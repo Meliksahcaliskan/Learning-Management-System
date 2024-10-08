@@ -9,6 +9,7 @@ learning-management-system/
 │   │   ├── java/
 │   │   │   └── com/
 │   │   │       └── cramschool/
+│   │   │           ├── cramschool.java                # Declares main method
 │   │   │           ├── config/                        # Configurations
 │   │   │           │   ├── ApplicationConfig.java
 │   │   │           │   ├── DatabaseConfig.java
