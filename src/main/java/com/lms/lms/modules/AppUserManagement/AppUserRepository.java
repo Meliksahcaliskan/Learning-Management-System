@@ -1,4 +1,4 @@
-package com.lms.lms.Model;
+package com.lms.lms.modules.AppUserManagement;
 
 import java.util.Optional;
 

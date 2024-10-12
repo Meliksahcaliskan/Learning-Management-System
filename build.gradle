@@ -27,6 +27,7 @@ dependencies {
 	implementation 'org.springframework.session:spring-session-core'
 	implementation 'org.postgresql:postgresql:42.5.0'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

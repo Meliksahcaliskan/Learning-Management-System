@@ -1,6 +1,5 @@
-package com.lms.lms.Security;
+package com.lms.lms.Config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -13,7 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-import com.lms.lms.Model.AppUserService;
+import com.lms.lms.modules.AppUserManagement.AppUserService;
 
 import lombok.AllArgsConstructor;
 
@@ -21,18 +20,16 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 @EnableWebSecurity
 public class SecurityConfig {
-    
-    @Autowired
-    private final AppUserService appUserService;
-    
+
+    private final AppUserService appUserService; // Lombok will handle constructor injection
     
     @Bean
-    public UserDetailsService userDetailsService(){
+    public UserDetailsService userDetailsService() {
         return appUserService;
     }
     
     @Bean
-    public AuthenticationProvider authenticationProvider(){
+    public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(appUserService);
         provider.setPasswordEncoder(passwordEncoder());
@@ -40,26 +37,22 @@ public class SecurityConfig {
     }
     
     @Bean
-    public PasswordEncoder passwordEncoder(){
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
     
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception{
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
             .csrf(AbstractHttpConfigurer::disable)
-            .formLogin(httpForm ->{
-                httpForm.loginPage("/req/login").permitAll();
-                httpForm.defaultSuccessUrl("/index");
-                
+            .formLogin(formLogin -> {
+                formLogin.loginPage("/req/login").permitAll(); // Custom login page
+                formLogin.defaultSuccessUrl("/index", true); // Redirect to /index after successful login
             })
-    
-            
-            .authorizeHttpRequests(registry ->{
-                registry.requestMatchers("/req/signup","/css/**","/js/**").permitAll();
-                registry.anyRequest().authenticated();
+            .authorizeHttpRequests(auth -> {
+                auth.requestMatchers("/req/signup", "/css/**", "/js/**", "/images/**").permitAll(); // Permit access to signup and static resources
+                auth.anyRequest().authenticated(); // All other requests need authentication
             })
             .build();
     }
-    
 }
