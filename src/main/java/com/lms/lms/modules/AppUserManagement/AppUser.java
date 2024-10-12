@@ -1,5 +1,9 @@
 package com.lms.lms.modules.AppUserManagement;
 
+import org.springframework.security.crypto.bcrypt.BCrypt;
+
+import com.lms.lms.modules.Role.Role;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,10 +19,6 @@ import jakarta.validation.constraints.Size;
 @Table(name="app_users")
 public class AppUser {
 
-    public enum Role {
-        STUDENT, TEACHER, ADMIN
-    }
-
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name="id")
@@ -26,12 +26,12 @@ public class AppUser {
 
     @NotNull
     @Size(min = 3, max = 60)
-    @Column(name="username")
+    @Column(name="username", unique=true)
     private String username;
 
     @NotNull
     @Size(min = 5, max = 100)
-    @Column(name="email")
+    @Column(name="email", unique=true)
     private String email;
 
     @NotNull
@@ -73,8 +73,12 @@ public class AppUser {
         return password;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setPassword(String rawPassword) {
+        this.password = BCrypt.hashpw(rawPassword, email);
+    }
+
+    public boolean checkPassword(String rawPassword) {
+        return BCrypt.checkpw(rawPassword, this.password);
     }
 
     public Role getRoleId() {

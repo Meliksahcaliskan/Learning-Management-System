@@ -1,14 +1,19 @@
 package com.lms.lms.Controller;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.lms.lms.modules.AppUserManagement.AppUser;
 import com.lms.lms.modules.AppUserManagement.AppUserRepository;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 public class RegistrationController {
@@ -40,6 +45,28 @@ public class RegistrationController {
         appUserRepository.save(user);
 
         return ResponseEntity.ok("User registered successfully");
+    }
+
+    @PostMapping("/login")
+    public String login(@RequestParam String username, @RequestParam String password, HttpServletRequest request) {
+        Optional<AppUser> userOptional = appUserRepository.findByUsername(username);
+        if (userOptional.isPresent()) {
+            AppUser user = userOptional.get();
+            if (user.checkPassword(password)) {
+                // Set user role in session
+                request.getSession().setAttribute("userRole", user.getRoleId().getRoleName());
+
+                String redirectUrl = switch (user.getRoleId().getRoleName()) {
+                    case "STUDENT" -> "/student-panel";
+                    case "TEACHER" -> "/teacher-panel";
+                    case "ADMIN" -> "/admin-panel";
+                    default -> "/login-failed";
+                };
+
+                return redirectUrl;
+            }
+        }
+        return "/login-failed";
     }
     
 }

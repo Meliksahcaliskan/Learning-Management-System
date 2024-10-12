@@ -2,6 +2,7 @@ package com.lms.lms.Aspect;
 
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
@@ -15,7 +16,7 @@ public class LoggingAspect {
 
     private final Logger logger = LoggerFactory.getLogger(LoggingAspect.class);
 
-    @Pointcut("execution(* com.lms.lms.Model.AppUserService.loadUserByUsername(..)) && args(username)")
+    @Pointcut("execution(* com.lms.lms.modules.AppUserManagement.AppUserService.loadUserByUsername(..)) && args(username)")
     public void userLoadByUsername(String username) {}
 
     @Before("userLoadByUsername(username)")
@@ -30,5 +31,25 @@ public class LoggingAspect {
         } else {
             logger.warn("User not found with username: {}", username);
         }
+    }
+
+    @Pointcut("execution(* com.lms.lms.Controller.RegistrationController.login(..))")
+    public void loginMethod() {}
+
+    @Before("loginMethod()")
+    public void logBeforeLogin(JoinPoint joinPoint) {
+        logger.info("Attempting to login");
+    }
+
+
+    @AfterReturning(pointcut = "loginMethod()", returning = "result")
+    public void logAfterLogin(JoinPoint joinPoint, Object result) {
+        logger.info("Login successful, redirecting to: {}", result);
+    }
+
+
+    @AfterThrowing(pointcut = "loginMethod()", throwing = "exception")
+    public void logAfterLoginException(JoinPoint joinPoint, Throwable exception) {
+        logger.error("Login failed with exception: {}", exception.getMessage());
     }
 }

@@ -100,6 +100,9 @@ public class Student {
     public String getParentName() { return parent_name; }
     public void setParentName(String parent_name) { this.parent_name = parent_name; }
 
+    public String getParentPhone() { return parent_phone; }
+    public void setParentPhone(String parent_phone) { this.parent_phone = parent_phone; }
+
     public String getClassId() { return class_id; } // TODO: Don't forget to change here also after creating classes entity.
     public void setClassId(String class_id) { this.class_id = class_id; }
 
