@@ -38,3 +38,6 @@ out/
 
 ### Trash ###
 trash/
+
+# Ignore .env file
+.env

@@ -34,6 +34,7 @@ dependencies {
 	implementation 'javax.servlet:javax.servlet-api:4.0.1'
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
 	implementation 'io.springfox:springfox-boot-starter:3.0.0'
+	implementation 'io.github.cdimascio:dotenv-java:3.0.0'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
