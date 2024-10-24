@@ -62,8 +62,9 @@ public class JwtTokenProvider {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
+        if(isTokenExpired(token)) return false;
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        return (username.equals(userDetails.getUsername()));
     }
 
     private boolean isTokenExpired(String token) {

@@ -37,11 +37,25 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequestDTO authRequest) {
-        AppUser authenticatedUser = authService.authenticate(authRequest);
-        String jwtToken = jwtTokenProvider.generateToken(authenticatedUser);
-        LoginResponseDTO loginResponse = new LoginResponseDTO(authenticatedUser, jwtToken); // DTO needs expirationTime field
-        return ResponseEntity.ok(loginResponse);
+        try {
+            // Authenticate user
+            AppUser authenticatedUser = authService.authenticate(authRequest);
+            
+            // Generate JWT token
+            String jwtToken = jwtTokenProvider.generateToken(authenticatedUser);
+            
+            // Create login response DTO
+            LoginResponseDTO loginResponse = new LoginResponseDTO(authenticatedUser, jwtToken);
+            
+            // Return the successful login response
+            return ResponseEntity.ok(loginResponse);
+            
+        } catch (IllegalArgumentException e) {
+            // Return 401 Unauthorized when credentials are invalid
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+        }
     }
+
 
 
     @PostMapping("/register")
@@ -53,6 +67,9 @@ public class AuthController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new RegisterResponseDTO(null, e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new RegisterResponseDTO(null, "An unexpected error occurred"));
         }
     }
 

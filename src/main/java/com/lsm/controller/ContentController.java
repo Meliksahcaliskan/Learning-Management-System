@@ -15,9 +15,10 @@ public class ContentController {
     public String signup(){
         return "signup";
     }
+
     @GetMapping("api/auth/index")
     public String home(){
         return "index";
     }
-    
+
 }

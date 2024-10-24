@@ -1,4 +1,3 @@
-/*
 package com.lsm.config;
 
 import org.springframework.context.annotation.Bean;
@@ -14,4 +13,3 @@ public class AspectConfig {
         return new LoggingAspect();
     }
 }
-*/

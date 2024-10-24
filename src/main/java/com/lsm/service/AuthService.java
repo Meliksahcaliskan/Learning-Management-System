@@ -2,6 +2,7 @@ package com.lsm.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -48,18 +49,27 @@ public class AuthService {
         return appUserRepository.save(newUser);
     }
 
-    public AppUser authenticate(LoginRequestDTO input) {
-        authenticationManager.authenticate(
+    public AppUser  authenticate(LoginRequestDTO input) {
+        try {
+            // Attempt to authenticate the user
+            authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        input.getUsername(),
-                        input.getPassword()
+                    input.getUsername(),
+                    input.getPassword()
                 )
-        );
+            );
+        } catch (BadCredentialsException e) {
+            // Handle bad credentials
+            throw new IllegalArgumentException("Bad credentials");
+        }
 
-        if (appUserRepository.findByUsername(input.getUsername()) == null)
+        // Check if the user exists after successful authentication
+        AppUser user = appUserRepository.findByUsername(input.getUsername());
+        if (user == null) {
             throw new UsernameNotFoundException("Username not found.");
+        }
 
-        return appUserRepository.findByUsername(input.getUsername());
+        return user;
     }
 
     //public AppUser findUserByUsername(String username) {

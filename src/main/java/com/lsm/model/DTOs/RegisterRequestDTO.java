@@ -60,7 +60,7 @@ public class RegisterRequestDTO {
         return role;
     }
 
-    public void setEmail(Role role) {
+    public void setRole(Role role) {
         this.role = role;
     }
 }

@@ -1,45 +1,95 @@
 package com.lsm.controller;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import static org.mockito.Mockito.when;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lsm.model.DTOs.LoginRequestDTO;
 import com.lsm.model.DTOs.RegisterRequestDTO;
 import com.lsm.model.entity.base.AppUser;
+import com.lsm.model.entity.enums.Role;
 import com.lsm.service.AuthService;
 import com.lsm.service.JwtTokenProvider;
 
 @WebMvcTest(AuthController.class)
-// @ContextConfiguration(classes = {AuthControllerTest.TestConfig.class})
+@AutoConfigureMockMvc(addFilters = false)
 public class AuthControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Mock
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockBean
     private AuthService authService;
 
-    @Mock
+    @MockBean
+    private UserDetailsService userDetailsService;
+
+    @MockBean
     private JwtTokenProvider jwtTokenProvider;
 
-    @InjectMocks
-    private AuthController authController;
+    @MockBean
+    private AuthenticationManager authenticationManager;
 
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
+    @Test
+    @WithMockUser
+    public void testRegister_Success() throws Exception {
+        // Create request DTO
+        RegisterRequestDTO request = new RegisterRequestDTO();
+        request.setUsername("newuser");
+        request.setPassword("password");
+        request.setEmail("email@example.com");
+        request.setRole(Role.STUDENT);
+
+        // Create mock response
+        AppUser mockUser = new AppUser();
+        // mockUser.setId(1L);
+        mockUser.setUsername("newuser");
+        mockUser.setEmail("email@example.com");
+        mockUser.setRole(Role.STUDENT);
+
+        // Mock service behavior
+        when(authService.registerUser(any(RegisterRequestDTO.class))).thenReturn(mockUser);
+
+        // Perform test
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.message").value("Registered successfully"));
+    }
+
+    @Test
+    public void testRegister_UsernameAlreadyExists() throws Exception {
+        RegisterRequestDTO request = new RegisterRequestDTO();
+        request.setUsername("existinguser");
+        request.setPassword("password");
+        request.setEmail("email@example.com");
+        request.setRole(Role.STUDENT);
+
+        when(authService.registerUser(any(RegisterRequestDTO.class)))
+            .thenThrow(new IllegalArgumentException("Username already exists"));
+
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Username already exists"));
     }
 
     @Test
@@ -48,71 +98,36 @@ public class AuthControllerTest {
         loginRequest.setUsername("user");
         loginRequest.setPassword("password");
 
-        // Mock the behavior of authService and jwtTokenProvider
-        AppUser mockUser = new AppUser(); // Assuming AppUser has a default constructor
+        AppUser mockUser = new AppUser();
         mockUser.setUsername("user");
+        mockUser.setId(1L);
+        
         when(authService.authenticate(any(LoginRequestDTO.class))).thenReturn(mockUser);
-        when(jwtTokenProvider.generateToken(mockUser)).thenReturn("mock-jwt-token");
+        when(jwtTokenProvider.generateToken(any(AppUser.class))).thenReturn("mock-jwt-token");
 
-        // Perform the request and validate response
         mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"user\",\"password\":\"password\"}"))
+                .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("mock-jwt-token"));
     }
 
     @Test
     public void testLogin_BadCredentials() throws Exception {
-        // Simulate authentication failure
-        when(authService.authenticate(any(LoginRequestDTO.class))).thenThrow(new IllegalArgumentException("Bad credentials"));
+        // Arrange
+        LoginRequestDTO loginRequest = new LoginRequestDTO();
+        loginRequest.setUsername("wrongUser");
+        loginRequest.setPassword("wrongPassword");
 
-        // Perform the request and validate the response
+        // Mock the behavior of authService.authenticate to throw BadCredentialsException
+        when(authService.authenticate(any(LoginRequestDTO.class)))
+            .thenThrow(new IllegalArgumentException("Bad credentials"));
+
+        // Act and Assert
         mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"wrongUser\",\"password\":\"wrongPassword\"}"))
+                .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isUnauthorized());
     }
 
-    @Test
-    public void testRegister_Success() throws Exception {
-        // RegisterRequestDTO registerRequest = new RegisterRequestDTO("newuser", "password", "email@example.com", Role.STUDENT);
-
-        // Mock the behavior of authService for a successful registration
-        AppUser mockUser = new AppUser();
-        mockUser.setId(1L); // Assuming AppUser has an ID field
-        when(authService.registerUser(any(RegisterRequestDTO.class))).thenReturn(mockUser);
-
-        // Perform the request and validate response
-        mockMvc.perform(post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"newuser\",\"password\":\"password\",\"email\":\"email@example.com\"}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").value("Registered successfully"));
-    }
-
-    @Test
-    public void testRegister_UsernameAlreadyExists() throws Exception {
-        // RegisterRequestDTO registerRequest = new RegisterRequestDTO("existinguser", "password", "email@example.com", Role.STUDENT);
-
-        // Simulate username already exists
-        when(authService.registerUser(any(RegisterRequestDTO.class))).thenThrow(new IllegalArgumentException("Username already exists"));
-
-        // Perform the request and validate response
-        mockMvc.perform(post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"existinguser\",\"password\":\"password\",\"email\":\"email@example.com\"}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Username already exists"));
-    }
-
-    /*
-    @Configuration
-    static class TestConfig {
-        @Bean
-        public AuthenticationManager authenticationManager() {
-            return new TestingAuthenticationManager();
-        }
-    }
-    */
 }

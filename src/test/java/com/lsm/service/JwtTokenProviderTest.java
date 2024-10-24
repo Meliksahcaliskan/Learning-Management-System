@@ -2,6 +2,8 @@ package com.lsm.service;
 
 import java.util.Date;
 
+import javax.crypto.SecretKey;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -16,6 +18,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Encoders;
+import io.jsonwebtoken.security.Keys;
 
 public class JwtTokenProviderTest {
 
@@ -30,7 +35,8 @@ public class JwtTokenProviderTest {
         MockitoAnnotations.openMocks(this);
 
         // Setting jwtSecret and jwtExpirationInMs using ReflectionTestUtils
-        ReflectionTestUtils.setField(jwtTokenProvider, "jwtSecret", "yourSecretKeyInBase64");
+        SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256); //or HS384 or HS512
+        ReflectionTestUtils.setField(jwtTokenProvider, "jwtSecret", Encoders.BASE64.encode(key.getEncoded()));
         ReflectionTestUtils.setField(jwtTokenProvider, "jwtExpirationInMs", 1000 * 60 * 60 * 10); // 10 hours
 
         // Mocking UserDetails
@@ -63,7 +69,7 @@ public class JwtTokenProviderTest {
         ReflectionTestUtils.setField(jwtTokenProvider, "jwtExpirationInMs", 1000); // 1 second
 
         String token = jwtTokenProvider.generateToken(userDetails);
-        Thread.sleep(2000); // Wait 2 seconds to ensure token is expired
+        Thread.sleep(1500); // Wait 1.5 seconds to ensure token is expired
 
         assertFalse(jwtTokenProvider.isTokenValid(token, userDetails));
     }

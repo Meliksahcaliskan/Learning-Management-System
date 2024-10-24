@@ -1,4 +1,3 @@
-/*
 package com.lsm.aspect;
 
 import org.aspectj.lang.JoinPoint;
@@ -28,9 +27,9 @@ public class LoggingAspect {
     public void repositoryMethods() {
     }
 
-    @Pointcut("execution(* com.lsm.security.*.*(..))")
-    public void securityMethods() {
-    }
+    //@Pointcut("execution(* com.lsm.security.*.*(..))")
+    //public void securityMethods() {
+    //}
 
     @Pointcut("execution(* com.lsm.model.validation.*.*(..))")
     public void validationMethods() {
@@ -41,7 +40,7 @@ public class LoggingAspect {
         logger.info("Entering method: {} with arguments: {}", joinPoint.getSignature().getName(), joinPoint.getArgs());
     }
 
-    @Around("serviceMethods() || repositoryMethods() || securityMethods() || validationMethods()")
+    @Around("serviceMethods() || repositoryMethods() || validationMethods()") // securityMethods() ||
     public Object logAroundMethods(ProceedingJoinPoint joinPoint) throws Throwable {
         long startTime = System.currentTimeMillis();
         try {
@@ -57,4 +56,3 @@ public class LoggingAspect {
     }
 
 }
-*/
