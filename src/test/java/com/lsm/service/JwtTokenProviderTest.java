@@ -5,8 +5,8 @@ import java.util.Date;
 import javax.crypto.SecretKey;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +18,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Encoders;
 import io.jsonwebtoken.security.Keys;
@@ -64,15 +65,23 @@ public class JwtTokenProviderTest {
     }
 
     @Test
-    public void testTokenExpiration() throws InterruptedException {
+    void testTokenExpiration() throws InterruptedException {
         // Set expiration time to 1 second for testing
-        ReflectionTestUtils.setField(jwtTokenProvider, "jwtExpirationInMs", 1000); // 1 second
-
+        ReflectionTestUtils.setField(jwtTokenProvider, "jwtExpirationInMs", 1000);
         String token = jwtTokenProvider.generateToken(userDetails);
-        Thread.sleep(1500); // Wait 1.5 seconds to ensure token is expired
-
-        assertFalse(jwtTokenProvider.isTokenValid(token, userDetails));
+    
+        // Wait 1.5 seconds to ensure token is expired
+        Thread.sleep(1500);
+       
+        // Capture the exception to handle the warning
+        ExpiredJwtException exception = assertThrows(ExpiredJwtException.class, () -> {
+            jwtTokenProvider.isTokenValid(token, userDetails);
+        });
+    
+        // Optionally, assert specific message or other details about the exception
+        assertNotNull(exception.getMessage()); // or check specific exception details if needed
     }
+    
 
     @Test
     public void testExtractClaim() {

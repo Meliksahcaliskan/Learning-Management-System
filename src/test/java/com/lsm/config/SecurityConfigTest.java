@@ -8,17 +8,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -35,31 +40,49 @@ public class SecurityConfigTest {
     @Mock
     private AuthenticationConfiguration authenticationConfiguration;
 
-    @MockBean
+    @Mock
     private UserDetailsService userDetailsService;
 
-    @MockBean
+    @Mock
     private JwtTokenProvider jwtTokenProvider;
 
-    @MockBean
+    @Mock
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Mock
     private HttpSecurity httpSecurity;
 
+    @Mock
+    private CsrfConfigurer<HttpSecurity> csrfConfigurer;
+
+    @Mock
+    private AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authRegistry;
+
+    @Mock
+    private DefaultSecurityFilterChain securityFilterChain;
+
+    @InjectMocks
     private SecurityConfig securityConfig;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         securityConfig = new SecurityConfig(appUserService);
+
+        // Mock the builder pattern to return httpSecurity for method chaining
+        when(httpSecurity.csrf(any())).thenReturn(httpSecurity);
+        when(httpSecurity.authorizeHttpRequests(any())).thenReturn(httpSecurity);
+        when(httpSecurity.addFilterBefore(any(), any())).thenReturn(httpSecurity);
+        when(httpSecurity.build()).thenReturn(securityFilterChain);
     }
 
     @Test
+    @MockitoSettings(strictness = Strictness.LENIENT)
     void userDetailsService_ShouldReturnAppUserService() {
         assertEquals(appUserService, securityConfig.userDetailsService());
     }
 
     @Test
+    @MockitoSettings(strictness = Strictness.LENIENT)
     void passwordEncoder_ShouldNotBeNull() {
         assertNotNull(securityConfig.passwordEncoder());
     }
@@ -76,6 +99,7 @@ public class SecurityConfigTest {
     */
 
     @Test
+    @MockitoSettings(strictness = Strictness.LENIENT)
     void authenticationManager_ShouldReturnFromConfiguration() throws Exception {
         AuthenticationManager mockAuthManager = mock(AuthenticationManager.class);
         when(authenticationConfiguration.getAuthenticationManager()).thenReturn(mockAuthManager);
@@ -87,6 +111,7 @@ public class SecurityConfigTest {
     }
 
     @Test
+    @MockitoSettings(strictness = Strictness.LENIENT)
     void passwordEncoder_ShouldBeBCryptPasswordEncoder() {
         PasswordEncoder encoder = securityConfig.passwordEncoder();
         
@@ -95,23 +120,22 @@ public class SecurityConfigTest {
     }
 
     @Test
+    @MockitoSettings(strictness = Strictness.LENIENT)
     void securityFilterChain_ShouldConfigureSecurityCorrectly() throws Exception {
-        // Mock behavior for HttpSecurity
-        when(httpSecurity.csrf(any())).thenReturn(httpSecurity); // Ensure csrf returns the same mock
-        when(httpSecurity.authorizeHttpRequests(any())).thenReturn(httpSecurity); // Ensure authorizeHttpRequests returns the same mock
-        when(httpSecurity.addFilterBefore(any(JwtAuthenticationFilter.class), eq(UsernamePasswordAuthenticationFilter.class)))
-            .thenReturn(httpSecurity); // Ensure addFilterBefore returns the same mock
+        // Act
+        SecurityFilterChain result = securityConfig.securityFilterChain(httpSecurity, jwtAuthenticationFilter);
 
-        // Call the method under test
-        SecurityFilterChain filterChain = securityConfig.securityFilterChain(httpSecurity, jwtAuthenticationFilter);
-
-        // Assert that the filter chain is not null (ensuring that it is built correctly)
-        assertNotNull(filterChain);
-
-        // Verify interactions with the mocks
+        // Assert
+        assertNotNull(result);
+        
+        // Verify all security configurations were called
         verify(httpSecurity).csrf(any());
         verify(httpSecurity).authorizeHttpRequests(any());
-        verify(httpSecurity).addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        verify(httpSecurity).addFilterBefore(
+            eq(jwtAuthenticationFilter), 
+            eq(UsernamePasswordAuthenticationFilter.class)
+        );
+        verify(httpSecurity).build();
     }
 
 }
