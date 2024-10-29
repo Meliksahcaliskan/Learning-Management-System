@@ -3,6 +3,7 @@ package com.lsm.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -56,11 +57,13 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         return httpSecurity
                 .csrf(csrf -> csrf.disable()) // disable csrf for stateless API
-                .authorizeHttpRequests(registry -> {
+                .authorizeHttpRequests(registry -> { // TODO: Register should be restricted later.
                     registry.requestMatchers("/api/auth/register", "/api/auth/login", "/css/**", "/js/**").permitAll();
+                    registry.requestMatchers(HttpMethod.POST, "api/assignments/**"); // Require login for all POST requests to /api/assignment/**
                     registry.anyRequest().authenticated();
                 })
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .logout(logout -> logout.permitAll())
                 .build();
     }
 

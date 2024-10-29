@@ -17,30 +17,26 @@ import com.lsm.service.AssignmentService;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 
 @RestController
-@RequestMapping("/api/assignment")
+@RequestMapping("/api/assignments")
 public class AssignmentController {
-    AssignmentService assignmentService;
+    private AssignmentService assignmentService;
 
     @Autowired
     public AssignmentController(AssignmentService assignmentService) {
         this.assignmentService = assignmentService;
     }
 
-    @PostMapping("/assign")
-    public ResponseEntity<?> assign(@RequestBody AssignmentRequestDTO assignmentRequestDTO) {
+    @PostMapping("/createAssignment")
+    public ResponseEntity<?> createAssignment(@RequestBody AssignmentRequestDTO assignmentRequestDTO) {
         try {
-            // Authenticate user
             Assignment assignment = assignmentService.createAssignment(assignmentRequestDTO);
-            
-            // Create login response DTO
             AssignmentDTO assignmentDTO = new AssignmentDTO(assignment);
-            
-            // Return the successful login response
             return ResponseEntity.ok(assignmentDTO);
             
         } catch (AccessDeniedException e) {
-            // Return 401 Unauthorized when credentials are invalid
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only Teachers can assign homework");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 }

@@ -2,6 +2,7 @@ package com.lsm.service;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,12 @@ public class AssignmentService {
 
     public Assignment createAssignment(AssignmentRequestDTO assignmentRequestDTO) 
         throws AccessDeniedException {
-        if (assignmentRequestDTO.getTeacher().getRole() != Role.ROLE_TEACHER) {
+        Optional<AppUser> teacher_opt = appUserRepository.findById(assignmentRequestDTO.getTeacherId());
+        if(!teacher_opt.isPresent()) {
+            throw new IllegalArgumentException("The teacher id doesn't exist or doesn't belongs to a teacher.");
+        }
+        AppUser teacher = teacher_opt.get();
+        if (teacher.getRole() != Role.ROLE_TEACHER) {
             throw new AccessDeniedException("Only teachers can assign homework.");
         }
 
@@ -35,7 +41,7 @@ public class AssignmentService {
             .collect(Collectors.toList());
 
         Assignment assignment = new Assignment(assignmentRequestDTO.getTitle()
-            , assignmentRequestDTO.getDescription(), assignmentRequestDTO.getDueDate(), assignmentRequestDTO.getTeacher(), students);
+            , assignmentRequestDTO.getDescription(), assignmentRequestDTO.getDueDate(), teacher, students);
         return assignmentRepository.save(assignment);
     }
 
