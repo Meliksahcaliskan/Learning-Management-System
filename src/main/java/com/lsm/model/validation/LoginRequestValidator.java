@@ -35,4 +35,6 @@ public class LoginRequestValidator implements Validator {
             }
         }
     }
+
+    // TODO: check for strong password
 }

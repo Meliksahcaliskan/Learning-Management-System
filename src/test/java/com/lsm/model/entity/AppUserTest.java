@@ -20,7 +20,7 @@ public class AppUserTest {
     @BeforeEach
     public void setUp() {
         // Create a sample AppUser for testing
-        appUser = new AppUser("testUser", "test@example.com", "password123", Role.STUDENT);
+        appUser = new AppUser("testUser", "test@example.com", "password123", Role.ROLE_STUDENT);
     }
 
     @Test
@@ -52,7 +52,7 @@ public class AppUserTest {
 
     @Test
     public void testGetRole() {
-        assertEquals(Role.STUDENT, appUser.getRole());
+        assertEquals(Role.ROLE_STUDENT, appUser.getRole());
     }
 
     @Test
@@ -73,7 +73,7 @@ public class AppUserTest {
 
     @Test
     public void testSetRole() {
-        appUser.setRole(Role.TEACHER);
-        assertEquals(Role.TEACHER, appUser.getRole());
+        appUser.setRole(Role.ROLE_TEACHER);
+        assertEquals(Role.ROLE_TEACHER, appUser.getRole());
     }
 }

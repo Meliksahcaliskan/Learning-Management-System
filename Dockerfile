@@ -2,10 +2,12 @@
 FROM openjdk:17-jdk-alpine
 
 # Set the working directory in the container
-WORKDIR /app
+WORKDIR /lsm
+
+# Copy the .env file to the working directory
+COPY .env ./
 
 # Copy the build output (JAR file) from the host machine to the container
-# This assumes you are using Gradle or Maven and the JAR is located in `build/libs/`
 COPY build/libs/*.jar app.jar
 
 # Expose the port that the application will run on

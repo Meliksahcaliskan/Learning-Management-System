@@ -3,14 +3,17 @@ package com.lsm.model.entity.base;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.springframework.lang.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
+import com.lsm.model.entity.StudentDetails;
 import com.lsm.model.entity.enums.Role;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -51,9 +54,11 @@ public class AppUser implements UserDetails {
     @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name="role")
-    // @ManyToOne(fetch = FetchType.EAGER)
-    // @JoinColumn(name = "role_id", nullable = false)
     private Role role;
+
+    @Embedded
+    @Nullable
+    private StudentDetails studentDetails;
 
     // Constructors, Getters, and Setters
 
@@ -64,6 +69,14 @@ public class AppUser implements UserDetails {
         this.email = email;
         this.password = hashPassword(rawPassword);
         this.role = role;
+    }
+
+    public AppUser(String username, String email, String rawPassword, Role role, StudentDetails studentDetails) {
+        this.username = username;
+        this.email = email;
+        this.password = hashPassword(rawPassword);
+        this.role = role;
+        this.studentDetails = studentDetails;
     }
 
     public Long getId() {
@@ -115,6 +128,14 @@ public class AppUser implements UserDetails {
 
     private String hashPassword(String rawPassword) {
         return BCrypt.hashpw(rawPassword, BCrypt.gensalt());
+    }
+
+    public StudentDetails getStudentDetails() {
+        return studentDetails;
+    }
+
+    public void setStudentDetails(StudentDetails studentDetails) {
+        this.studentDetails = studentDetails;
     }
 
     @Override

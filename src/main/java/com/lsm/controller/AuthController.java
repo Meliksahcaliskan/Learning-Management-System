@@ -57,7 +57,6 @@ public class AuthController {
     }
 
 
-
     @PostMapping("/register")
     public ResponseEntity<RegisterResponseDTO> register(@RequestBody RegisterRequestDTO authRequest) {
         try {
