@@ -9,16 +9,18 @@ public class AssignmentDTO {
     private String title;
     private String description;
     private LocalDate dueDate;
+    private String message;
 
     // Default constructor
     // public AssignmentDTO() {}
 
     // Parameterized constructor
-    public AssignmentDTO(Assignment assignment) {
+    public AssignmentDTO(Assignment assignment, String message) {
         this.id = assignment.getId();
         this.title = assignment.getTitle();
         this.description = assignment.getDescription();
         this.dueDate = assignment.getDueDate();
+        this.message = message;
     }
 
     // Getters and Setters
@@ -52,5 +54,13 @@ public class AssignmentDTO {
 
     public void setDueDate(LocalDate dueDate) {
         this.dueDate = dueDate;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 }

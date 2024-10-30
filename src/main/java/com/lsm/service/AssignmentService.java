@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.lsm.model.DTOs.AssignmentDTO;
 import com.lsm.model.DTOs.AssignmentRequestDTO;
 import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.base.AppUser;
@@ -26,7 +27,11 @@ public class AssignmentService {
 
     public Assignment createAssignment(AssignmentRequestDTO assignmentRequestDTO) 
         throws AccessDeniedException {
-        Optional<AppUser> teacher_opt = appUserRepository.findById(assignmentRequestDTO.getTeacherId());
+        Long teacherId = assignmentRequestDTO.getTeacherId();
+        if (teacherId == null) {
+            throw new IllegalArgumentException("Teacher ID cannot be null.");
+        }
+        Optional<AppUser> teacher_opt = appUserRepository.findById(teacherId);
         if(!teacher_opt.isPresent()) {
             throw new IllegalArgumentException("The teacher id doesn't exist or doesn't belongs to a teacher.");
         }
@@ -43,6 +48,25 @@ public class AssignmentService {
         Assignment assignment = new Assignment(assignmentRequestDTO.getTitle()
             , assignmentRequestDTO.getDescription(), assignmentRequestDTO.getDueDate(), teacher, students);
         return assignmentRepository.save(assignment);
+    }
+
+    public List<AssignmentDTO> displayAssignmentsForStudent(Long requestedStudentId, Long loggedInStudentId)
+        throws IllegalArgumentException, AccessDeniedException {
+        AppUser student = appUserRepository.findById(loggedInStudentId)
+            .orElseThrow(() -> new IllegalArgumentException("Student not found"));
+        
+        if (!requestedStudentId.equals(loggedInStudentId)) {
+            throw new AccessDeniedException("You are not authorized to view other students' assignments.");
+        }
+        
+        if (student.getRole() != Role.ROLE_STUDENT) {
+            throw new AccessDeniedException("Only students can view assigned homework.");
+        }
+
+        List<Assignment> assignments = assignmentRepository.findByAssignedToContaining(student);
+        return assignments.stream()
+            .map(assignment -> new AssignmentDTO(assignment, ""))
+            .collect(Collectors.toList());
     }
 
     public Assignment findById(Long id) {
