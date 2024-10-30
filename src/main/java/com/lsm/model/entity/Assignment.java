@@ -41,7 +41,7 @@ public class Assignment {
 
     @ManyToOne
     @JoinColumn(name = "assigned_by_teacher_id", nullable = false)
-    private AppUser assignedBy;  // Reference to the teacher who created the assignment
+    private AppUser assignedBy;
 
     @ManyToMany
     @JoinTable(
@@ -49,15 +49,19 @@ public class Assignment {
         joinColumns = @JoinColumn(name = "assignment_id"),
         inverseJoinColumns = @JoinColumn(name = "student_id")
     )
-    private List<AppUser> assignedTo;  // List of students who received the assignment
+    private List<AppUser> assignedTo;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private AssignmentStatus status = AssignmentStatus.PENDING;  // Default status as PENDING
+    private AssignmentStatus status = AssignmentStatus.PENDING;
 
     @NotNull
-    @Column(name = "class_id", nullable = false)
+    @Column(name = "class_id", nullable = false, insertable = false, updatable = false)  // Avoids duplicate mapping
     private Long classId;
+
+    @ManyToOne
+    @JoinColumn(name = "class_id", nullable = false)  // Maps to the ClassEntity relation
+    private ClassEntity classEntity;
 
     @NotNull
     @Column(name = "course_id", nullable = false)
@@ -85,6 +89,10 @@ public class Assignment {
     // Getters and Setters
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getTitle() {

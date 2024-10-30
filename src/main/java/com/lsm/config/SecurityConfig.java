@@ -60,7 +60,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(registry -> { // TODO: Register should be restricted later.
                     registry.requestMatchers("/api/auth/register", "/api/auth/login", "/css/**", "/js/**").permitAll();
                     registry.requestMatchers(HttpMethod.POST, "api/assignments/createAssignment").hasAuthority("ROLE_TEACHER"); // Require login for all POST requests to /api/assignment/**
-                    registry.requestMatchers(HttpMethod.GET, "api/assignments/displayAssignments/{studentId}");
+                    registry.requestMatchers(HttpMethod.GET, "/api/assignments/displayAssignments/{studentId}").hasAuthority("ROLE_STUDENT");
                     registry.requestMatchers(HttpMethod.PUT, "api/assignments/updateAssignment/{assignmentId}").hasAuthority("ROLE_TEACHER");
                     registry.requestMatchers(HttpMethod.DELETE, "api/assignments/deleteAssignment/{assignmentId}").hasAuthority("ROLE_TEACHER");
                     registry.anyRequest().authenticated();

@@ -59,7 +59,7 @@ public class AppUserTest {
     public void testGetAuthorities() {
         Collection<? extends GrantedAuthority> authorities = appUser.getAuthorities();
         assertEquals(1, authorities.size());
-        assertEquals("STUDENT", authorities.iterator().next().getAuthority());
+        assertEquals("ROLE_STUDENT", authorities.iterator().next().getAuthority());
     }
 
     @Test
