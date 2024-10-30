@@ -15,6 +15,9 @@ public class StudentDetails {
     @Column(name = "surname")
     private String surname;
 
+    @Column(name = "phone")
+    private String phone;
+
     @Column(name = "tc")
     @TCConstraint
     private String tc;
@@ -31,11 +34,10 @@ public class StudentDetails {
     @Column(name = "parent_phone")
     private String parentPhone;
 
-    // Getters and Setters
-
-    public StudentDetails(String name, String surname, String tc, LocalDate birthDate, LocalDate registrationDate, String parentName, String parentPhone) {
+    public StudentDetails(String name, String surname, String phone, String tc, LocalDate birthDate, LocalDate registrationDate, String parentName, String parentPhone) {
         this.name = name;
         this.surname = surname;
+        this.phone = phone;
         this.tc = tc;
         this.birthDate = birthDate;
         this.registrationDate = registrationDate;
@@ -48,6 +50,9 @@ public class StudentDetails {
 
     public String getSurname() { return surname; }
     public void setSurname(String surname) { this.surname = surname; }
+
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 
     public String getTc() { return tc; }
     public void setTc(String tc) { this.tc = tc; }

@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public class AssignmentRequestDTO {
+
     @NotNull(message = "Teacher ID is required.")
     private Long teacherId;
 
@@ -25,21 +26,34 @@ public class AssignmentRequestDTO {
     @NotEmpty(message = "Student ID list cannot be empty.")
     private List<Long> studentIdList;
 
+    @NotNull(message = "Class ID is required.")
+    private Long classId;
+
+    @NotNull(message = "Course ID is required.")
+    private Long courseId;
+
+    @NotNull(message = "Assignment date is required.")
+    private LocalDate date;
 
     // Default constructor
     public AssignmentRequestDTO() {
     }
 
     // Parameterized constructor
-    public AssignmentRequestDTO(Long teacherId, String title, String description, LocalDate dueDate, List<Long> studentIdList) {
+    public AssignmentRequestDTO(Long teacherId, String title, String description, LocalDate dueDate, 
+                                List<Long> studentIdList, Long classId, Long courseId, LocalDate date) {
         this.teacherId = teacherId;
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
         this.studentIdList = studentIdList;
+        this.classId = classId;
+        this.courseId = courseId;
+        this.date = date;
     }
 
     // Getters and Setters
+
     public Long getTeacherId() {
         return teacherId;
     }
@@ -79,5 +93,28 @@ public class AssignmentRequestDTO {
     public void setStudentIdList(List<Long> studentIdList) {
         this.studentIdList = studentIdList;
     }
-}
 
+    public Long getClassId() {
+        return classId;
+    }
+
+    public void setClassId(Long classId) {
+        this.classId = classId;
+    }
+
+    public Long getCourseId() {
+        return courseId;
+    }
+
+    public void setCourseId(Long courseId) {
+        this.courseId = courseId;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
+    }
+}

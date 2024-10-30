@@ -55,18 +55,34 @@ public class Assignment {
     @Column(name = "status")
     private AssignmentStatus status = AssignmentStatus.PENDING;  // Default status as PENDING
 
-    // Constructors, Getters, Setters, and other methods
+    @NotNull
+    @Column(name = "class_id", nullable = false)
+    private Long classId;
 
-    // public Assignment() {}
+    @NotNull
+    @Column(name = "course_id", nullable = false)
+    private Long courseId;
 
-    public Assignment(String title, String description, LocalDate dueDate, AppUser assignedBy, List<AppUser> assignedTo) {
+    @NotNull
+    @Column(name = "assignment_date", nullable = false)
+    private LocalDate date;
+
+    // Constructors
+    public Assignment() {}
+
+    public Assignment(String title, String description, LocalDate dueDate, AppUser assignedBy, 
+                      List<AppUser> assignedTo, Long classId, Long courseId, LocalDate date) {
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
         this.assignedBy = assignedBy;
         this.assignedTo = assignedTo;
+        this.classId = classId;
+        this.courseId = courseId;
+        this.date = date;
     }
 
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -118,5 +134,28 @@ public class Assignment {
     public void setStatus(AssignmentStatus status) {
         this.status = status;
     }
-}
 
+    public Long getClassId() {
+        return classId;
+    }
+
+    public void setClassId(Long classId) {
+        this.classId = classId;
+    }
+
+    public Long getCourseId() {
+        return courseId;
+    }
+
+    public void setCourseId(Long courseId) {
+        this.courseId = courseId;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
+    }
+}
