@@ -17,6 +17,10 @@ import com.lsm.model.entity.base.AppUser;
 import com.lsm.service.AuthService;
 import com.lsm.service.JwtTokenProvider;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "Authentication", description = "Authentication management APIs")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -35,6 +39,7 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @Operation(summary = "Login user", description = "Authenticates a user and returns a JWT token")
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequestDTO authRequest) {
         try {

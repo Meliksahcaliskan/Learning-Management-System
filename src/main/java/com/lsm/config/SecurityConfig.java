@@ -58,7 +58,7 @@ public class SecurityConfig {
         return httpSecurity
                 .csrf(csrf -> csrf.disable()) // disable csrf for stateless API
                 .authorizeHttpRequests(registry -> { // TODO: Register should be restricted later.
-                    registry.requestMatchers("/api/auth/register", "/api/auth/login", "/css/**", "/js/**").permitAll();
+                    registry.requestMatchers("/api/auth/register", "/api/auth/login", "/swagger-ui.html", "/swagger-ui/**", "/api-docs/**", "/css/**", "/js/**").permitAll();
                     registry.requestMatchers(HttpMethod.POST, "api/assignments/createAssignment").hasAuthority("ROLE_TEACHER"); // Require login for all POST requests to /api/assignment/**
                     registry.requestMatchers(HttpMethod.GET, "/api/assignments/displayAssignments/{studentId}").hasAuthority("ROLE_STUDENT");
                     registry.requestMatchers(HttpMethod.PUT, "api/assignments/updateAssignment/{assignmentId}").hasAuthority("ROLE_TEACHER");

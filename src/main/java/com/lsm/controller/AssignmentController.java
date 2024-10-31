@@ -24,6 +24,9 @@ import com.lsm.model.entity.base.AppUser;
 import com.lsm.service.AppUserService;
 import com.lsm.service.AssignmentService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+
 @RestController
 @RequestMapping("/api/assignments")
 public class AssignmentController {
@@ -56,6 +59,8 @@ public class AssignmentController {
     }
 
 
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Get user assignments")
     @GetMapping("/displayAssignments/{studentId}")
     public ResponseEntity<?> displayAssignmentsForStudent(@PathVariable Long studentId, Authentication authentication) {
         AppUser userDetails = (AppUser) authentication.getPrincipal();
