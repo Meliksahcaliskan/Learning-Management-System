@@ -3,10 +3,12 @@ package com.lsm.service;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import com.lsm.model.DTOs.AssignmentDTO;
 import com.lsm.model.DTOs.AssignmentRequestDTO;
@@ -16,6 +18,7 @@ import com.lsm.model.entity.enums.Role;
 import com.lsm.repository.AppUserRepository;
 import com.lsm.repository.AssignmentRepository;
 
+import io.micrometer.common.util.StringUtils;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -27,38 +30,32 @@ public class AssignmentService {
     @Autowired
     private AppUserRepository appUserRepository;
 
-    public Assignment createAssignment(AssignmentRequestDTO assignmentRequestDTO, Long loggedInUserId) 
+    @Transactional
+    public Assignment createAssignment(AssignmentRequestDTO assignmentRequestDTO, Long loggedInUserId)
             throws AccessDeniedException, IllegalArgumentException {
-        AppUser user = appUserRepository.findById(loggedInUserId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        // Check if the user has permission to add assignments
-        if (user.getRole() == Role.ROLE_STUDENT) {
-            throw new AccessDeniedException("Students cannot add assignments.");
+        
+        // Validate input
+        validateInputDTO(assignmentRequestDTO);
+        
+        // Find and validate user
+        AppUser user = findAndValidateUser(loggedInUserId);
+        
+        // Validate user permissions
+        validateUserPermissions(user, assignmentRequestDTO);
+        
+        // Validate and retrieve students
+        List<AppUser> students = findValidStudents(assignmentRequestDTO);
+        
+        try {
+            // Create assignment
+            Assignment assignment = buildAssignment(assignmentRequestDTO, user, students);
+            
+            // Save assignment
+            return assignmentRepository.save(assignment);
+        } catch (Exception e) {
+            // You can still throw a meaningful exception
+            throw new RuntimeException("Failed to create assignment", e);
         }
-
-        if (user.getRole() == Role.ROLE_TEACHER && !user.getClasses().contains(assignmentRequestDTO.getClassId())) {
-            throw new AccessDeniedException("Teachers can only add assignments for their own classes.");
-        }
-
-        // Get list of students to assign
-        List<AppUser> students = appUserRepository.findAllById(assignmentRequestDTO.getStudentIdList())
-            .stream()
-            .filter(appUser -> appUser.getRole() == Role.ROLE_STUDENT)
-            .collect(Collectors.toList());
-
-        Assignment assignment = new Assignment(
-            assignmentRequestDTO.getTitle(),
-            assignmentRequestDTO.getDescription(),
-            assignmentRequestDTO.getDueDate(),
-            user,
-            students,
-            assignmentRequestDTO.getClassId(),
-            assignmentRequestDTO.getCourseId(),
-            LocalDate.now()
-        );
-
-        return assignmentRepository.save(assignment);
     }
 
     public List<AssignmentDTO> displayAssignmentsForStudent(Long requestedStudentId, Long loggedInStudentId)
@@ -111,6 +108,14 @@ public class AssignmentService {
             assignment.setDueDate(updateRequest.getDueDate());
         }
 
+        if (updateRequest.getClassId() != null) {
+            assignment.setClassId(updateRequest.getClassId());
+        }
+
+        if (updateRequest.getCourseId() != null) {
+            assignment.setCourseId(updateRequest.getCourseId());
+        }
+
         if (updateRequest.getStudentIdList() != null && !updateRequest.getStudentIdList().isEmpty()) {
             List<AppUser> students = appUserRepository.findAllById(updateRequest.getStudentIdList()).stream()
                 .filter(user -> user.getRole() == Role.ROLE_STUDENT)
@@ -158,5 +163,74 @@ public class AssignmentService {
 
     public Assignment save(Assignment assignment) {
         return assignmentRepository.save(assignment);
+    }
+
+    private void validateInputDTO(AssignmentRequestDTO dto) {
+        Objects.requireNonNull(dto, "Assignment request cannot be null");
+        
+        if (StringUtils.isBlank(dto.getTitle())) {
+            throw new IllegalArgumentException("Assignment title is required");
+        }
+        
+        if (dto.getDueDate() == null) {
+            throw new IllegalArgumentException("Due date is required");
+        }
+        
+        if (dto.getDueDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Due date cannot be in the past");
+        }
+        
+        if (CollectionUtils.isEmpty(dto.getStudentIdList())) {
+            throw new IllegalArgumentException("At least one student must be assigned");
+        }
+    }
+    
+    private AppUser findAndValidateUser(Long userId) {
+        return appUserRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+    
+    private void validateUserPermissions(AppUser user, AssignmentRequestDTO dto) throws AccessDeniedException {
+        // Check user role
+        if (user.getRole() == Role.ROLE_STUDENT) {
+            throw new AccessDeniedException("Students cannot add assignments");
+        }
+        
+        // For teachers, check class access
+        if (user.getRole() == Role.ROLE_TEACHER) {
+            if (dto.getClassId() == null) {
+                throw new IllegalArgumentException("Class ID is required for teacher assignments");
+            }
+            
+            if (!user.getClasses().contains(dto.getClassId())) {
+                throw new AccessDeniedException("Teachers can only add assignments for their own classes");
+            }
+        }
+    }
+    
+    private List<AppUser> findValidStudents(AssignmentRequestDTO dto) {
+        List<AppUser> students = appUserRepository.findAllById(dto.getStudentIdList())
+            .stream()
+            .filter(appUser -> appUser.getRole() == Role.ROLE_STUDENT)
+            .collect(Collectors.toList());
+        
+        if (students.size() != dto.getStudentIdList().size()) {
+            throw new IllegalArgumentException("Invalid student IDs provided");
+        }
+        
+        return students;
+    }
+    
+    private Assignment buildAssignment(AssignmentRequestDTO dto, AppUser creator, List<AppUser> students) {
+        return new Assignment(
+            dto.getTitle(),
+            dto.getDescription(),
+            dto.getDueDate(),
+            creator,
+            students,
+            dto.getClassId(),
+            dto.getCourseId(),
+            LocalDate.now()
+        );
     }
 }

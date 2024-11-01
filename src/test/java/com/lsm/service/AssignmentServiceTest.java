@@ -2,6 +2,7 @@ package com.lsm.service;
 
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,13 +47,16 @@ class AssignmentServiceTest {
         teacher = new AppUser();
         teacher.setId(1L);
         teacher.setRole(Role.ROLE_TEACHER);
+        teacher.setClasses(new ArrayList<>()); // Initialize classes list
 
         student = new AppUser();
         student.setId(2L);
         student.setRole(Role.ROLE_STUDENT);
+        student.setClasses(new ArrayList<>()); // Initialize classes list
 
         assignment = new Assignment();
         assignment.setId(1L);
+        assignment.setTitle("Math Assignment"); // Set the title here
         assignment.setAssignedBy(teacher);
         assignment.setAssignedTo(List.of(student));
     }
@@ -64,6 +68,10 @@ class AssignmentServiceTest {
         requestDTO.setDescription("Chapter 1 Exercises");
         requestDTO.setDueDate(LocalDate.now().plusDays(7));
         requestDTO.setStudentIdList(List.of(student.getId()));
+        requestDTO.setClassId(1L);
+
+        List<Long> classes = new ArrayList<>(); classes.add(1L);
+        teacher.setClasses(classes);
 
         when(appUserRepository.findById(teacher.getId())).thenReturn(Optional.of(teacher));
         when(appUserRepository.findAllById(requestDTO.getStudentIdList())).thenReturn(List.of(student));
@@ -76,18 +84,37 @@ class AssignmentServiceTest {
     }
 
     @Test
-    void testCreateAssignment_StudentForbidden() {
+    void testCreateAssignment_AccessDenied() {
+        // Prepare the assignment request
         AssignmentRequestDTO requestDTO = new AssignmentRequestDTO();
+        requestDTO.setTitle("Math Assignment");
+        requestDTO.setDescription("Chapter 1 Exercises");
+        requestDTO.setDueDate(LocalDate.now().plusDays(7));
+        requestDTO.setStudentIdList(List.of(student.getId()));
+        
+        // Set a class ID that is not in the teacher's allowed classes
+        requestDTO.setClassId(1L);
+        
+        // Ensure the teacher's class list does NOT include the class in the request
+        List<Long> classes = new ArrayList<>();
+        classes.add(2L); // Different from the requestDTO's class ID
+        teacher.setClasses(classes);
 
-        when(appUserRepository.findById(student.getId())).thenReturn(Optional.of(student));
+        // Mock the repository calls
+        when(appUserRepository.findById(teacher.getId())).thenReturn(Optional.of(teacher));
+        when(appUserRepository.findAllById(requestDTO.getStudentIdList())).thenReturn(List.of(student));
 
+        // Use assertThrows to verify the AccessDeniedException is thrown
         assertThrows(AccessDeniedException.class, () -> {
-            assignmentService.createAssignment(requestDTO, student.getId());
+            assignmentService.createAssignment(requestDTO, teacher.getId());
         });
     }
 
     @Test
     void testDisplayAssignmentsForStudent_Success() throws AccessDeniedException {
+        // Ensure the assignment has a title
+        assignment.setTitle("Math Assignment");
+
         when(appUserRepository.findById(student.getId())).thenReturn(Optional.of(student));
         when(assignmentRepository.findByAssignedToContaining(student)).thenReturn(List.of(assignment));
 

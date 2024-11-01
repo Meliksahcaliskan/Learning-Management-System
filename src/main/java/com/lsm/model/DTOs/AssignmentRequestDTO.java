@@ -17,7 +17,7 @@ public class AssignmentRequestDTO {
     @Size(min = 3, max = 100, message = "Title should be between 3 and 100 characters.")
     private String title;
 
-    @Size(max = 500, message = "Description should not exceed 500 characters.")
+    @Size(max = 1000, message = "Description should not exceed 1000 characters.")
     private String description;
 
     @Future(message = "Due date should be in the future.")
