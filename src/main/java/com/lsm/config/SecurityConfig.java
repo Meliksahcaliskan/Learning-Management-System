@@ -58,11 +58,11 @@ public class SecurityConfig {
         return httpSecurity
                 .csrf(csrf -> csrf.disable()) // disable csrf for stateless API
                 .authorizeHttpRequests(registry -> { // TODO: Register should be restricted later.
-                    registry.requestMatchers("/api/auth/register", "/api/auth/login", "/swagger-ui.html", "/swagger-ui/**", "/api-docs/**", "/css/**", "/js/**").permitAll();
-                    registry.requestMatchers(HttpMethod.POST, "api/assignments/createAssignment").hasAuthority("ROLE_TEACHER"); // Require login for all POST requests to /api/assignment/**
-                    registry.requestMatchers(HttpMethod.GET, "/api/assignments/displayAssignments/{studentId}").hasAuthority("ROLE_STUDENT");
-                    registry.requestMatchers(HttpMethod.PUT, "api/assignments/updateAssignment/{assignmentId}").hasAuthority("ROLE_TEACHER");
-                    registry.requestMatchers(HttpMethod.DELETE, "api/assignments/deleteAssignment/{assignmentId}").hasAuthority("ROLE_TEACHER");
+                    registry.requestMatchers("/api/v1/auth/register", "/api/v1/auth/login", "/swagger-ui.html", "/swagger-ui/**", "/api-docs/**", "/css/**", "/js/**").permitAll();
+                    registry.requestMatchers(HttpMethod.POST, "api/v1/assignments/createAssignment").hasAuthority("ROLE_TEACHER"); // Require login for all POST requests to /api/assignment/**
+                    registry.requestMatchers(HttpMethod.GET, "/api/v1/assignments/displayAssignments/{studentId}").hasAuthority("ROLE_STUDENT");
+                    registry.requestMatchers(HttpMethod.PUT, "api/v1/assignments/updateAssignment/{assignmentId}").hasAuthority("ROLE_TEACHER");
+                    registry.requestMatchers(HttpMethod.DELETE, "api/v1/assignments/deleteAssignment/{assignmentId}").hasAuthority("ROLE_TEACHER");
                     registry.anyRequest().authenticated();
                 })
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

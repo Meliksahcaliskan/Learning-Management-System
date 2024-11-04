@@ -28,7 +28,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 @RestController
-@RequestMapping("/api/assignments")
+@RequestMapping("/api/v1/assignments")
 public class AssignmentController {
     private AssignmentService assignmentService;
     private AppUserService appUserService;

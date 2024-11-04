@@ -6,7 +6,6 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import com.lsm.model.DTOs.LoginRequestDTO;
-import com.lsm.model.entity.base.AppUser;
 import com.lsm.repository.AppUserRepository;
 
 @Component
@@ -22,6 +21,7 @@ public class LoginRequestValidator implements Validator {
 
     @Override
     public void validate(Object target, Errors errors) {
+        /*
         LoginRequestDTO loginRequestDTO = (LoginRequestDTO) target;
 
         // Check if the username exists in the database
@@ -34,6 +34,7 @@ public class LoginRequestValidator implements Validator {
                 errors.rejectValue("password", "error.password.incorrect", "Incorrect password");
             }
         }
+        */
     }
 
     // TODO: check for strong password
