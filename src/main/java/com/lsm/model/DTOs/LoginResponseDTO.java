@@ -1,10 +1,14 @@
 package com.lsm.model.DTOs;
 
-// For handling login requests (with fields like username and password).
-
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.Role;
+import lombok.*;
 
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class LoginResponseDTO {
     private Long id;
     private String username;
@@ -18,25 +22,5 @@ public class LoginResponseDTO {
         this.email = appUser.getEmail();
         this.role = appUser.getRole();
         this.token = token;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public String getToken() {
-        return token;
     }
 }

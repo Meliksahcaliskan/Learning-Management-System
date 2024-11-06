@@ -1,6 +1,7 @@
 package com.lsm.controller;
 
 import com.lsm.model.DTOs.AttendanceDTO;
+import com.lsm.model.DTOs.AttendanceStatsDTO;
 import com.lsm.model.DTOs.AttendanceRequestDTO;
 import com.lsm.service.AttendanceService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,13 +41,13 @@ public class AttendanceController {
     })
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     @PostMapping("/mark")
-    public ResponseEntity<ApiResponse> markAttendance(
+    public ResponseEntity<ApiResponse_> markAttendance(
             @Valid @RequestBody AttendanceRequestDTO attendanceRequest
     ) {
         attendanceService.markAttendance(attendanceRequest);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(new ApiResponse(
+                .body(new ApiResponse_(
                     true,
                     "Attendance marked successfully",
                     attendanceRequest.getStudentId()
@@ -108,13 +109,13 @@ public class AttendanceController {
     })
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     @PostMapping("/bulk")
-    public ResponseEntity<ApiResponse> markBulkAttendance(
+    public ResponseEntity<ApiResponse_> markBulkAttendance(
             @Valid @RequestBody List<AttendanceRequestDTO> attendanceRequests
     ) {
         attendanceService.markBulkAttendance(attendanceRequests);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(new ApiResponse(
+                .body(new ApiResponse_(
                     true,
                     "Bulk attendance marked successfully",
                     attendanceRequests.size()

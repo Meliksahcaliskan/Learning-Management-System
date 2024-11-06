@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +45,19 @@ public class AttendanceService {
 
         Attendance attendance = mapToAttendanceEntity(attendanceRequest, student);
         attendanceRepository.save(attendance);
+    }
+
+    @Transactional
+    public void markBulkAttendance(List<AttendanceRequestDTO> attendanceRequests) {
+        for(AttendanceRequestDTO attendanceRequest : attendanceRequests) {
+            AppUser student = appUserRepository.findById(attendanceRequest.getStudentId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            String.format("Student with ID %d not found.", attendanceRequest.getStudentId())
+                    ));
+
+            Attendance attendance = mapToAttendanceEntity(attendanceRequest, student);
+            attendanceRepository.save(attendance);
+        }
     }
 
     /**
@@ -101,10 +115,10 @@ public class AttendanceService {
      */
     private AppUser getAuthenticatedUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        AppUser user = appUserRepository.findByUsername(username);
-        if(user == null)
+        Optional<AppUser> user = appUserRepository.findByUsername(username);
+        if(user.get() == null)
             throw new UsernameNotFoundException("User not found");
-        return user;
+        return user.get();
     }
 
     /**
