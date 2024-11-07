@@ -1,5 +1,4 @@
-
-
+import Login from "./pages/Login/Login";
 
 const App = () => {
 
@@ -8,7 +7,9 @@ const App = () => {
 
 
   return(
-    <></>
+    <>
+      <Login></Login>
+    </>
   );
 }
 export default App
