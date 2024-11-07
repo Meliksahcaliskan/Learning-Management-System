@@ -6,136 +6,167 @@ import com.lsm.model.entity.enums.Role;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import java.security.Key;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class JwtTokenProvider {
+
+    private static final String ROLES_CLAIM = "roles";
+    private static final String TOKEN_TYPE_CLAIM = "type";
+    private static final String USER_ID_CLAIM = "uid";
+    private static final String EMAIL_CLAIM = "email";
 
     @Value("${app.jwt.secret}")
     private String jwtSecret;
 
     @Value("${app.jwt.access-token.expiration}")
-    private long jwtExpirationInMs;
+    private long accessTokenExpiration;
+
+    @Value("${app.jwt.refresh-token.expiration:604800000}") // 7 days default
+    private long refreshTokenExpiration;
 
     @Value("${app.jwt.issuer}")
     private String tokenIssuer;
 
     private Key signingKey;
-    private final Set<String> tokenBlacklist = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final RedisTemplate<String, String> redisTemplate;
 
     @PostConstruct
     public void init() {
+        // Generate a secure key from the secret
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
         this.signingKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    /**
-     * Generates a JWT token for a user.
-     *
-     * @param userDetails the user details
-     * @return the generated token
-     */
-    public String generateToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        if (userDetails instanceof AppUser) {
-            claims.put("role", ((AppUser) userDetails).getRole().name());
-        }
+    public String generateAccessToken(AppUser user) {
+        return generateToken(user, TokenType.ACCESS, accessTokenExpiration);
+    }
+
+    public String generateRefreshToken(AppUser user) {
+        return generateToken(user, TokenType.REFRESH, refreshTokenExpiration);
+    }
+
+    private String generateToken(AppUser user, TokenType tokenType, long expiration) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationInMs))
+                .setSubject(user.getUsername())
+                .claim(ROLES_CLAIM, user.getRole().name())
+                .claim(TOKEN_TYPE_CLAIM, tokenType.name())
+                .claim(USER_ID_CLAIM, user.getId())
+                .claim(EMAIL_CLAIM, user.getEmail())
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
                 .setIssuer(tokenIssuer)
+                .setId(UUID.randomUUID().toString())
                 .signWith(signingKey, SignatureAlgorithm.HS512)
                 .compact();
     }
 
-    /**
-     * Extracts username from token.
-     *
-     * @param token the JWT token
-     * @return the username
-     */
     public String getUsernameFromToken(String token) {
-        return extractClaim(token, Claims::getSubject);
+        return getClaimFromToken(token, Claims::getSubject);
     }
 
-    /**
-     * Validates if a token is valid for a user.
-     *
-     * @param token the JWT token
-     * @param userDetails the user details
-     * @return true if valid, false otherwise
-     */
+    public Long getUserIdFromToken(String token) {
+        return getClaimFromToken(token, claims -> claims.get(USER_ID_CLAIM, Long.class));
+    }
+
+    public Role getRoleFromToken(String token) {
+        return getClaimFromToken(token, claims -> {
+            String roleString = claims.get(ROLES_CLAIM, String.class);
+            return Role.valueOf(roleString);
+        });
+    }
+
+    public TokenType getTokenType(String token) {
+        return getClaimFromToken(token, claims -> {
+            String typeString = claims.get(TOKEN_TYPE_CLAIM, String.class);
+            return TokenType.valueOf(typeString);
+        });
+    }
+
     public boolean validateToken(String token, UserDetails userDetails) {
         try {
             if (isTokenBlacklisted(token)) {
+                log.warn("Token is blacklisted");
                 return false;
             }
 
-            final String username = getUsernameFromToken(token);
             Claims claims = extractAllClaims(token);
 
-            return username.equals(userDetails.getUsername()) &&
-                    !isTokenExpired(claims) &&
-                    claims.getIssuer().equals(tokenIssuer);
+            return validateTokenClaims(claims, userDetails) &&
+                    validateTokenType(claims) &&
+                    validateTokenExpiration(claims) &&
+                    validateTokenIssuer(claims);
 
-        } catch (SignatureException e) {
-            log.error("Invalid JWT signature: {}", e.getMessage());
+        } catch (SecurityException | MalformedJwtException e) {
+            log.error("Invalid JWT signature", e);
             throw new InvalidTokenException("Invalid token signature");
-        } catch (MalformedJwtException e) {
-            log.error("Invalid JWT token: {}", e.getMessage());
-            throw new InvalidTokenException("Malformed token");
         } catch (ExpiredJwtException e) {
-            log.error("JWT token is expired: {}", e.getMessage());
-            throw new InvalidTokenException("Token expired");
+            log.error("JWT token is expired", e);
+            throw new InvalidTokenException("Token has expired");
         } catch (UnsupportedJwtException e) {
-            log.error("JWT token is unsupported: {}", e.getMessage());
-            throw new InvalidTokenException("Unsupported token");
+            log.error("JWT token is unsupported", e);
+            throw new InvalidTokenException("Unsupported token format");
         } catch (IllegalArgumentException e) {
-            log.error("JWT claims string is empty: {}", e.getMessage());
-            throw new InvalidTokenException("Empty claims");
+            log.error("JWT claims string is empty", e);
+            throw new InvalidTokenException("Token claims are empty");
         }
     }
 
-    /**
-     * Invalidates a token by adding it to the blacklist.
-     *
-     * @param token the token to invalidate
-     */
     public void invalidateToken(String token) {
-        tokenBlacklist.add(token);
-        log.info("Token invalidated");
+        try {
+            Claims claims = extractAllClaims(token);
+            String tokenId = claims.getId();
+            Date expiration = claims.getExpiration();
+
+            // Store in Redis with expiration
+            long ttl = expiration.getTime() - System.currentTimeMillis();
+            if (ttl > 0) {
+                redisTemplate.opsForValue().set(
+                        getBlacklistKey(tokenId),
+                        "blacklisted",
+                        ttl,
+                        TimeUnit.MILLISECONDS
+                );
+            }
+
+            log.info("Token invalidated successfully");
+        } catch (Exception e) {
+            log.error("Error invalidating token", e);
+            throw new InvalidTokenException("Could not invalidate token");
+        }
     }
 
-    /**
-     * Gets user details from a token.
-     *
-     * @param token the JWT token
-     * @return the AppUser
-     */
     public AppUser getUserFromToken(String token) {
         Claims claims = extractAllClaims(token);
+
         return AppUser.builder()
+                .id(claims.get(USER_ID_CLAIM, Long.class))
                 .username(claims.getSubject())
-                .role(extractRole(claims))
+                .email(claims.get(EMAIL_CLAIM, String.class))
+                .role(Role.valueOf(claims.get(ROLES_CLAIM, String.class)))
                 .build();
     }
 
-    private <T> T extractClaim(String token, Claims.ClaimExtractor<T> extractor) {
+    private <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
-        return extractor.extractClaim(claims);
+        return claimsResolver.apply(claims);
     }
 
     private Claims extractAllClaims(String token) {
@@ -152,24 +183,45 @@ public class JwtTokenProvider {
         }
     }
 
-    private boolean isTokenExpired(Claims claims) {
-        return claims.getExpiration().before(new Date());
+    private boolean validateTokenClaims(Claims claims, UserDetails userDetails) {
+        return claims.getSubject().equals(userDetails.getUsername());
+    }
+
+    private boolean validateTokenType(Claims claims) {
+        String tokenType = claims.get(TOKEN_TYPE_CLAIM, String.class);
+        return TokenType.ACCESS.name().equals(tokenType);
+    }
+
+    private boolean validateTokenExpiration(Claims claims) {
+        return !claims.getExpiration().before(new Date());
+    }
+
+    private boolean validateTokenIssuer(Claims claims) {
+        return claims.getIssuer().equals(tokenIssuer);
     }
 
     private boolean isTokenBlacklisted(String token) {
-        return tokenBlacklist.contains(token);
+        try {
+            String tokenId = extractAllClaims(token).getId();
+            return Boolean.TRUE.equals(
+                    redisTemplate.hasKey(getBlacklistKey(tokenId))
+            );
+        } catch (Exception e) {
+            log.error("Error checking token blacklist", e);
+            return true; // Fail-safe: consider suspicious tokens as blacklisted
+        }
     }
 
-    private Role extractRole(Claims claims) {
-        try {
-            String roleString = claims.get("role", String.class);
-            if (roleString != null) {
-                return Role.valueOf(roleString);
-            }
-            return Role.ROLE_STUDENT;
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid role in token claims: {}", e.getMessage());
-            return Role.ROLE_STUDENT;
-        }
+    private String getBlacklistKey(String tokenId) {
+        return "token:blacklist:" + tokenId;
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum TokenType {
+        ACCESS("Access Token"),
+        REFRESH("Refresh Token");
+
+        private final String description;
     }
 }

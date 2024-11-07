@@ -1,8 +1,10 @@
 package com.lsm.service;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.internal.LoadingCache;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ExecutionException;
@@ -17,7 +19,7 @@ public class LoginAttemptService {
     public void init() {
         attemptsCache = CacheBuilder.newBuilder()
                 .expireAfterWrite(15, TimeUnit.MINUTES)
-                .build(new CacheLoader<>() {
+                .build(new CacheLoader<String, Integer>() {
                     @Override
                     public Integer load(String key) {
                         return 0;

@@ -1,6 +1,7 @@
 package com.lsm.controller;
 
 import com.lsm.exception.*;
+import com.lsm.mapper.UserMapper;
 import com.lsm.model.DTOs.*;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.security.RateLimiter;
@@ -28,6 +29,7 @@ import jakarta.validation.Valid;
 public class AuthController {
     private final AuthService authService;
     private final RateLimiter rateLimiter;
+    private final UserMapper userMapper;
 
     @Operation(
             summary = "Authenticate user",
@@ -60,11 +62,12 @@ public class AuthController {
                 throw new AuthenticationException(e.getMessage());
             }
 
-            LoginResponseDTO response = LoginResponseDTO.builder()
-                    .accessToken(result.getAccessToken())
-                    .refreshToken(result.getRefreshToken())
-                    .user(UserDTO.fromEntity(result.getUser()))
-                    .build();
+            LoginResponseDTO response = userMapper.toLoginResponse(
+                    result.getUser(),
+                    result.getAccessToken(),
+                    result.getRefreshToken(),
+                    result.getExpiresIn()
+            );
 
             return ResponseEntity.ok(new ApiResponse_<>(
                     true,
@@ -103,12 +106,7 @@ public class AuthController {
         try {
             AppUser newUser = authService.registerUser(registerRequest);
 
-            RegisterResponseDTO response = RegisterResponseDTO.builder()
-                    .id(newUser.getId())
-                    .username(newUser.getUsername())
-                    .email(newUser.getEmail())
-                    .message("Registration successful")
-                    .build();
+            RegisterResponseDTO response = userMapper.toRegisterResponse(newUser);
 
             return ResponseEntity
                     .status(HttpStatus.CREATED)

@@ -26,6 +26,7 @@ import javax.security.auth.login.AccountLockedException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -88,7 +89,7 @@ public class AuthService {
             loginAttemptService.loginSucceeded(clientIp);
             eventPublisher.publishEvent(new UserLoginEvent(user));
 
-            return new AuthenticationResult(accessToken, refreshToken.getToken(), user);
+            return new AuthenticationResult(accessToken, refreshToken.getToken(), user, REFRESH_TOKEN_VALIDITY);
 
         } catch (BadCredentialsException e) {
             loginAttemptService.loginFailed(clientIp);
@@ -129,9 +130,8 @@ public class AuthService {
     public void logout(String token, String refreshToken) {
         try {
             String username = jwtTokenProvider.getUsernameFromToken(token);
-            AppUser user = appUserRepository.findByUsername(username);
-            if(user == null)
-                throw new UserNotFoundException("User not found");
+            Optional<AppUser> userOpt = appUserRepository.findByUsername(username);
+            AppUser user = userOpt.orElseThrow(() -> new UserNotFoundException("User not found"));
 
             // Invalidate specific refresh token if provided
             if (refreshToken != null) {

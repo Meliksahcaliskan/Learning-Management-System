@@ -1,39 +1,69 @@
 package com.lsm.model.DTOs;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.lsm.model.entity.enums.Role;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import com.lsm.model.validation.constraint.PasswordConstraint;
+import com.lsm.model.validation.groups.ValidationGroups;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.*;
+import lombok.*;
+
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.Optional;
 
 @Builder
 @Getter
 @Setter
-public class RegisterRequestDTO {
-    @NotBlank
-    @Size(min = 3, max = 60)
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema(description = "Registration request containing user details")
+public class RegisterRequestDTO implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    @NotBlank(message = "Username is required")
+    @Size(min = 3, max = 60, message = "Username must be between 3 and 60 characters")
+    @Pattern(regexp = "^[a-zA-Z0-9._-]+$",
+            message = "Username can only contain letters, numbers, dots, underscores, and hyphens")
+    @Schema(description = "Username for registration",
+            example = "john.doe")
     private String username;
 
-    @NotBlank
-    @Size(min = 6)
+    @NotBlank(message = "Password is required")
+    @PasswordConstraint(groups = ValidationGroups.Registration.class)
+    @Schema(description = "Password for the account",
+            example = "SecurePass123!")
     private String password;
 
-    @NotBlank
-    @Email
+    @NotBlank(message = "Email is required")
+    @Email(message = "Please provide a valid email address",
+            regexp = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$")
+    @Schema(description = "Email address",
+            example = "john.doe@example.com")
     private String email;
 
-    private Role role; // not as a String for type safety
+    @NotNull(message = "Role is required")
+    @Schema(description = "User role",
+            example = "ROLE_STUDENT",
+            allowableValues = {"ROLE_STUDENT", "ROLE_TEACHER"})
+    private Role role;
 
-    // Constructors
-    public RegisterRequestDTO() {}
+    @Schema(description = "First name", example = "John")
+    @Pattern(regexp = "^[a-zA-Z\\s-]{2,50}$",
+            message = "First name must be between 2 and 50 characters and contain only letters, spaces, and hyphens")
+    private String firstName;
 
-    public RegisterRequestDTO(String username, String password, String email, Role role) {
-        this.username = username;
-        this.password = password;
-        this.email = email;
-        this.role = role;
+    @Schema(description = "Last name", example = "Doe")
+    @Pattern(regexp = "^[a-zA-Z\\s-]{2,50}$",
+            message = "Last name must be between 2 and 50 characters and contain only letters, spaces, and hyphens")
+    private String lastName;
+
+    @JsonIgnore
+    public String getFullName() {
+        return String.format("%s %s",
+                Optional.ofNullable(firstName).orElse(""),
+                Optional.ofNullable(lastName).orElse("")).trim();
     }
 }

@@ -80,9 +80,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf(csrf -> csrf
-                        .disable()
-                )
+                .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors
                         .configurationSource(corsConfigurationSource())
                 )
@@ -97,7 +95,7 @@ public class SecurityConfig {
                         })
                 )
                 .authorizeHttpRequests(registry -> {
-                    // Public endpoints
+                    // Public endpoints (TODO: register must restricted for non-admin users later.)
                     registry.requestMatchers(
                             "/api/v1/auth/register",
                             "/api/v1/auth/login",
