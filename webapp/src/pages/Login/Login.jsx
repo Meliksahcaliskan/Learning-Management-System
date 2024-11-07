@@ -7,7 +7,7 @@ import { AuthContext } from '../../contexts/AuthContext'
 
 const Login = () => {
 
-    const { setUser } = useContext(AuthContext);
+    const { login } = useContext(AuthContext);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(false);
@@ -24,9 +24,11 @@ const Login = () => {
 
         try {
             const response = await authService.login({username, password});
-            setUser(response);
-            sessionStorage.setItem('authToken', response.token);
+            login(response);
+            // setUser(response);
+            // sessionStorage.setItem('user', JSON.stringify(response));
         } catch(err) {
+            // loginError(err.message);
             loginError('Yanlış kullanıcı adı veya şifre');
         }
     }
