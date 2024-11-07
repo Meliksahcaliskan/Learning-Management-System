@@ -1,15 +1,12 @@
-import Login from "./pages/Login/Login";
+import React from "react";
+import { AuthProvider } from "./contexts/AuthContext";
+import AppRouter from "./routes/AppRouter";
 
 const App = () => {
-
-
-
-
-
   return(
-    <>
-      <Login></Login>
-    </>
+    <AuthProvider>
+      <AppRouter />
+    </AuthProvider>
   );
 }
 export default App
