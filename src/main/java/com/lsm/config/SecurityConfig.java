@@ -136,7 +136,7 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers
                         .frameOptions(frameOptions -> frameOptions.deny())
-                        .xssProtection(xss -> xss.enable())
+                        .xssProtection(xss -> xss.block(true))
                         .contentSecurityPolicy(csp ->
                                 csp.policyDirectives("default-src 'self'; frame-ancestors 'none';"))
                 )

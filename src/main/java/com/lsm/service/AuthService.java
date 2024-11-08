@@ -36,8 +36,8 @@ import java.util.UUID;
 public class AuthService {
     private static final long REFRESH_TOKEN_VALIDITY = 7 * 24 * 60 * 60 * 1000; // 7 days
     private static final int MAX_REFRESH_TOKEN_PER_USER = 5;
-    private static final int MAX_LOGIN_ATTEMPTS = 5;
-    private static final long LOCK_DURATION = 15; // minutes
+    public static final int MAX_LOGIN_ATTEMPTS = 5;
+    public static final long LOCK_DURATION = 15; // minutes
 
     private final AppUserRepository appUserRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -83,7 +83,7 @@ public class AuthService {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            String accessToken = jwtTokenProvider.generateToken(user);
+            String accessToken = jwtTokenProvider.generateAccessToken(user);
             RefreshToken refreshToken = createRefreshToken(user.getId());
 
             loginAttemptService.loginSucceeded(clientIp);
@@ -120,7 +120,7 @@ public class AuthService {
                 .map(this::verifyRefreshToken)
                 .map(token -> {
                     AppUser user = token.getUser();
-                    String newAccessToken = jwtTokenProvider.generateToken(user);
+                    String newAccessToken = jwtTokenProvider.generateAccessToken(user);
                     return new TokenRefreshResult(newAccessToken, refreshToken);
                 })
                 .orElseThrow(() -> new InvalidTokenException("Invalid refresh token"));
@@ -150,6 +150,11 @@ public class AuthService {
             log.error("Error during logout", e);
             throw new LogoutException("Error during logout process");
         }
+    }
+
+    private AppUser createUserFromRequest(RegisterRequestDTO registerRequest) {
+        return new AppUser(registerRequest.getUsername(), registerRequest.getEmail(),
+                registerRequest.getPassword(), registerRequest.getRole());
     }
 
     private void validateRegistrationRequest(RegisterRequestDTO request) {

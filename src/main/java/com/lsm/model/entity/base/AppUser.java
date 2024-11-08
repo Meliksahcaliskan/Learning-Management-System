@@ -25,11 +25,11 @@ import java.util.List;
 @Entity
 @Table(name = "app_users")
 @Inheritance(strategy = InheritanceType.JOINED)
+@Builder
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class AppUser implements UserDetails {
     
     private static final BCryptPasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
