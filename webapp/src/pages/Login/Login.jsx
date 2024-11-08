@@ -23,7 +23,9 @@ const Login = () => {
         }
 
         try {
-            const response = await authService.login({username, password});
+            const response = await authService.login({
+                username : username,
+                password : password});
             login(response);
             // setUser(response);
             // sessionStorage.setItem('user', JSON.stringify(response));

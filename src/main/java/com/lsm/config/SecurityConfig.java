@@ -1,5 +1,7 @@
 package com.lsm.config;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +15,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.lsm.security.JwtAuthenticationFilter;
 import com.lsm.service.AppUserService;
@@ -57,14 +62,14 @@ public class SecurityConfig {
         return httpSecurity
                 .csrf(csrf -> csrf.disable()) // disable csrf for stateless API
                 .authorizeHttpRequests(registry -> {
-                    registry.requestMatchers("/api/auth/register", "/api/auth/login", "/css/**", "/js/**").permitAll();
+                    registry.requestMatchers("/api/auth/register", "/api/auth/login").permitAll();
                     registry.anyRequest().authenticated();
                 })
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
-    /*
+    
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -79,5 +84,5 @@ public class SecurityConfig {
 
         return source;
     }
-    */
+    
 }
