@@ -2,6 +2,7 @@ package com.lsm.service;
 
 import com.lsm.model.DTOs.AttendanceDTO;
 import com.lsm.model.DTOs.AttendanceRequestDTO;
+import com.lsm.model.DTOs.AttendanceStatsDTO;
 import com.lsm.model.entity.Attendance;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.repository.AttendanceRepository;
@@ -78,6 +79,17 @@ public class AttendanceService {
                 .collect(Collectors.toList());
     }
 
+    // TODO: this is a placeholder
+    public AttendanceStatsDTO getAttendanceStats(Long studentId, Long classId) {
+        AppUser currentUser = getAuthenticatedUser();
+        validateAccessPermissions(currentUser, studentId);
+
+        return AttendanceStatsDTO.builder()
+                .studentId(studentId)
+                .classId(classId)
+                .build();
+    }
+
     /**
      * Creates an Attendance entity from the request DTO and student entity.
      *
@@ -116,7 +128,7 @@ public class AttendanceService {
     private AppUser getAuthenticatedUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Optional<AppUser> user = appUserRepository.findByUsername(username);
-        if(user.get() == null)
+        if(!user.isPresent())
             throw new UsernameNotFoundException("User not found");
         return user.get();
     }

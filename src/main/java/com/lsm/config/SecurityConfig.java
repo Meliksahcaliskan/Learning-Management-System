@@ -5,6 +5,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,6 +24,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.lsm.security.JwtAuthenticationFilter;
 import com.lsm.service.AppUserService;
+import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -34,6 +36,7 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@PropertySource("classpath:application.properties")
 @Slf4j
 public class SecurityConfig {
 
@@ -136,7 +139,11 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers
                         .frameOptions(frameOptions -> frameOptions.deny())
-                        .xssProtection(xss -> xss.block(true))
+                        .xssProtection(
+                                        xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK)
+                                ).contentSecurityPolicy(
+                                        cps -> cps.policyDirectives("script-src 'self'")
+                                )
                         .contentSecurityPolicy(csp ->
                                 csp.policyDirectives("default-src 'self'; frame-ancestors 'none';"))
                 )
