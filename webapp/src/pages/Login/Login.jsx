@@ -25,16 +25,13 @@ const Login = () => {
         try {
             const response = await authService.login({
                 username : username,
-                password : password});
+                password : password
+            });
             login(response);
-            // setUser(response);
-            // sessionStorage.setItem('user', JSON.stringify(response));
         } catch(err) {
-            // loginError(err.message);
             loginError('Yanlış kullanıcı adı veya şifre');
         }
     }
-
 
     const loginError = (message) => {
         setErrorMessage(message);
@@ -46,8 +43,6 @@ const Login = () => {
         setPassword('');
     }
 
-
-
     return(
         <div className="login-page">
             <img src="https://picsum.photos/140/900" alt="landspace photo" className='landing-img'/>
@@ -58,13 +53,13 @@ const Login = () => {
                         <div className="login-fields">
                             <h3 className="greeting">Hoş Geldiniz</h3>
                             <div className="inputs">
-                                <div className="input-fields">
+                                <div className="login-input-fields">
                                     {errorMessage && <div className="error-message">{errorMessage}</div>}
                                     <InputField 
                                         type={'text'}                          
                                         label={'Kullanıcı adı'}      
                                         placeholder={'Kullanıcı adınızı giriniz'}
-                                        onChange={(value) => setUsername(value)}
+                                        onChange={(e) => setUsername(e.target.value)}
                                         value={username}
                                         style={{borderColor : errorMessage ? 'red' : 'none'}}
                                         />
@@ -72,12 +67,12 @@ const Login = () => {
                                         type={'password'}
                                         label={'Şifre'}
                                         placeholder={'Şifrenizi giriniz'}
-                                        onChange={(value) => setPassword(value)}
+                                        onChange={(e) => setPassword(e.target.value)}
                                         value={password}
                                         style={{borderColor : errorMessage ? 'red' : 'none'}}
                                     />
                                 </div>
-                                <div className="options">
+                                <div className="login-options">
                                     <span className="remember-me">
                                         <label className="switch">
                                             <input  
@@ -93,17 +88,11 @@ const Login = () => {
                                 </div>
                             </div>
                         </div>
-                        <button type="submit" className='login-btn' onClick={handleLogin}>Giriş yap</button>
+                        <button type="submit" className='login-btn btn' onClick={handleLogin}>Giriş yap</button>
                     </div>
                 </div>
             </div>
         </div>
     );
-
-
-
-
-
-
 }
 export default Login

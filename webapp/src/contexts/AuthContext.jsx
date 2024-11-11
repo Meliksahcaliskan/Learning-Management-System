@@ -1,15 +1,9 @@
 import React, { createContext, useEffect, useState } from "react";
 
-
-
-
-
-
 export const AuthContext = createContext();
 
 export const AuthProvider = ({children}) => {
     const [user, setUser] = useState(null);
-
 
     useEffect(() => {
         const storedUser = sessionStorage.getItem('user');
@@ -27,8 +21,6 @@ export const AuthProvider = ({children}) => {
         setUser(null);
         sessionStorage.removeItem('user');
     }
-
-
 
     return(
         <AuthContext.Provider value={{user, login, logout}}>

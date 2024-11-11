@@ -1,11 +1,6 @@
 import './InputField.css';
 
-const InputField = ({type, label, placeholder, value, onChange, style}) => {
-
-    const handleChange = (event) => {
-        onChange(event.target.value);
-    }
-
+const InputField = ({type, label, placeholder, value, onChange, style, name}) => {
     return(
         <div className="input-container">
             <label className='label'>{label}</label>
@@ -13,8 +8,9 @@ const InputField = ({type, label, placeholder, value, onChange, style}) => {
                     placeholder={placeholder}
                     className="input"
                     value={value}
-                    onChange={handleChange}
-                    style={style}/>
+                    onChange={onChange}
+                    style={style}
+                    name={name}/>
         </div>
     );
 }

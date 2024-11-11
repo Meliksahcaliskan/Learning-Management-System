@@ -48,3 +48,20 @@ body{
     height: 100%;
     overflow: hidden;
 }
+
+
+.btn {
+    background-color: var(--highlighted-item);
+    padding: 16px;
+    border-radius: 8px;
+    border: none;
+    color: var(--white);
+    font-family: var(--placeholder-font);
+    font-size: var(--placeholder-size);
+    font-weight: var(--placeholder-weight);
+}
+
+.btn:hover {
+    background-color: var(--highlighted-item-hovered);
+    cursor: pointer;
+}

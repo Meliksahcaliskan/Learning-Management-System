@@ -40,7 +40,7 @@
   color: var(--title);
 }
 
-.options {
+.login-options {
   display: flex;
   justify-content: space-between;
 }
