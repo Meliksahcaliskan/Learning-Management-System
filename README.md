@@ -118,3 +118,37 @@ lsm/
 ├── gradlew
 ├── lsm_database_dump.sql
 ├── settings.gradle
+~~~~
+## Explanation
+---
+~~~
+lsm/
+├── src/main/java/com/lsm/           # Core application code
+│   ├── aspect/                      # AOP configurations for logging
+│   ├── config/                      # Application configurations
+│   │   ├── AspectConfig            # AOP configuration
+│   │   ├── CacheConfig             # Caching setup
+│   │   ├── RedisConfig             # Redis configuration
+│   │   ├── SecurityConfig          # Security settings
+│   │   └── SwaggerConfig           # API documentation
+│   ├── controller/                  # REST API endpoints
+│   ├── events/                      # Event-driven components
+│   ├── exception/                   # Custom exceptions
+│   ├── mapper/                      # Object mapping utilities
+│   ├── model/                       # Data models
+│   │   ├── DTOs/                   # Data Transfer Objects
+│   │   ├── entity/                 # Database entities
+│   │   └── validation/             # Input validation
+│   ├── repository/                  # Data access layer
+│   ├── security/                    # Security implementations
+│   └── service/                     # Business logic layer
+│
+├── src/main/resources/             # Application resources
+│   ├── static/                     # Static web assets
+│   ├── templates/                  # View templates
+│   └── application.properties      # Application configuration
+│
+├── src/test/                       # Test suite
+├── Dockerfile                      # Container configuration
+├── docker-compose.yml              # Container orchestration
+└── build.gradle                    # Build configuration
