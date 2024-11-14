@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import io.github.cdimascio.dotenv.Dotenv;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.lsm")
 public class LsmApplication {
 
 	public static void main(String[] args) {

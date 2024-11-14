@@ -1,7 +1,8 @@
 package com.lsm.model.entity.enums;
 
 public enum Role {
-    STUDENT,
-    TEACHER,
-    ADMIN
+    ROLE_STUDENT,
+    ROLE_TEACHER,
+    ROLE_COORDINATOR,
+    ROLE_ADMIN
 }

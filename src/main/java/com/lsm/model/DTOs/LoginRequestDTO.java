@@ -1,9 +1,11 @@
 package com.lsm.model.DTOs;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 // For sending back token or user info upon successful login.
+@Schema(description = "Login Request DTO")
 public class LoginRequestDTO {
     @NotBlank
     @Size(min = 3, max = 60)

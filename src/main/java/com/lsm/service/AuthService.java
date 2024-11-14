@@ -40,8 +40,6 @@ public class AuthService {
         AppUser newUser = new AppUser();
         newUser.setUsername(authRequest.getUsername());
         newUser.setPassword(authRequest.getPassword()); // passwordEncoder.encode(authRequest.getPassword())
-        // System.out.println("REMOVEME: " + passwordEncoder.encode(authRequest.getPassword()));
-        // System.out.println("REMOVEME: " + authRequest.getPassword());
         newUser.setEmail(authRequest.getEmail());
         newUser.setRole(authRequest.getRole());
 
@@ -49,7 +47,7 @@ public class AuthService {
         return appUserRepository.save(newUser);
     }
 
-    public AppUser  authenticate(LoginRequestDTO input) {
+    public AppUser authenticate(LoginRequestDTO input) {
         try {
             // Attempt to authenticate the user
             authenticationManager.authenticate(

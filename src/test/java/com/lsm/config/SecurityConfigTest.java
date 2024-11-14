@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
@@ -121,7 +122,11 @@ public class SecurityConfigTest {
 
     @Test
     @MockitoSettings(strictness = Strictness.LENIENT)
+    @SuppressWarnings("unchecked")
     void securityFilterChain_ShouldConfigureSecurityCorrectly() throws Exception {
+        // Arrange: Mock logout with the correct type
+        when(httpSecurity.logout(any(Customizer.class))).thenAnswer(invocation -> httpSecurity);
+        
         // Act
         SecurityFilterChain result = securityConfig.securityFilterChain(httpSecurity, jwtAuthenticationFilter);
 
@@ -135,7 +140,10 @@ public class SecurityConfigTest {
             eq(jwtAuthenticationFilter), 
             eq(UsernamePasswordAuthenticationFilter.class)
         );
+        verify(httpSecurity).logout(any());  // Ensure logout is configured
         verify(httpSecurity).build();
     }
+
+
 
 }

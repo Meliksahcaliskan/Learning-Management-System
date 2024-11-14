@@ -2,15 +2,21 @@ package com.lsm.model.entity.base;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
+import org.springframework.lang.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
+import com.lsm.model.entity.StudentDetails;
 import com.lsm.model.entity.enums.Role;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -19,6 +25,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -51,9 +58,16 @@ public class AppUser implements UserDetails {
     @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name="role")
-    // @ManyToOne(fetch = FetchType.EAGER)
-    // @JoinColumn(name = "role_id", nullable = false)
     private Role role;
+
+    @Embedded
+    @Nullable
+    private StudentDetails studentDetails;
+
+    @ElementCollection
+    @CollectionTable(name = "user_classes", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "class_id")
+    private List<Long> classes;  // List of class IDs associated with the user (for teachers)
 
     // Constructors, Getters, and Setters
 
@@ -64,6 +78,23 @@ public class AppUser implements UserDetails {
         this.email = email;
         this.password = hashPassword(rawPassword);
         this.role = role;
+    }
+
+    public AppUser(String username, String email, String rawPassword, Role role, StudentDetails studentDetails) {
+        this.username = username;
+        this.email = email;
+        this.password = hashPassword(rawPassword);
+        this.role = role;
+        this.studentDetails = studentDetails;
+    }
+
+    public AppUser(String username, String email, String rawPassword, Role role, StudentDetails studentDetails, List<Long> classes) {
+        this.username = username;
+        this.email = email;
+        this.password = hashPassword(rawPassword);
+        this.role = role;
+        this.studentDetails = studentDetails;
+        this.classes = classes;
     }
 
     public Long getId() {
@@ -116,6 +147,23 @@ public class AppUser implements UserDetails {
     private String hashPassword(String rawPassword) {
         return BCrypt.hashpw(rawPassword, BCrypt.gensalt());
     }
+
+    public StudentDetails getStudentDetails() {
+        return studentDetails;
+    }
+
+    public void setStudentDetails(StudentDetails studentDetails) {
+        this.studentDetails = studentDetails;
+    }
+
+    public List<Long> getClasses() {
+        return classes;
+    }
+
+    public void setClasses(List<Long> classes) {
+        this.classes = classes;
+    }
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

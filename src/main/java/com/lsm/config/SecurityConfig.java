@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -61,11 +62,16 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         return httpSecurity
                 .csrf(csrf -> csrf.disable()) // disable csrf for stateless API
-                .authorizeHttpRequests(registry -> {
-                    registry.requestMatchers("/api/auth/register", "/api/auth/login").permitAll();
+                .authorizeHttpRequests(registry -> { // TODO: Register should be restricted later.
+                    registry.requestMatchers("/api/auth/register", "/api/auth/login", "/swagger-ui.html", "/swagger-ui/**", "/api-docs/**", "/css/**", "/js/**").permitAll();
+                    registry.requestMatchers(HttpMethod.POST, "api/assignments/createAssignment").hasAuthority("ROLE_TEACHER"); // Require login for all POST requests to /api/assignment/**
+                    registry.requestMatchers(HttpMethod.GET, "/api/assignments/displayAssignments/{studentId}").hasAuthority("ROLE_STUDENT");
+                    registry.requestMatchers(HttpMethod.PUT, "api/assignments/updateAssignment/{assignmentId}").hasAuthority("ROLE_TEACHER");
+                    registry.requestMatchers(HttpMethod.DELETE, "api/assignments/deleteAssignment/{assignmentId}").hasAuthority("ROLE_TEACHER");
                     registry.anyRequest().authenticated();
                 })
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .logout(logout -> logout.permitAll())
                 .build();
     }
 

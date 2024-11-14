@@ -54,14 +54,14 @@ public class AuthControllerTest {
         request.setUsername("newuser");
         request.setPassword("password");
         request.setEmail("email@example.com");
-        request.setRole(Role.STUDENT);
+        request.setRole(Role.ROLE_STUDENT);
 
         // Create mock response
         AppUser mockUser = new AppUser();
         // mockUser.setId(1L);
         mockUser.setUsername("newuser");
         mockUser.setEmail("email@example.com");
-        mockUser.setRole(Role.STUDENT);
+        mockUser.setRole(Role.ROLE_STUDENT);
 
         // Mock service behavior
         when(authService.registerUser(any(RegisterRequestDTO.class))).thenReturn(mockUser);
@@ -80,7 +80,7 @@ public class AuthControllerTest {
         request.setUsername("existinguser");
         request.setPassword("password");
         request.setEmail("email@example.com");
-        request.setRole(Role.STUDENT);
+        request.setRole(Role.ROLE_STUDENT);
 
         when(authService.registerUser(any(RegisterRequestDTO.class)))
             .thenThrow(new IllegalArgumentException("Username already exists"));
