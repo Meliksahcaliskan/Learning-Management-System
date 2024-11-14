@@ -2,12 +2,12 @@ package com.lsm.security;
 
 import com.lsm.exception.InvalidTokenException;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,13 +17,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
-import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.util.Arrays;
 
@@ -42,7 +41,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsService userDetailsService;
     private final HandlerExceptionResolver handlerExceptionResolver;
-    private final SecurityContextRepository securityContextRepository;
+    private final HttpSessionSecurityContextRepository securityContextRepository;
+
+    @Bean
+    public HttpSessionSecurityContextRepository httpSessionSecurityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
+    }
 
     @Value("${security.jwt.header.xsrf:X-XSRF-TOKEN}")
     private String xsrfHeader;
@@ -55,7 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
-    ) throws ServletException, IOException {
+    ) throws InvalidTokenException {
         try {
             if (shouldNotFilter(request)) {
                 filterChain.doFilter(request, response);
