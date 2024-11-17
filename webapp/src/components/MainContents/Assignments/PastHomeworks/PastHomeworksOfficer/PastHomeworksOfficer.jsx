@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import './PastHomeworksOfficer.css';
-
+import AssignmentSearch from '../../../../../utils/assignmentSearch/assignmentSearch';
 
 
 
@@ -8,11 +9,16 @@ import './PastHomeworksOfficer.css';
 const PastHomeworksOfficer = () => {
 
 
+    const [assignments, setAssignments] = useState([]);
 
-
+    const handleSearchResults = (response) => {
+        setAssignments(response);
+    }
 
     return(
-        <p>past homeworks officer lets goooo</p>
+        <>
+            <AssignmentSearch onSearch={handleSearchResults}/>
+        </>
     );
 }
 export default PastHomeworksOfficer;

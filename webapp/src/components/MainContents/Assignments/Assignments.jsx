@@ -3,6 +3,7 @@ import './Assignments.css';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { getAssignmentOptions } from '../../../utils/assignmentOptions';
 import Navigator from '../../common/Navigator/Navigator';
+import StudentAssignments from './StudentAssignments/StudentAssignments';
 
 
 
@@ -15,12 +16,13 @@ const Assignments = () => {
 
     return(
         <div className="assignments">
-            <Navigator
+            {/* <Navigator
                 options={assignmentOptions}
                 onSelect={(option) => setSelectedOption(option)}
                 />
-            {/* use selectedOption's component here */}
-            {selectedOption.component && <selectedOption.component />}
+            use selectedOption's component here
+            {selectedOption.component && <selectedOption.component user={user}/>} */}
+            <StudentAssignments user={user}/>
         </div>
     );
 }

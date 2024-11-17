@@ -6,7 +6,7 @@ import authService from '../../../services/authService';
 
 const NewUser = () => {
 
-    const [userType, setUserType] = useState('STUDENT'); 
+    const [userType, setUserType] = useState('ROLE_STUDENT'); 
     
     const [studentData, setStudentData] = useState({
         firstName: '',
@@ -37,7 +37,7 @@ const NewUser = () => {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         clearResponse();
-        if (userType === 'STUDENT') {
+        if (userType === 'ROLE_STUDENT') {
             setStudentData((prevData) => ({ ...prevData, [name]: value }));
         } else {
             setTeacherData((prevData) => ({ ...prevData, [name]: value }));
@@ -48,7 +48,7 @@ const NewUser = () => {
         e.preventDefault();
         //validate all the inputs that are necessary are filled and correct.
         
-        const formData = userType === 'STUDENT' ? studentData : teacherData;
+        const formData = userType === 'ROLE_STUDENT' ? studentData : teacherData;
         try {
             const response = await authService.register({
                 username : formData.firstName + formData.lastName,
@@ -110,23 +110,23 @@ const NewUser = () => {
             <div className="options">
                 <NavigationOption 
                     title='Öğrenci'
-                    isHighlighted={userType === 'STUDENT'}
+                    isHighlighted={userType === 'ROLE_STUDENT'}
                     onClick={() => {
-                        setUserType('STUDENT');
+                        setUserType('ROLE_STUDENT');
                         clearResponse();
                     }}
                 />
                 <NavigationOption 
                     title='Öğretmen'
-                    isHighlighted={userType === 'TEACHER'}
+                    isHighlighted={userType === 'ROLE_TEACHER'}
                     onClick={() => {
-                        setUserType('TEACHER');
+                        setUserType('ROLE_TEACHER');
                         clearResponse();    
                     }}
                 />
             </div>
             <div className="form">
-                {userType === 'STUDENT'
+                {userType === 'ROLE_STUDENT'
                     ? <StudentForm  data={studentData} onInputChange={handleInputChange}/>
                     : <TeacherForm data={teacherData} onInputChange={handleInputChange}/>
                 }
