@@ -1,5 +1,6 @@
 package com.lsm.config;
 
+import com.lsm.service.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +16,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -24,10 +24,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.lsm.security.JwtAuthenticationFilter;
 import com.lsm.service.AppUserService;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.util.Arrays;
 import java.util.List;
@@ -41,7 +43,8 @@ import java.util.List;
 public class SecurityConfig {
 
     private final AppUserService appUserService;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final HandlerExceptionResolver handlerExceptionResolver;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Value("${cors.allowed-origins}")
     private List<String> allowedOrigins;
@@ -56,8 +59,18 @@ public class SecurityConfig {
     private Long maxAge;
 
     @Bean
-    public UserDetailsService userDetailsService() {
-        return appUserService;
+    public HttpSessionSecurityContextRepository httpSessionSecurityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
+    }
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(
+                jwtTokenProvider,
+                appUserService,
+                handlerExceptionResolver,
+                httpSessionSecurityContextRepository()
+        );
     }
 
     @Bean
@@ -136,7 +149,7 @@ public class SecurityConfig {
                     // Default policy
                     registry.anyRequest().authenticated();
                 })
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers
                         .frameOptions(frameOptions -> frameOptions.deny())
                         .xssProtection(

@@ -16,7 +16,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import java.time.Duration;
 
 @Configuration
-@EnableRedisRepositories
+// @EnableRedisRepositories
 public class RedisConfig {
     @Bean
     public RedisTemplate<String, Integer> redisTemplate(RedisConnectionFactory connectionFactory) {
