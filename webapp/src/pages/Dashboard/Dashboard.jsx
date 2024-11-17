@@ -22,7 +22,10 @@ const Dashboard = () => {
     return(
         <div className="dashboard">
             <Sidebar
-                onSelect={(option) => setSelectedOption(option)}
+                onSelect={(option) => setSelectedOption({
+                    title : option.title,
+                    component : option.component
+                })}
                 options={sidebarOptions}
             />
             <div className="page-right">

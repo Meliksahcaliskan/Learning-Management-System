@@ -28,8 +28,7 @@
 
 .save-btn {
     position: relative;
-    left: 90%;
-    transform: translateX(-50%);
+    margin-left: auto;
 }
 
 .register-response {

@@ -55,22 +55,28 @@ const Login = () => {
                             <div className="inputs">
                                 <div className="login-input-fields">
                                     {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                    <InputField 
-                                        type={'text'}                          
-                                        label={'Kullanıcı adı'}      
-                                        placeholder={'Kullanıcı adınızı giriniz'}
-                                        onChange={(e) => setUsername(e.target.value)}
-                                        value={username}
-                                        style={{borderColor : errorMessage ? 'red' : 'none'}}
+                                    <div className="input-container">
+                                        <label className="label">Kullanıcı Adı</label>
+                                        <input
+                                            className='input'
+                                            type='text'
+                                            placeholder='Kullanıcı adinızı giriniz'
+                                            onChange={(e) => setUsername(e.target.value)}
+                                            value={username}
+                                            style={{borderColor : errorMessage ? 'red' : 'none'}}
                                         />
-                                    <InputField
-                                        type={'password'}
-                                        label={'Şifre'}
-                                        placeholder={'Şifrenizi giriniz'}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        value={password}
-                                        style={{borderColor : errorMessage ? 'red' : 'none'}}
-                                    />
+                                    </div>
+                                    <div className="input-container">
+                                        <label className="label">Şifre</label>
+                                        <input 
+                                            className='input'
+                                            type='password'
+                                            placeholder='Şifrenizi giriniz'
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            value={password}
+                                            style={{borderColor : errorMessage ? 'red' : 'none'}}
+                                        />
+                                    </div>
                                 </div>
                                 <div className="login-options">
                                     <span className="remember-me">
