@@ -9,23 +9,26 @@ import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
-import org.springframework.data.redis.serializer.GenericToStringSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
 
 @Configuration
-// @EnableRedisRepositories
 public class RedisConfig {
+
     @Bean
-    public RedisTemplate<String, Integer> redisTemplate(RedisConnectionFactory connectionFactory) {
-        RedisTemplate<String, Integer> template = new RedisTemplate<>();
+    public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericToStringSerializer<>(Integer.class));
-        template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new GenericToStringSerializer<>(Integer.class));
+
+        // Use StringRedisSerializer for both keys and values since JwtTokenProvider
+        // stores blacklist tokens as strings
+        StringRedisSerializer serializer = new StringRedisSerializer();
+        template.setKeySerializer(serializer);
+        template.setValueSerializer(serializer);
+        template.setHashKeySerializer(serializer);
+        template.setHashValueSerializer(serializer);
+
         template.setEnableTransactionSupport(true);
         template.afterPropertiesSet();
         return template;
@@ -41,7 +44,11 @@ public class RedisConfig {
         RedisStandaloneConfiguration serverConfig = new RedisStandaloneConfiguration();
         serverConfig.setHostName(redisProperties.getHost());
         serverConfig.setPort(redisProperties.getPort());
-        serverConfig.setPassword(RedisPassword.of(redisProperties.getPassword()));
+
+        // Only set password if it's not null or empty
+        if (redisProperties.getPassword() != null && !redisProperties.getPassword().isEmpty()) {
+            serverConfig.setPassword(RedisPassword.of(redisProperties.getPassword()));
+        }
         serverConfig.setDatabase(redisProperties.getDatabase());
 
         return new LettuceConnectionFactory(serverConfig, clientConfig);

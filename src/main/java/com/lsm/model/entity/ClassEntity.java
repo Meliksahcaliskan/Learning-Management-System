@@ -16,8 +16,12 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
+@Getter
+@Setter
 @Table(name = "classes")
 public class ClassEntity {
 
@@ -51,59 +55,11 @@ public class ClassEntity {
     }
 
     // Parameterized constructor
-    public ClassEntity(String name, String description, AppUser teacher) {
+    public ClassEntity(String name, String description, AppUser teacher, List<AppUser> students) {
         this.name = name;
         this.description = description;
         this.teacher = teacher;
-    }
-
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public AppUser getTeacher() {
-        return teacher;
-    }
-
-    public void setTeacher(AppUser teacher) {
-        this.teacher = teacher;
-    }
-
-    public List<AppUser> getStudents() {
-        return students;
-    }
-
-    public void setStudents(List<AppUser> students) {
         this.students = students;
-    }
-
-    public List<Assignment> getAssignments() {
-        return assignments;
-    }
-
-    public void setAssignments(List<Assignment> assignments) {
-        this.assignments = assignments;
     }
 }
 

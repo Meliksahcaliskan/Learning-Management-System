@@ -136,15 +136,35 @@ public class SecurityConfig {
                             "/favicon.ico"
                     ).permitAll();
 
+                    // Class endpoints
+                    registry.requestMatchers(HttpMethod.POST, "/api/v1/classes/**")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN");
+
+                    registry.requestMatchers(HttpMethod.GET, "/api/v1/classes/**")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_STUDENT", "ROLE_ADMIN");
+
+                    registry.requestMatchers(HttpMethod.PUT, "/api/v1/classes/**")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN");
+
+                    registry.requestMatchers(HttpMethod.DELETE, "/api/v1/classes/**")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN");
+
+                    // Student management in classes
+                    registry.requestMatchers(HttpMethod.POST, "/api/v1/classes/*/students/*")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN");
+
+                    registry.requestMatchers(HttpMethod.DELETE, "/api/v1/classes/*/students/*")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN");
+
                     // Assignment endpoints
                     registry.requestMatchers(HttpMethod.POST, "/api/v1/assignments/**")
-                            .hasAuthority("ROLE_TEACHER");
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN");
                     registry.requestMatchers(HttpMethod.GET, "/api/v1/assignments/student/**")
                             .hasAuthority("ROLE_STUDENT");
                     registry.requestMatchers(HttpMethod.PUT, "/api/v1/assignments/**")
-                            .hasAuthority("ROLE_TEACHER");
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN");
                     registry.requestMatchers(HttpMethod.DELETE, "/api/v1/assignments/**")
-                            .hasAuthority("ROLE_TEACHER");
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN");
 
                     // Default policy
                     registry.anyRequest().authenticated();
@@ -153,10 +173,10 @@ public class SecurityConfig {
                 .headers(headers -> headers
                         .frameOptions(frameOptions -> frameOptions.deny())
                         .xssProtection(
-                                        xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK)
-                                ).contentSecurityPolicy(
-                                        cps -> cps.policyDirectives("script-src 'self'")
-                                )
+                                xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK)
+                        ).contentSecurityPolicy(
+                                cps -> cps.policyDirectives("script-src 'self'")
+                        )
                         .contentSecurityPolicy(csp ->
                                 csp.policyDirectives("default-src 'self'; frame-ancestors 'none';"))
                 )

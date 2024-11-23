@@ -49,8 +49,8 @@ public class AssignmentController {
         @ApiResponse(responseCode = "400", description = "Invalid request data"),
         @ApiResponse(responseCode = "403", description = "Insufficient permissions")
     })
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
-    @PostMapping
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PostMapping("/createAssignment")
     public ResponseEntity<ApiResponse_<AssignmentDTO>> createAssignment(
             @Valid @RequestBody AssignmentRequestDTO assignmentRequest,
             Principal principal
@@ -88,8 +88,12 @@ public class AssignmentController {
     ) {
         try {
             AppUser currentUser = (AppUser) authentication.getPrincipal();
+            // Additional security check to ensure students can only view their own assignments
+            if (!currentUser.getId().equals(studentId)) {
+                throw new AccessDeniedException("You can only view your own assignments");
+            }
             List<AssignmentDTO> assignments = assignmentService
-                .displayAssignmentsForStudent(studentId, currentUser.getId());
+                .getAssignmentsByClass(studentId, currentUser);
             
             return ResponseEntity.ok(new ApiResponse_<>(
                 true,
@@ -111,7 +115,7 @@ public class AssignmentController {
         @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Assignment not found")
     })
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     @PutMapping("/{assignmentId}")
     public ResponseEntity<ApiResponse_<AssignmentDTO>> updateAssignment(
             @Parameter(description = "ID of the assignment to update", required = true)
@@ -142,7 +146,7 @@ public class AssignmentController {
         @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Assignment not found")
     })
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     @DeleteMapping("/{assignmentId}")
     public ResponseEntity<ApiResponse_<Void>> deleteAssignment(
             @Parameter(description = "ID of the assignment to delete", required = true)

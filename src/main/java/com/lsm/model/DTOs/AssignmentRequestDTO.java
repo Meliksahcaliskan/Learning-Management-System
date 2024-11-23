@@ -7,7 +7,11 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class AssignmentRequestDTO {
 
     @NotNull(message = "Teacher ID is required.")
@@ -22,9 +26,6 @@ public class AssignmentRequestDTO {
 
     @Future(message = "Due date should be in the future.")
     private LocalDate dueDate;
-
-    @NotEmpty(message = "Student ID list cannot be empty.")
-    private List<Long> studentIdList;
 
     @NotNull(message = "Class ID is required.")
     private Long classId;
@@ -41,80 +42,13 @@ public class AssignmentRequestDTO {
 
     // Parameterized constructor
     public AssignmentRequestDTO(Long teacherId, String title, String description, LocalDate dueDate, 
-                                List<Long> studentIdList, Long classId, Long courseId, LocalDate date) {
+                                Long classId, Long courseId) {
         this.teacherId = teacherId;
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
-        this.studentIdList = studentIdList;
         this.classId = classId;
         this.courseId = courseId;
-        this.date = date;
-    }
-
-    // Getters and Setters
-
-    public Long getTeacherId() {
-        return teacherId;
-    }
-
-    public void setTeacherId(Long teacherId) {
-        this.teacherId = teacherId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public LocalDate getDueDate() {
-        return dueDate;
-    }
-
-    public void setDueDate(LocalDate dueDate) {
-        this.dueDate = dueDate;
-    }
-
-    public List<Long> getStudentIdList() {
-        return studentIdList;
-    }
-
-    public void setStudentIdList(List<Long> studentIdList) {
-        this.studentIdList = studentIdList;
-    }
-
-    public Long getClassId() {
-        return classId;
-    }
-
-    public void setClassId(Long classId) {
-        this.classId = classId;
-    }
-
-    public Long getCourseId() {
-        return courseId;
-    }
-
-    public void setCourseId(Long courseId) {
-        this.courseId = courseId;
-    }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
+        this.date = LocalDate.now();
     }
 }

@@ -42,8 +42,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final HandlerExceptionResolver handlerExceptionResolver;
     private final HttpSessionSecurityContextRepository securityContextRepository;
 
-    @Value("${security.jwt.header.xsrf:X-XSRF-TOKEN}")
-    private String xsrfHeader;
+    // @Value("${security.jwt.header.xsrf:X-XSRF-TOKEN}")
+    // private String xsrfHeader;
 
     @Value("${security.jwt.ignore-paths:/api/v1/auth/**,/swagger-ui/**,/api-docs/**}")
     private String[] ignorePaths;
@@ -66,11 +66,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
+            /*
             if (!validateXsrfToken(request)) {
                 handleSecurityException(request, response,
                         new InvalidTokenException("Invalid XSRF token"));
                 return;
             }
+            */
 
             processToken(token, request, response);
             filterChain.doFilter(request, response);
@@ -98,6 +100,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
+    /* Won't work on Mobile find an alternative or don't use.
     private boolean validateXsrfToken(HttpServletRequest request) {
         // Skip XSRF validation for GET requests
         if (request.getMethod().equals(HttpMethod.GET.name())) {
@@ -111,6 +114,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 StringUtils.hasText(sessionXsrfToken) &&
                 xsrfToken.equals(sessionXsrfToken);
     }
+    */
 
     private void processToken(
             String token,
@@ -172,7 +176,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private void addSecurityHeaders(HttpServletResponse response) {
         response.setHeader("X-Content-Type-Options", "nosniff");
         response.setHeader("X-Frame-Options", "DENY");
-        response.setHeader("X-XSS-Protection", "1; mode=block");
+        // response.setHeader("X-XSS-Protection", "1; mode=block");
         response.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
         response.setHeader("Pragma", "no-cache");
         response.setHeader("Expires", "0");
