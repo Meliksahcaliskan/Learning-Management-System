@@ -23,14 +23,14 @@ public class AppUserService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<AppUser> userOpt = appUserRepository.findByUsername(username);
-        return userOpt.orElseThrow(() -> new UserNotFoundException("User not found with username: " + username));
+    public UserDetails loadUserByUsername(String loginIdentifier) throws UsernameNotFoundException {
+        Optional<AppUser> userOpt = appUserRepository.findByUsernameOrEmail(loginIdentifier, loginIdentifier);
+        return userOpt.orElseThrow(() -> new UserNotFoundException("User not found with username or email: " + loginIdentifier));
     }
 
-    public AppUser findByUsername(String username) {
-        Optional<AppUser> userOpt = appUserRepository.findByUsername(username);
-        return userOpt.orElseThrow(() -> new UserNotFoundException("User not found with username: " + username));
+    public AppUser findByUsername(String loginIdentifier) {
+        Optional<AppUser> userOpt = appUserRepository.findByUsernameOrEmail(loginIdentifier, loginIdentifier);
+        return userOpt.orElseThrow(() -> new UserNotFoundException("User not found with username or email: " + loginIdentifier));
     }
 
     public AppUser save(AppUser appUser) {

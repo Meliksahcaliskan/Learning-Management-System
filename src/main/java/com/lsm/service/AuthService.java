@@ -62,15 +62,19 @@ public class AuthService {
 
     @Transactional
     public AuthenticationResult authenticate(LoginRequestDTO loginRequest, String clientIp)
-      throws AccountLockedException {
+            throws AccountLockedException {
         if (loginAttemptService.isBlocked(clientIp)) {
             throw new AccountLockedException("Account is temporarily locked due to too many failed attempts");
+        }
+
+        if (!loginRequest.isValid()) {
+            throw new AuthenticationException("Either username or email must be provided");
         }
 
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(),
+                            loginRequest.getLoginIdentifier(),
                             loginRequest.getPassword()
                     )
             );
@@ -93,8 +97,8 @@ public class AuthService {
 
         } catch (BadCredentialsException e) {
             loginAttemptService.loginFailed(clientIp);
-            log.warn("Authentication failed for user: {}", loginRequest.getUsername());
-            throw new AuthenticationException("Invalid username or password");
+            log.warn("Authentication failed for user identifier: {}", loginRequest.getLoginIdentifier());
+            throw new AuthenticationException("Invalid credentials");
         }
     }
 

@@ -74,18 +74,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(appUserService);
-        provider.setPasswordEncoder(passwordEncoder());
-        // Prevent user not found exceptions from being shown to users
-        provider.setHideUserNotFoundExceptions(true);
-        return provider;
-    }
-
-    @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12); // Increased strength factor
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean
