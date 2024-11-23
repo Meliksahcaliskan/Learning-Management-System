@@ -1,11 +1,12 @@
 package com.lsm.model.entity;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.lsm.model.validation.constraint.TCConstraint;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Embeddable
@@ -15,12 +16,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StudentDetails {
-    @Column(name = "name")
-    private String name;
-
-    @Column(name = "surname")
-    private String surname;
-
     @Column(name = "phone")
     private String phone;
 
@@ -39,4 +34,10 @@ public class StudentDetails {
 
     @Column(name = "parent_phone")
     private String parentPhone;
+
+    @ElementCollection
+    @CollectionTable(name = "user_classes", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "class_id")
+    @Builder.Default
+    private List<Long> classes = new ArrayList<>();
 }

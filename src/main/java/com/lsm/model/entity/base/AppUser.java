@@ -37,14 +37,22 @@ public class AppUser implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id")
-    @Getter
-    @Setter
     private Long id;
 
     @NotNull
     @Size(min = 3, max = 60)
     @Column(name = "username", unique = true)
     private String username;
+
+    @NotNull
+    @Size(min = 2, max = 50)
+    @Column(name = "name")
+    private String name;
+
+    @NotNull
+    @Size(min = 2, max = 50)
+    @Column(name = "surname")
+    private String surname;
 
     @NotNull
     @Size(min = 5, max = 100)
@@ -66,12 +74,6 @@ public class AppUser implements UserDetails {
     @Embedded
     private StudentDetails studentDetails;
 
-    @ElementCollection
-    @CollectionTable(name = "user_classes", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "class_id")
-    @Builder.Default
-    private List<Long> classes = new ArrayList<>();
-
     public AppUser(String username, String email, String rawPassword, Role role) {
         this.username = username;
         this.email = email;
@@ -82,11 +84,6 @@ public class AppUser implements UserDetails {
     public AppUser(String username, String email, String rawPassword, Role role, StudentDetails studentDetails) {
         this(username, email, rawPassword, role);
         this.studentDetails = studentDetails;
-    }
-
-    public AppUser(String username, String email, String rawPassword, Role role, StudentDetails studentDetails, List<Long> classes) {
-        this(username, email, rawPassword, role, studentDetails);
-        this.classes = classes;
     }
 
     private String hashPassword(String rawPassword) {
@@ -105,9 +102,9 @@ public class AppUser implements UserDetails {
         return password;
     }
 
-    public void setPassword(String rawPassword) {
-        this.password = hashPassword(rawPassword);
-    }
+    // public void setPassword(String rawPassword) {
+    //     this.password = hashPassword(rawPassword);
+    // }
     
     public boolean checkPassword(String rawPassword) {
         return PASSWORD_ENCODER.matches(rawPassword, this.password);

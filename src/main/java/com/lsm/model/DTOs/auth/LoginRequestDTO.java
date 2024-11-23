@@ -1,4 +1,4 @@
-package com.lsm.model.DTOs;
+package com.lsm.model.DTOs.auth;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;

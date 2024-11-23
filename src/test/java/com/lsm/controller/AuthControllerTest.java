@@ -17,8 +17,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lsm.model.DTOs.LoginRequestDTO;
-import com.lsm.model.DTOs.RegisterRequestDTO;
+import com.lsm.model.DTOs.auth.LoginRequestDTO;
+import com.lsm.model.DTOs.auth.RegisterRequestDTO;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.Role;
 import com.lsm.service.AuthService;

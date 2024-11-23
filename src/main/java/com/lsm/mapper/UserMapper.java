@@ -1,7 +1,7 @@
 package com.lsm.mapper;
 
-import com.lsm.model.DTOs.LoginResponseDTO;
-import com.lsm.model.DTOs.RegisterResponseDTO;
+import com.lsm.model.DTOs.auth.LoginResponseDTO;
+import com.lsm.model.DTOs.auth.RegisterResponseDTO;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.Role;
 import org.springframework.stereotype.Component;
@@ -16,6 +16,8 @@ public class UserMapper {
         return LoginResponseDTO.builder()
                 .id(user.getId())
                 .username(user.getUsername())
+                .name(user.getName())
+                .surname(user.getSurname())
                 .email(user.getEmail())
                 .role(user.getRole())
                 .accessToken(accessToken)
@@ -29,6 +31,8 @@ public class UserMapper {
         return RegisterResponseDTO.builder()
                 .userId(user.getId())
                 .username(user.getUsername())
+                .name(user.getName())
+                .surname(user.getSurname())
                 .email(user.getEmail())
                 .role(user.getRole())
                 .message("Registration successful")

@@ -1,4 +1,4 @@
-package com.lsm.model.DTOs;
+package com.lsm.model.DTOs.auth;
 
 import com.lsm.model.entity.base.AppUser;
 import lombok.AllArgsConstructor;

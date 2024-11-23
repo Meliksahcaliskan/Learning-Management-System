@@ -1,4 +1,4 @@
-package com.lsm.model.DTOs;
+package com.lsm.model.DTOs.auth;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.lsm.model.entity.enums.Role;
@@ -25,6 +25,12 @@ public class RegisterResponseDTO implements Serializable {
 
     @Schema(description = "Username of the registered user")
     private String username;
+
+    @Schema(description = "Name of the registered user")
+    private String name;
+
+    @Schema(description = "Surname of the registered user")
+    private String surname;
 
     @Schema(description = "Email of the registered user")
     private String email;

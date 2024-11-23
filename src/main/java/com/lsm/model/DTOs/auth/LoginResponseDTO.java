@@ -1,4 +1,4 @@
-package com.lsm.model.DTOs;
+package com.lsm.model.DTOs.auth;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -21,6 +21,12 @@ public class LoginResponseDTO {
 
     @Schema(description = "Username of the authenticated user")
     private String username;
+
+    @Schema(description = "Name of the authenticated user")
+    private String name;
+
+    @Schema(description = "Surname of the authenticated user")
+    private String surname;
 
     @Schema(description = "Email address of the authenticated user")
     private String email;
@@ -48,6 +54,8 @@ public class LoginResponseDTO {
     public LoginResponseDTO(AppUser appUser, String accessToken, String refreshToken, Long expiresIn) {
         this.id = appUser.getId();
         this.username = appUser.getUsername();
+        this.name = appUser.getName();
+        this.surname = appUser.getSurname();
         this.email = appUser.getEmail();
         this.role = appUser.getRole();
         this.accessToken = accessToken;

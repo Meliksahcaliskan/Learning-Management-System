@@ -3,6 +3,7 @@ package com.lsm.controller;
 import com.lsm.exception.*;
 import com.lsm.mapper.UserMapper;
 import com.lsm.model.DTOs.*;
+import com.lsm.model.DTOs.auth.*;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.security.RateLimiter;
 import com.lsm.service.AuthService;

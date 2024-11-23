@@ -2,12 +2,15 @@ package com.lsm.service;
 
 import com.lsm.events.*;
 import com.lsm.exception.*;
-import com.lsm.model.DTOs.AuthenticationResult;
-import com.lsm.model.DTOs.LoginRequestDTO;
-import com.lsm.model.DTOs.RegisterRequestDTO;
+import com.lsm.model.DTOs.auth.AuthenticationResult;
+import com.lsm.model.DTOs.auth.LoginRequestDTO;
+import com.lsm.model.DTOs.auth.RegisterRequestDTO;
 import com.lsm.model.DTOs.TokenRefreshResult;
+import com.lsm.model.DTOs.auth.StudentRegisterRequestDTO;
 import com.lsm.model.entity.RefreshToken;
+import com.lsm.model.entity.StudentDetails;
 import com.lsm.model.entity.base.AppUser;
+import com.lsm.model.entity.enums.Role;
 import com.lsm.repository.AppUserRepository;
 import com.lsm.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
@@ -157,8 +160,33 @@ public class AuthService {
     }
 
     private AppUser createUserFromRequest(RegisterRequestDTO registerRequest) {
-        return new AppUser(registerRequest.getUsername(), registerRequest.getEmail(),
-                registerRequest.getPassword(), registerRequest.getRole());
+        AppUser .AppUserBuilder userBuilder = AppUser.builder()
+                .username(registerRequest.getUsername())
+                .name(registerRequest.getFirstName())
+                .surname(registerRequest.getLastName())
+                .email(registerRequest.getEmail())
+                .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .role(registerRequest.getRole())
+                .studentDetails(null);
+
+        if (registerRequest instanceof StudentRegisterRequestDTO) {
+            StudentDetails studentDetails = getStudentDetails((StudentRegisterRequestDTO) registerRequest);
+            userBuilder.studentDetails(studentDetails);
+        }
+
+        return userBuilder.build();
+    }
+
+    private static StudentDetails getStudentDetails(StudentRegisterRequestDTO registerRequest) {
+        StudentDetails studentDetails = new StudentDetails();
+        studentDetails.setTc(registerRequest.getTc());
+        studentDetails.setClasses(registerRequest.getClasses());
+        studentDetails.setPhone(registerRequest.getPhone());
+        studentDetails.setParentPhone(registerRequest.getParentPhone());
+        studentDetails.setBirthDate(registerRequest.getBirthDate());
+        studentDetails.setParentName(registerRequest.getParentName());
+        studentDetails.setRegistrationDate(registerRequest.getRegistrationDate());
+        return studentDetails;
     }
 
     private void validateRegistrationRequest(RegisterRequestDTO request) {

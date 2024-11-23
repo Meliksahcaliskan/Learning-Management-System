@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-import com.lsm.model.DTOs.LoginRequestDTO;
+import com.lsm.model.DTOs.auth.LoginRequestDTO;
 import com.lsm.repository.AppUserRepository;
 
 @Component
