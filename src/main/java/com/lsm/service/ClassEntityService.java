@@ -40,7 +40,7 @@ public class ClassEntityService implements ClassEntityServiceInterface {
                 AppUser student = appUserRepository.findById(studentId)
                         .orElseThrow(() -> new EntityNotFoundException("Student not found with id: " + studentId));
                 students.add(student);
-                student.getClasses().add(classEntity.getId());
+                student.getStudentDetails().getClasses().add(classEntity.getId());
             }
             classEntity.setStudents(students);
         }

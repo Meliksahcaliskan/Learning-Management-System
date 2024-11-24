@@ -35,7 +35,12 @@ public class AppUser implements UserDetails {
     private static final BCryptPasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "app_user_seq")
+    @SequenceGenerator(
+            name = "app_user_seq",
+            sequenceName = "app_users_seq",  // This matches your actual sequence name in the database
+            allocationSize = 1
+    )
     @Column(name = "id")
     private Long id;
 
