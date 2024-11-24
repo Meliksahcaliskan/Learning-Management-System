@@ -2,15 +2,12 @@ package com.lsm.service;
 
 import com.lsm.events.*;
 import com.lsm.exception.*;
-import com.lsm.model.DTOs.auth.AuthenticationResult;
-import com.lsm.model.DTOs.auth.LoginRequestDTO;
-import com.lsm.model.DTOs.auth.RegisterRequestDTO;
+import com.lsm.model.DTOs.auth.*;
 import com.lsm.model.DTOs.TokenRefreshResult;
-import com.lsm.model.DTOs.auth.StudentRegisterRequestDTO;
 import com.lsm.model.entity.RefreshToken;
 import com.lsm.model.entity.StudentDetails;
+import com.lsm.model.entity.TeacherDetails;
 import com.lsm.model.entity.base.AppUser;
-import com.lsm.model.entity.enums.Role;
 import com.lsm.repository.AppUserRepository;
 import com.lsm.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
@@ -167,11 +164,17 @@ public class AuthService {
                 .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
                 .role(registerRequest.getRole())
-                .studentDetails(null);
+                .studentDetails(null)
+                .teacherDetails(null);
 
         if (registerRequest instanceof StudentRegisterRequestDTO) {
             StudentDetails studentDetails = getStudentDetails((StudentRegisterRequestDTO) registerRequest);
             userBuilder.studentDetails(studentDetails);
+        }
+
+        if (registerRequest instanceof TeacherRegisterRequestDTO) {
+            TeacherDetails teacherDetails = getTeacherDetails((TeacherRegisterRequestDTO) registerRequest);
+            userBuilder.teacherDetails(teacherDetails);
         }
 
         return userBuilder.build();
@@ -187,6 +190,15 @@ public class AuthService {
         studentDetails.setParentName(registerRequest.getParentName());
         studentDetails.setRegistrationDate(registerRequest.getRegistrationDate());
         return studentDetails;
+    }
+
+    private static TeacherDetails getTeacherDetails(TeacherRegisterRequestDTO registerRequest) {
+        TeacherDetails teacherDetails = new TeacherDetails();
+        teacherDetails.setTc(registerRequest.getTc());
+        teacherDetails.setClasses(registerRequest.getClasses());
+        teacherDetails.setPhone(registerRequest.getPhone());
+        teacherDetails.setBirthDate(registerRequest.getBirthDate());
+        return teacherDetails;
     }
 
     private void validateRegistrationRequest(RegisterRequestDTO request) {

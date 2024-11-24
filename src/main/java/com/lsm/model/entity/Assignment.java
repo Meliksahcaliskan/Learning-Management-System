@@ -5,28 +5,26 @@ import java.time.LocalDate;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.AssignmentStatus;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "assignments")
 public class Assignment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "assignment_seq")
+    @SequenceGenerator(name = "assignment_seq", sequenceName = "assignments_seq", allocationSize = 1)
     private Long id;
 
     @NotNull
@@ -48,33 +46,15 @@ public class Assignment {
     @Column(name = "status")
     private AssignmentStatus status = AssignmentStatus.PENDING;
 
-    @NotNull
-    @Column(name = "class_id", nullable = false, insertable = false, updatable = false)  // Avoids duplicate mapping
-    private Long classId;
-
     @ManyToOne
-    @JoinColumn(name = "class_id", nullable = false)  // Maps to the ClassEntity relation
+    @JoinColumn(name = "class_id", nullable = false)
     private ClassEntity classEntity;
 
-    @NotNull
-    @Column(name = "course_id", nullable = false)
-    private Long courseId;
+    @ManyToOne
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
 
     @NotNull
     @Column(name = "assignment_date", nullable = false)
     private LocalDate date;
-
-    // Constructors
-    public Assignment() {}
-
-    public Assignment(String title, String description, LocalDate dueDate, AppUser assignedBy, 
-                      Long classId, Long courseId, LocalDate date) {
-        this.title = title;
-        this.description = description;
-        this.dueDate = dueDate;
-        this.assignedBy = assignedBy;
-        this.classId = classId;
-        this.courseId = courseId;
-        this.date = date;
-    }
 }

@@ -1,9 +1,16 @@
 -- Clear existing data
-DELETE FROM user_classes;
+DELETE FROM class_courses;
+DELETE FROM class_students;
+DELETE FROM assignments;
+DELETE FROM classes;
+DELETE FROM courses;
 DELETE FROM app_users;
 
--- Reset sequence
+-- Reset sequences
 ALTER SEQUENCE app_users_seq RESTART WITH 1;
+ALTER SEQUENCE classes_id_seq RESTART WITH 1;
+ALTER SEQUENCE assignments_seq RESTART WITH 1;
+ALTER SEQUENCE courses_seq RESTART WITH 1;
 
 -- [Previous INSERT statements remain the same but using the correct sequence]
 -- Insert Admin
@@ -62,15 +69,60 @@ VALUES (nextval('app_users_seq'), 'student6', 'Frank', 'Anderson', 'frank.anders
         '$2a$12$KI8ugVXiXKu6Q7VthcY2u.JGVmh0OQ6wtx6NnK31G1TnGbEbSTgzG', 'ROLE_STUDENT',
         '5556789012', '12345678906', '2001-05-30', '2023-09-01', 'Patricia Anderson', '5556789013');
 
--- Insert sample class assignments for students
-INSERT INTO user_classes (user_id, class_id) VALUES
-                                                 ((SELECT id FROM app_users WHERE username = 'student1'), 1),
-                                                 ((SELECT id FROM app_users WHERE username = 'student1'), 2),
-                                                 ((SELECT id FROM app_users WHERE username = 'student2'), 1),
-                                                 ((SELECT id FROM app_users WHERE username = 'student3'), 2),
-                                                 ((SELECT id FROM app_users WHERE username = 'student4'), 1),
-                                                 ((SELECT id FROM app_users WHERE username = 'student5'), 2),
-                                                 ((SELECT id FROM app_users WHERE username = 'student6'), 1);
+-- Insert Courses
+INSERT INTO courses (id, name, description, code, credits)
+VALUES
+    (nextval('courses_seq'), 'Mathematics', 'Foundational mathematics course', 'MATH101', 4),
+    (nextval('courses_seq'), 'Physics', 'Introduction to physics', 'PHYS101', 4),
+    (nextval('courses_seq'), 'Chemistry', 'Basic chemistry concepts', 'CHEM101', 4);
 
--- Update sequence to the next value
+-- Insert Classes
+INSERT INTO classes (id, name, description, teacher_id)
+VALUES
+    (nextval('classes_id_seq'), 'Mathematics 101', 'Introduction to Mathematics',
+     (SELECT id FROM app_users WHERE username = 'teacher1')),
+    (nextval('classes_id_seq'), 'Physics 101', 'Introduction to Physics',
+     (SELECT id FROM app_users WHERE username = 'teacher2'));
+
+-- Insert Class-Course relationships
+INSERT INTO class_courses (class_id, course_id)
+VALUES
+    ((SELECT id FROM classes WHERE name = 'Mathematics 101'),
+     (SELECT id FROM courses WHERE code = 'MATH101')),
+    ((SELECT id FROM classes WHERE name = 'Physics 101'),
+     (SELECT id FROM courses WHERE code = 'PHYS101'));
+
+-- Insert Class-Student relationships
+INSERT INTO class_students (class_id, student_id)
+VALUES
+    ((SELECT id FROM classes WHERE name = 'Mathematics 101'),
+     (SELECT id FROM app_users WHERE username = 'student1')),
+    ((SELECT id FROM classes WHERE name = 'Physics 101'),
+     (SELECT id FROM app_users WHERE username = 'student1')),
+-- [Rest of the class_students INSERT statements]
+
+-- Insert Assignments
+INSERT INTO assignments (
+    id, title, description, due_date, assigned_by_teacher_id,
+    status, class_id, course_id, assignment_date
+)
+VALUES
+    (nextval('assignments_seq'), 'Math Homework 1', 'Complete exercises 1-10', '2024-12-01',
+    (SELECT id FROM app_users WHERE username = 'teacher1'),
+    'PENDING',
+    (SELECT id FROM classes WHERE name = 'Mathematics 101'),
+    (SELECT id FROM courses WHERE code = 'MATH101'),
+    '2024-11-24'),
+
+    (nextval('assignments_seq'), 'Physics Lab Report', 'Write report on gravity experiment', '2024-12-05',
+    (SELECT id FROM app_users WHERE username = 'teacher2'),
+    'PENDING',
+    (SELECT id FROM classes WHERE name = 'Physics 101'),
+    (SELECT id FROM courses WHERE code = 'PHYS101'),
+    '2024-11-24');
+
+-- Update sequences to next values
 SELECT setval('app_users_seq', (SELECT MAX(id) FROM app_users));
+SELECT setval('classes_id_seq', (SELECT MAX(id) FROM classes));
+SELECT setval('assignments_seq', (SELECT MAX(id) FROM assignments));
+SELECT setval('courses_seq', (SELECT MAX(id) FROM courses));

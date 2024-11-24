@@ -5,6 +5,10 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.lsm.model.entity.ClassEntity;
+import com.lsm.model.entity.Course;
+import com.lsm.repository.ClassEntityRepository;
+import com.lsm.repository.CourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,11 +28,15 @@ public class AssignmentService {
 
     private final AssignmentRepository assignmentRepository;
     private final AppUserRepository appUserRepository;
+    private final ClassEntityRepository classEntityRepository;
+    private final CourseRepository courseRepository;
 
     @Autowired
-    public AssignmentService(AssignmentRepository assignmentRepository, AppUserRepository appUserRepository) {
+    public AssignmentService(AssignmentRepository assignmentRepository, AppUserRepository appUserRepository, ClassEntityRepository classEntityRepository, CourseRepository courseRepository) {
         this.assignmentRepository = assignmentRepository;
         this.appUserRepository = appUserRepository;
+        this.classEntityRepository = classEntityRepository;
+        this.courseRepository = courseRepository;
     }
 
     @Transactional
@@ -37,6 +45,12 @@ public class AssignmentService {
         // Validate teacher
         AppUser teacher = appUserRepository.findById(loggedInUserId)
                 .orElseThrow(() -> new EntityNotFoundException("Teacher not found"));
+        ClassEntity classEntity = classEntityRepository.findById(dto.getClassId()).orElseThrow(
+                () -> new EntityNotFoundException("Class not found")
+        );
+        Course course = courseRepository.findById(dto.getCourseId()).orElseThrow(
+                () -> new EntityNotFoundException("Course not found")
+        );
 
         if (teacher.getRole() != Role.ROLE_TEACHER && teacher.getRole() != Role.ROLE_ADMIN) {
             throw new AccessDeniedException("Only teachers and admins can create assignments");
@@ -48,7 +62,7 @@ public class AssignmentService {
         }
 
         // Check if assignment title already exists for the class
-        if (assignmentRepository.existsByTitleAndClassId(dto.getTitle(), dto.getClassId())) {
+        if (assignmentRepository.existsByTitleAndClassEntity(dto.getTitle(), classEntity)) {
             throw new IllegalArgumentException("An assignment with this title already exists for this class");
         }
 
@@ -57,8 +71,8 @@ public class AssignmentService {
         assignment.setDescription(dto.getDescription());
         assignment.setDueDate(dto.getDueDate());
         assignment.setAssignedBy(teacher);
-        assignment.setClassId(dto.getClassId());
-        assignment.setCourseId(dto.getCourseId());
+        assignment.setClassEntity(classEntity);
+        assignment.setCourse(course);
         assignment.setDate(LocalDate.now());
 
         return assignmentRepository.save(assignment);
@@ -68,6 +82,12 @@ public class AssignmentService {
             throws AccessDeniedException {
         AppUser user = appUserRepository.findById(loggedInUser.getId())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        ClassEntity classEntity = classEntityRepository.findById(dto.getClassId()).orElseThrow(
+                () -> new EntityNotFoundException("Class not found")
+        );
+        Course course = courseRepository.findById(dto.getCourseId()).orElseThrow(
+                () -> new EntityNotFoundException("Course not found")
+        );
 
         // For teachers, only show their own assignments
         List<Assignment> assignments;
@@ -99,12 +119,20 @@ public class AssignmentService {
             throw new IllegalArgumentException("An assignment with this title already exists for this class");
         }
 
+        ClassEntity classEntity = classEntityRepository.findById(dto.getClassId()).orElseThrow(
+                () -> new EntityNotFoundException("Class not found")
+        );
+
+        Course course = courseRepository.findById(dto.getCourseId()).orElseThrow(
+                () -> new EntityNotFoundException("Course not found")
+        );
+
         // Update fields
         existingAssignment.setTitle(dto.getTitle());
         existingAssignment.setDescription(dto.getDescription());
         existingAssignment.setDueDate(dto.getDueDate());
-        existingAssignment.setClassId(dto.getClassId());
-        existingAssignment.setCourseId(dto.getCourseId());
+        existingAssignment.setClassEntity(classEntity);
+        existingAssignment.setCourse(course);
 
         return assignmentRepository.save(existingAssignment);
     }

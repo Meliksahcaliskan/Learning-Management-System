@@ -2,6 +2,7 @@ package com.lsm.model.entity.base;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.lsm.model.entity.StudentDetails;
+import com.lsm.model.entity.TeacherDetails;
 import com.lsm.model.entity.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -79,6 +80,9 @@ public class AppUser implements UserDetails {
     @Embedded
     private StudentDetails studentDetails;
 
+    @Embedded
+    private TeacherDetails teacherDetails;
+
     public AppUser(String username, String email, String rawPassword, Role role) {
         this.username = username;
         this.email = email;
@@ -89,6 +93,11 @@ public class AppUser implements UserDetails {
     public AppUser(String username, String email, String rawPassword, Role role, StudentDetails studentDetails) {
         this(username, email, rawPassword, role);
         this.studentDetails = studentDetails;
+    }
+
+    public AppUser(String username, String email, String rawPassword, Role role, TeacherDetails teacherDetails) {
+        this(username, email, rawPassword, role);
+        this.teacherDetails = teacherDetails;
     }
 
     private String hashPassword(String rawPassword) {
