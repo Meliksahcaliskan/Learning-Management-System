@@ -82,19 +82,16 @@ public class AssignmentService {
             throws AccessDeniedException {
         AppUser user = appUserRepository.findById(loggedInUser.getId())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        ClassEntity classEntity = classEntityRepository.findById(dto.getClassId()).orElseThrow(
+        ClassEntity classEntity = classEntityRepository.findById(classId).orElseThrow(
                 () -> new EntityNotFoundException("Class not found")
-        );
-        Course course = courseRepository.findById(dto.getCourseId()).orElseThrow(
-                () -> new EntityNotFoundException("Course not found")
         );
 
         // For teachers, only show their own assignments
         List<Assignment> assignments;
         if (user.getRole() == Role.ROLE_TEACHER) {
-            assignments = assignmentRepository.findByClassIdAndAssignedBy(classId, loggedInUser);
+            assignments = assignmentRepository.findByClassEntityAndAssignedBy(classEntity, loggedInUser);
         } else {
-            assignments = assignmentRepository.findByClassIdOrderByDueDateDesc(classId);
+            assignments = assignmentRepository.findByClassEntityOrderByDueDateDesc(classEntity);
         }
 
         return assignments.stream()
@@ -107,6 +104,13 @@ public class AssignmentService {
             throws AccessDeniedException {
         Assignment existingAssignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
+        ClassEntity classEntity = classEntityRepository.findById(dto.getClassId()).orElseThrow(
+                () -> new EntityNotFoundException("Class not found")
+        );
+
+        Course course = courseRepository.findById(dto.getCourseId()).orElseThrow(
+                () -> new EntityNotFoundException("Course not found")
+        );
 
         // Validate teacher
         if (!existingAssignment.getAssignedBy().getId().equals(loggedInUserId)) {
@@ -115,17 +119,9 @@ public class AssignmentService {
 
         // Check if updated title conflicts with existing assignments
         if (!existingAssignment.getTitle().equals(dto.getTitle()) &&
-                assignmentRepository.existsByTitleAndClassId(dto.getTitle(), dto.getClassId())) {
+                assignmentRepository.existsByTitleAndClassEntity(dto.getTitle(), classEntity)) {
             throw new IllegalArgumentException("An assignment with this title already exists for this class");
         }
-
-        ClassEntity classEntity = classEntityRepository.findById(dto.getClassId()).orElseThrow(
-                () -> new EntityNotFoundException("Class not found")
-        );
-
-        Course course = courseRepository.findById(dto.getCourseId()).orElseThrow(
-                () -> new EntityNotFoundException("Course not found")
-        );
 
         // Update fields
         existingAssignment.setTitle(dto.getTitle());
