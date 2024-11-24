@@ -33,7 +33,7 @@ const Dashboard = () => {
                     title={selectedOption.title}
                     user={{
                         name : user.username,
-                        imgSource : '../../../public/icons/profile-picture.svg'
+                        imgSource : '/icons/profile-picture.svg'
                     }}
                 />
                 <MainContent 

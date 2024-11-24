@@ -106,3 +106,7 @@ body{
 .input-container:hover .label, .input:focus {
     color: var(--highlighted-item);
 }
+
+ul li {
+    margin-bottom: 12px;
+}

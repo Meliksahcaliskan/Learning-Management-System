@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import './PastHomeworksOfficer.css';
-import AssignmentSearch from '../../../../../utils/assignmentSearch/assignmentSearch';
+import AssignmentSearch from '../../../../utils/assignmentSearch/assignmentSearch';
 
 
 

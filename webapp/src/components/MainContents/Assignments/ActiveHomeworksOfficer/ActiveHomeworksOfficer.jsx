@@ -1,5 +1,5 @@
 import './ActiveHomeworksOfficer.css';
-import AssignmentSearch from '../../../../../utils/assignmentSearch/assignmentSearch';
+import AssignmentSearch from '../../../../utils/assignmentSearch/assignmentSearch';
 import { useState } from 'react';
 
 const ActiveHomeworksOfficer = () => {

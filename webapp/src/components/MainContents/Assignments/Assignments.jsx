@@ -1,28 +1,20 @@
-import { useContext, useState } from 'react';
 import './Assignments.css';
+
+import { useContext } from 'react';
 import { AuthContext } from '../../../contexts/AuthContext';
-import { getAssignmentOptions } from '../../../utils/assignmentOptions';
-import Navigator from '../../common/Navigator/Navigator';
+
 import StudentAssignments from './StudentAssignments/StudentAssignments';
-
-
+import OfficerAssignments from './OfficerAssignments/OfficerAssignments';
 
 const Assignments = () => {
 
     const { user } = useContext(AuthContext);
-    const assignmentOptions = getAssignmentOptions(user.role);
-    const [selectedOption, setSelectedOption] = useState(assignmentOptions[0]);
-    
-
     return(
         <div className="assignments">
-            {/* <Navigator
-                options={assignmentOptions}
-                onSelect={(option) => setSelectedOption(option)}
-                />
-            use selectedOption's component here
-            {selectedOption.component && <selectedOption.component user={user}/>} */}
-            <StudentAssignments user={user}/>
+            {user.role === 'ROLE_STUDENT'
+                ? <StudentAssignments user={user}/>
+                : <OfficerAssignments user={user}/>
+            }
         </div>
     );
 }
