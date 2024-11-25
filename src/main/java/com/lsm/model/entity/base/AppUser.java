@@ -78,10 +78,25 @@ public class AppUser implements UserDetails {
     private Role role;
 
     @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "phone", column = @Column(name = "student_phone")),
+            @AttributeOverride(name = "tc", column = @Column(name = "student_tc")),
+            @AttributeOverride(name = "birthDate", column = @Column(name = "student_birth_date")),
+            @AttributeOverride(name = "registrationDate", column = @Column(name = "student_registration_date")),
+            @AttributeOverride(name = "parentName", column = @Column(name = "student_parent_name")),
+            @AttributeOverride(name = "parentPhone", column = @Column(name = "student_parent_phone")),
+            @AttributeOverride(name = "classEntity", column = @Column(name = "class_id_student"))
+    })
     private StudentDetails studentDetails;
 
     @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "phone", column = @Column(name = "teacher_phone")),
+            @AttributeOverride(name = "tc", column = @Column(name = "teacher_tc")),
+            @AttributeOverride(name = "birthDate", column = @Column(name = "teacher_birth_date"))
+    })
     private TeacherDetails teacherDetails;
+
 
     public AppUser(String username, String email, String rawPassword, Role role) {
         this.username = username;

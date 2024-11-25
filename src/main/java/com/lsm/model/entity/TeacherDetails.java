@@ -15,19 +15,14 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TeacherDetails {
-    @Column(name = "phone")
     private String phone;
-
-    @Column(name = "tc")
     @TCConstraint
     private String tc;
-
-    @Column(name = "birth_date")
     private LocalDate birthDate;
 
     @ElementCollection
-    @CollectionTable(name = "user_classes", joinColumns = @JoinColumn(name = "user_id"))
+    @CollectionTable(name = "teacher_classes", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "class_id")
-    @Builder.Default
     private List<Long> classes = new ArrayList<>();
 }
+

@@ -40,7 +40,7 @@ public class ClassEntityService implements ClassEntityServiceInterface {
                 AppUser student = appUserRepository.findById(studentId)
                         .orElseThrow(() -> new EntityNotFoundException("Student not found with id: " + studentId));
                 students.add(student);
-                student.getStudentDetails().getClasses().add(classEntity.getId());
+                student.getStudentDetails().setClassEntity(classEntity.getId());
             }
             classEntity.setStudents(students);
         }
@@ -49,17 +49,19 @@ public class ClassEntityService implements ClassEntityServiceInterface {
     }
 
     // @Override
+    @Transactional
     public ClassEntity getClassById(Long id) {
         return classRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Class not found with id: " + id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ClassEntity> getAllClasses(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new SecurityException("User  is not authenticated");
+            throw new SecurityException("User is not authenticated");
         }
-        return classRepository.findAll();
+        return classRepository.findAllWithAssociations();
     }
 
     @Override

@@ -46,7 +46,7 @@ public class ClassEntityController {
             @ApiResponse(responseCode = "400", description = "Invalid request data"),
             @ApiResponse(responseCode = "403", description = "Insufficient permissions")
     })
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @PostMapping
     public ResponseEntity<ClassEntityResponseDTO> createClass(@Valid @RequestBody ClassEntityRequestDTO requestDTO) {
         ClassEntity entity = classMapper.toEntity(requestDTO);
@@ -72,7 +72,7 @@ public class ClassEntityController {
             @ApiResponse(responseCode = "200", description = "Classes retrieved successfully"),
             @ApiResponse(responseCode = "403", description = "Insufficient permissions")
     })
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_STUDENT', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_STUDENT', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @GetMapping
     public ResponseEntity<List<ClassEntityResponseDTO>> getAllClasses(Authentication authentication) {
         List<ClassEntityResponseDTO> classes = classService.getAllClasses(authentication)

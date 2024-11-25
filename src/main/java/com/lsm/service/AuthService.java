@@ -183,7 +183,7 @@ public class AuthService {
     private static StudentDetails getStudentDetails(StudentRegisterRequestDTO registerRequest) {
         StudentDetails studentDetails = new StudentDetails();
         studentDetails.setTc(registerRequest.getTc());
-        studentDetails.setClasses(registerRequest.getClasses());
+        studentDetails.setClassEntity(registerRequest.getClassEntity());
         studentDetails.setPhone(registerRequest.getPhone());
         studentDetails.setParentPhone(registerRequest.getParentPhone());
         studentDetails.setBirthDate(registerRequest.getBirthDate());

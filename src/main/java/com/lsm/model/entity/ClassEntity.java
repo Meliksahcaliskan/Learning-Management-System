@@ -1,6 +1,8 @@
 package com.lsm.model.entity;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.lsm.model.entity.base.AppUser;
 
@@ -31,7 +33,7 @@ public class ClassEntity {
     @JoinColumn(name = "teacher_id", nullable = false)
     private AppUser teacher;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "class_students",
         joinColumns = @JoinColumn(name = "class_id"),
@@ -40,7 +42,7 @@ public class ClassEntity {
     private List<AppUser> students;
 
     @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL)
-    private List<Assignment> assignments;
+    private Set<Assignment> assignments = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -48,6 +50,6 @@ public class ClassEntity {
             joinColumns = @JoinColumn(name = "class_id"),
             inverseJoinColumns = @JoinColumn(name = "course_id")
     )
-    private List<Course> courses;
+    private Set<Course> courses = new HashSet<>();
 }
 

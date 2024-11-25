@@ -42,7 +42,6 @@ public class AssignmentService {
     @Transactional
     public Assignment createAssignment(AssignmentRequestDTO dto, Long loggedInUserId)
             throws AccessDeniedException {
-        // Validate teacher
         AppUser teacher = appUserRepository.findById(loggedInUserId)
                 .orElseThrow(() -> new EntityNotFoundException("Teacher not found"));
         ClassEntity classEntity = classEntityRepository.findById(dto.getClassId()).orElseThrow(
@@ -52,8 +51,12 @@ public class AssignmentService {
                 () -> new EntityNotFoundException("Course not found")
         );
 
-        if (teacher.getRole() != Role.ROLE_TEACHER && teacher.getRole() != Role.ROLE_ADMIN) {
-            throw new AccessDeniedException("Only teachers and admins can create assignments");
+        if (teacher.getRole() == Role.ROLE_STUDENT) {
+            throw new AccessDeniedException("Only teachers, admins, coordinators can create assignments");
+        }
+
+        if (teacher.getRole() == Role.ROLE_TEACHER && !teacher.getTeacherDetails().getClasses().contains(dto.getClassId())) {
+            throw new AccessDeniedException("Teachers can create assignments only their assigned classes");
         }
 
         // Validate that teacher ID matches logged-in user

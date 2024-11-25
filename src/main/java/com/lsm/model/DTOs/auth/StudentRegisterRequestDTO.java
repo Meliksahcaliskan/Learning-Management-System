@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @Getter
 @Setter
@@ -17,5 +16,5 @@ public class StudentRegisterRequestDTO extends RegisterRequestDTO {
     private LocalDate registrationDate;
     private String parentName;
     private String parentPhone;
-    private List<Long> classes;
+    private Long classEntity;
 }
