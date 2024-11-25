@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import com.lsm.model.entity.ClassEntity;
 import com.lsm.model.entity.Course;
+import com.lsm.model.entity.enums.AssignmentStatus;
 import com.lsm.repository.ClassEntityRepository;
 import com.lsm.repository.CourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,62 @@ public class AssignmentService {
         this.appUserRepository = appUserRepository;
         this.classEntityRepository = classEntityRepository;
         this.courseRepository = courseRepository;
+    }
+
+    @Transactional
+    public Assignment updateAssignmentStatus(Long assignmentId, AssignmentStatus newStatus, AppUser currentUser) throws AccessDeniedException {
+        Assignment assignment = findById(assignmentId);
+
+        // Validate the status update based on user role and current status
+        try {
+            validateStatusUpdate(assignment, newStatus, currentUser);
+        } catch (AccessDeniedException e) {
+            throw new AccessDeniedException(e.getMessage());
+        }
+
+        assignment.setStatus(newStatus);
+        return assignmentRepository.save(assignment);
+    }
+
+    private void validateStatusUpdate(Assignment assignment, AssignmentStatus newStatus, AppUser currentUser) throws AccessDeniedException {
+        Role userRole = currentUser.getRole();
+
+        // Admins and Coordinators can update to any status
+        if (userRole == Role.ROLE_ADMIN || userRole == Role.ROLE_COORDINATOR) {
+            return;
+        }
+
+        // Students can only update to SUBMITTED status
+        if (userRole == Role.ROLE_STUDENT) {
+            if (newStatus != AssignmentStatus.SUBMITTED) {
+                throw new AccessDeniedException("Students can only update assignment status to SUBMITTED");
+            }
+            if (assignment.getStatus() != AssignmentStatus.PENDING) {
+                throw new AccessDeniedException("Can only submit PENDING assignments");
+            }
+            return;
+        }
+
+        // Teachers can only update their own assignments to GRADED status
+        if (userRole == Role.ROLE_TEACHER) {
+            if (!assignment.getAssignedBy().equals(currentUser)) {
+                throw new AccessDeniedException("Teachers can only update their own assignments");
+            }
+            if (newStatus != AssignmentStatus.GRADED) {
+                throw new AccessDeniedException("Teachers can only update assignment status to GRADED");
+            }
+            if (assignment.getStatus() != AssignmentStatus.SUBMITTED) {
+                throw new AccessDeniedException("Can only grade SUBMITTED assignments");
+            }
+        }
+    }
+
+    @Transactional
+    public List<AssignmentDTO> getAllAssignments() {
+        List<Assignment> assignments = assignmentRepository.findAll();
+        return assignments.stream()
+                .map(assignment -> new AssignmentDTO(assignment, "Retrieved successfully"))
+                .collect(Collectors.toList());
     }
 
     @Transactional

@@ -2,8 +2,10 @@ package com.lsm.controller;
 
 import com.lsm.model.DTOs.AssignmentDTO;
 import com.lsm.model.DTOs.AssignmentRequestDTO;
+import com.lsm.model.DTOs.AssignmentStatusUpdateDTO;
 import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.base.AppUser;
+import com.lsm.model.entity.enums.Role;
 import com.lsm.service.AppUserService;
 import com.lsm.service.AssignmentService;
 
@@ -115,7 +117,7 @@ public class AssignmentController {
         @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Assignment not found")
     })
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @PutMapping("/{assignmentId}")
     public ResponseEntity<ApiResponse_<AssignmentDTO>> updateAssignment(
             @Parameter(description = "ID of the assignment to update", required = true)
@@ -125,6 +127,9 @@ public class AssignmentController {
     ) {
         try {
             AppUser currentUser = (AppUser) authentication.getPrincipal();
+            if (currentUser.getRole() == Role.ROLE_TEACHER && currentUser.equals(assignmentService.findById(assignmentId).getAssignedBy())) {
+                throw new AccessDeniedException("Teacher can only update his/her own assignments");
+            }
             Assignment updated = assignmentService.updateAssignment(assignmentId, updateRequest, currentUser.getId());
             
             return ResponseEntity.ok(new ApiResponse_<>(
@@ -138,6 +143,66 @@ public class AssignmentController {
     }
 
     @Operation(
+            summary = "Update assignment status",
+            description = "Update the status of an assignment. Students can only update to SUBMITTED status. " +
+                    "Teachers can update their own assignments to GRADED status. " +
+                    "Admins and Coordinators can update to any status."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Assignment status updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid status update request"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Assignment not found")
+    })
+    @PatchMapping("/{assignmentId}/status")
+    public ResponseEntity<ApiResponse_<AssignmentDTO>> updateAssignmentStatus(
+            @Parameter(description = "ID of the assignment to update", required = true)
+            @PathVariable @Positive Long assignmentId,
+            @Valid @RequestBody AssignmentStatusUpdateDTO statusUpdate,
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            Assignment updated = assignmentService.updateAssignmentStatus(assignmentId, statusUpdate.getStatus(), currentUser);
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Assignment status updated successfully",
+                    new AssignmentDTO(updated, "Status updated successfully")
+            ));
+        } catch (AccessDeniedException e) {
+            throw new SecurityException(e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Get all assignments",
+            description = "Retrieve all assignments in the system. Only accessible by administrators and coordinators."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Assignments retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    @GetMapping
+    public ResponseEntity<ApiResponse_<List<AssignmentDTO>>> getAllAssignments(
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            List<AssignmentDTO> assignments = assignmentService.getAllAssignments();
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "All assignments retrieved successfully",
+                    assignments
+            ));
+        } catch (Exception e) {
+            throw new SecurityException(e.getMessage());
+        }
+    }
+
+    @Operation(
         summary = "Delete an assignment",
         description = "Allows teachers to delete their own assignments"
     )
@@ -146,7 +211,7 @@ public class AssignmentController {
         @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Assignment not found")
     })
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @DeleteMapping("/{assignmentId}")
     public ResponseEntity<ApiResponse_<Void>> deleteAssignment(
             @Parameter(description = "ID of the assignment to delete", required = true)
@@ -154,8 +219,11 @@ public class AssignmentController {
             Principal principal
     ) {
         try {
-            Long teacherId = appUserService.findByUsername(principal.getName()).getId();
-            assignmentService.deleteAssignment(assignmentId, teacherId);
+            AppUser currentUser = appUserService.findByUsername(principal.getName());
+            if (currentUser.getRole() == Role.ROLE_TEACHER && currentUser.equals(assignmentService.findById(assignmentId).getAssignedBy())) {
+                throw new AccessDeniedException("Teacher can only delete his/her own assignments");
+            }
+            assignmentService.deleteAssignment(assignmentId, currentUser.getId());
             
             return ResponseEntity.ok(new ApiResponse_<>(
                 true,
