@@ -29,7 +29,7 @@ const Dashboard = () => {
                 options={sidebarOptions}
             />
             <div className="page-right">
-                <Header 
+                <Header
                     title={selectedOption.title}
                     user={{
                         name : user.username,
@@ -42,6 +42,5 @@ const Dashboard = () => {
             </div>
         </div>
     );
-
 }
 export default Dashboard

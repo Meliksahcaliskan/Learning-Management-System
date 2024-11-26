@@ -9,12 +9,14 @@
     color: var(--black);
 
     border: 1px solid var(--placeholder-text);
+    line-height: 1.1;
 }
 
 .assignment-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
 }
 
 .assignment-header-info {
@@ -37,6 +39,7 @@
     place-items: center;
     padding: 8px;
     border: 1px solid var(--placeholder-text);
+    cursor: pointer;
 }
 
 .assignment-body {
@@ -71,6 +74,7 @@
     border-radius: 4px;
     color: var(--title);
     width: fit-content;
+    cursor: pointer;
 }
 
 .delete-btn {

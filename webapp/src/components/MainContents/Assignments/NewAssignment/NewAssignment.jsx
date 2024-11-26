@@ -1,12 +1,10 @@
 import './NewAssignment.css';
-import InputField from '../../../common/InputField/InputField';
-import { useContext, useState } from 'react';
 import { AuthContext } from '../../../../contexts/AuthContext';
 import assignmentService from '../../../../services/assignmentService';
+import { useState } from 'react';
 
-const NewAssignment = () => {
+const NewAssignment = ({user, classes, courses}) => {
 
-    const { user } = useContext(AuthContext);
 
     const [AssignmentData, setAssignmentData] = useState({
         className : '',
@@ -28,6 +26,7 @@ const NewAssignment = () => {
 
 
       const handleFileUpload = (e) => {
+        console.log(e.target.files[0]);
         setAssignmentData({
             ...AssignmentData,
             document : e.target.files[0],
@@ -62,6 +61,12 @@ const NewAssignment = () => {
                     name='className'
                   >
                     {/* get the list of classes of the school */}
+                    {classes.map((singleClass) => (
+                        <option value={singleClass.id} key={singleClass.id}>
+                            {singleClass.name}
+                        </option>
+                    ))}
+
                   </select>
                 </div>
                 <div className="input-container">
@@ -73,6 +78,12 @@ const NewAssignment = () => {
                         name='subjectName'
                     >
                         {/* get the list of subjects */}
+                        {courses.map((singleCourse) => (
+                            <option value={singleCourse.id} key={singleCourse.id}>
+                                {singleCourse.title}
+                            </option>
+                        ))}
+
                     </select>
                 </div>
                 <div className="input-container">

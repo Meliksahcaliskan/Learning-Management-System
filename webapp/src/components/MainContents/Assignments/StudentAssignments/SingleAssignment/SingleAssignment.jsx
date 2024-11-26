@@ -31,35 +31,39 @@ const SingleAssigment = ({ assignment }) => {
         setuploadedFile(null);
     }
 
+    const handleDocumentDownload = () => {
+        console.log("handling document download");
+    }
+
     return(
         <div className="assignment-container">
-            <div className="assignment-header">
+            <div className="assignment-header" onClick={() => setIsExpanded((prev) => !prev)}>
                 <div className="assignment-header-info">
                     <img src="https://placeholder.pics/svg/32x32" alt="icon" />
                     <span className="assignment-subject">{assignment.subject}</span>
                     <span className="assignment-title">{assignment.title}</span>
                     <span className="assignment-dueDate">{(new Date(assignment.dueDate)).toLocaleDateString("en-GB")}</span>
                 </div>
-                <button
-                    className="expand-btn"
-                    onClick={() => setIsExpanded((prev) => !prev)}   
-                >
+                <button className="expand-btn">
                     <img src={isExpanded ? arrowUp : arrowDown} alt="toggle assignment details" />
                 </button>
             </div>
             {isExpanded && (
                 <div className="assignment-body">
                     <div style={{border : '1px solid grey'}}></div>
+
                     <div className="assignment-body-section">
                         <label className="assignment-section-title">Açıklama</label>
                         <p className="assignment-section-text">{assignment.description}</p>
                     </div>
+                    
                     {assignment.document &&
                         <div className="assignment-body-section">
                             <label className="assignment-section-title">Yardımcı materyaller</label>
-                            <span className="assignment-document">{assignment.document}</span>
+                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.document}</span>
                         </div>    
                     }
+                    
                     {assignment.status === 'PENDING' && (
                         <>
                             <div className="assignment-body-section">
@@ -74,7 +78,7 @@ const SingleAssigment = ({ assignment }) => {
                                 ) : (
                                     <>
                                         <label className="assignment-section-title">Döküman ekle</label>
-                                        <input type="file" onChange={handleFileUpload} />
+                                        <input type="file" onChange={handleFileUpload}/>
                                     </>
                                 )}
                             </div>
@@ -85,7 +89,7 @@ const SingleAssigment = ({ assignment }) => {
                     {(assignment.status !== 'PENDING' && assignment.uploadedDocument) &&
                         <div className="assignment-body-section">
                             <label className="assignment-section-title">Eklenen dökümanlar</label>
-                            <span className="assignment-document">{assignment.uploadedDocument}</span>
+                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.uploadedDocument}</span>
                         </div>
                     }
                     {assignment.status === 'SUBMITTED' &&

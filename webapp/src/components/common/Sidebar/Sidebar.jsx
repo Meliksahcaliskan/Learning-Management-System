@@ -1,14 +1,17 @@
 import './Sidebar.css';
 import LogoPlaceholder from '../LogoPlaceholder/LogoPlaceholder';
 import NavigationOption from '../NavigationOption/NavigationOption';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
+import { AuthContext } from '../../../contexts/AuthContext';
 
 const Sidebar = ({options, onSelect}) => {
 
     const [highlightedOption, setHighlightedOption] = useState(0);
     
+    const { logout } = useContext(AuthContext);
     const handleLogout = () => {
         console.log('log out the user');
+        logout();
     }
 
     return(
