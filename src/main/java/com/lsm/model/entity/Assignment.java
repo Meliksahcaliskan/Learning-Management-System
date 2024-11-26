@@ -65,4 +65,10 @@ public class Assignment {
 
     @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL)
     private Set<AssignmentDocument> studentSubmissions = new HashSet<>();
+
+    @Column(name = "grade")
+    private Double grade;
+
+    @Column(name = "feedback")
+    private String feedback;
 }

@@ -19,6 +19,8 @@ public class AssignmentDTO {
     private String message;
     private List<AssignmentDocumentDTO> teacherDocuments;
     private List<AssignmentDocumentDTO> studentSubmissions;
+    private Double grade;
+    private String feedback;
 
     // Default constructor
     // public AssignmentDTO() {}
@@ -36,6 +38,8 @@ public class AssignmentDTO {
         this.studentSubmissions = assignment.getStudentSubmissions().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+        this.grade = assignment.getGrade();
+        this.feedback = assignment.getFeedback();
     }
 
     private AssignmentDocumentDTO convertToDTO(AssignmentDocument doc) {

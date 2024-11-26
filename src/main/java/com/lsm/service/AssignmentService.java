@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.lsm.model.DTOs.GradeDTO;
 import com.lsm.model.entity.ClassEntity;
 import com.lsm.model.entity.Course;
 import com.lsm.model.entity.enums.AssignmentStatus;
@@ -85,6 +86,10 @@ public class AssignmentService {
             if (assignment.getStatus() != AssignmentStatus.SUBMITTED) {
                 throw new AccessDeniedException("Can only grade SUBMITTED assignments");
             }
+        }
+
+        if (assignment.getGrade() != null && newStatus != AssignmentStatus.GRADED) {
+            throw new IllegalStateException("Cannot change status of graded assignments");
         }
     }
 
@@ -208,6 +213,59 @@ public class AssignmentService {
         }
 
         assignmentRepository.delete(assignment);
+    }
+
+    @Transactional
+    public Assignment gradeAssignment(Long assignmentId, GradeDTO gradeDTO, AppUser currentUser)
+            throws AccessDeniedException {
+        Assignment assignment = findById(assignmentId);
+
+        // Validate that only teachers can grade their own assignments
+        if (currentUser.getRole() != Role.ROLE_TEACHER ||
+                !assignment.getAssignedBy().equals(currentUser)) {
+            throw new AccessDeniedException("Only the assigned teacher can grade this assignment");
+        }
+
+        // Validate that assignment is in SUBMITTED status
+        if (assignment.getStatus() != AssignmentStatus.SUBMITTED) {
+            throw new IllegalStateException("Can only grade assignments that have been submitted");
+        }
+
+        assignment.setGrade(gradeDTO.getGrade());
+        assignment.setFeedback(gradeDTO.getFeedback());
+        assignment.setStatus(AssignmentStatus.GRADED);
+
+        return assignmentRepository.save(assignment);
+    }
+
+    @Transactional
+    public Assignment unsubmitAssignment(Long assignmentId, AppUser currentUser)
+            throws AccessDeniedException {
+        Assignment assignment = findById(assignmentId);
+
+        // Validate that only the student can unsubmit their assignment
+        if (currentUser.getRole() != Role.ROLE_STUDENT) {
+            throw new AccessDeniedException("Only students can unsubmit assignments");
+        }
+
+        // Check if the assignment belongs to the student's class
+        if (!assignment.getClassEntity().getStudents().contains(currentUser)) {
+            throw new AccessDeniedException("You can only unsubmit your own assignments");
+        }
+
+        // Validate that assignment is in SUBMITTED status and not yet graded
+        if (assignment.getStatus() != AssignmentStatus.SUBMITTED) {
+            throw new IllegalStateException("Can only unsubmit assignments in SUBMITTED status");
+        }
+
+        if (assignment.getGrade() != null) {
+            throw new IllegalStateException("Cannot unsubmit graded assignments");
+        }
+
+        // Reset to pending status
+        assignment.setStatus(AssignmentStatus.PENDING);
+
+        return assignmentRepository.save(assignment);
     }
 
     public Assignment findById(Long id) {

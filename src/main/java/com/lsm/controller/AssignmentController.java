@@ -1,9 +1,6 @@
 package com.lsm.controller;
 
-import com.lsm.model.DTOs.AssignmentDTO;
-import com.lsm.model.DTOs.AssignmentDocumentDTO;
-import com.lsm.model.DTOs.AssignmentRequestDTO;
-import com.lsm.model.DTOs.AssignmentStatusUpdateDTO;
+import com.lsm.model.DTOs.*;
 import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.AssignmentDocument;
 import com.lsm.model.entity.base.AppUser;
@@ -298,5 +295,64 @@ public class AssignmentController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
+    }
+
+    @Operation(
+            summary = "Grade an assignment",
+            description = "Allows teachers to grade submitted assignments and provide feedback"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Assignment graded successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid grade data"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Assignment not found")
+    })
+    @PreAuthorize("hasRole('ROLE_TEACHER')")
+    @PatchMapping("/{assignmentId}/grade")
+    public ResponseEntity<ApiResponse_<AssignmentDTO>> gradeAssignment(
+            @PathVariable @Positive Long assignmentId,
+            @Valid @RequestBody GradeDTO gradeDTO,
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            Assignment graded = assignmentService.gradeAssignment(assignmentId, gradeDTO, currentUser);
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Assignment graded successfully",
+                    new AssignmentDTO(graded, "Graded successfully")
+            ));
+        } catch (AccessDeniedException e) {
+            throw new SecurityException(e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Unsubmit an assignment",
+            description = "Allows students to unsubmit their assignments if they haven't been graded yet"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Assignment unsubmitted successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Assignment not found")
+    })
+    @PatchMapping("/{assignmentId}/unsubmit")
+    public ResponseEntity<ApiResponse_<AssignmentDTO>> unsubmitAssignment(
+            @PathVariable @Positive Long assignmentId,
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            Assignment unsubmitted = assignmentService.unsubmitAssignment(assignmentId, currentUser);
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Assignment unsubmitted successfully",
+                    new AssignmentDTO(unsubmitted, "Unsubmitted successfully")
+            ));
+        } catch (AccessDeniedException e) {
+            throw new SecurityException(e.getMessage());
+        }
     }
 }
