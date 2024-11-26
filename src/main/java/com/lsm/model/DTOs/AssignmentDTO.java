@@ -1,15 +1,26 @@
 package com.lsm.model.DTOs;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.lsm.model.entity.Assignment;
+import com.lsm.model.entity.AssignmentDocument;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class AssignmentDTO {
     private Long id; // Unique identifier for the assignment
     private String title;
     private String description;
     private LocalDate dueDate;
     private String message;
+    private List<AssignmentDocumentDTO> teacherDocuments;
+    private List<AssignmentDocumentDTO> studentSubmissions;
+    private Double grade;
+    private String feedback;
 
     // Default constructor
     // public AssignmentDTO() {}
@@ -21,46 +32,25 @@ public class AssignmentDTO {
         this.description = assignment.getDescription();
         this.dueDate = assignment.getDueDate();
         this.message = message;
+        this.teacherDocuments = assignment.getTeacherDocuments().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        this.studentSubmissions = assignment.getStudentSubmissions().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        this.grade = assignment.getGrade();
+        this.feedback = assignment.getFeedback();
     }
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public LocalDate getDueDate() {
-        return dueDate;
-    }
-
-    public void setDueDate(LocalDate dueDate) {
-        this.dueDate = dueDate;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
+    private AssignmentDocumentDTO convertToDTO(AssignmentDocument doc) {
+        return new AssignmentDocumentDTO(
+                doc.getId(),
+                doc.getFileName(),
+                doc.getFileType(),
+                doc.getFileSize(),
+                doc.getUploadTime(),
+                doc.getUploadedBy().getUsername(),
+                doc.isTeacherUpload()
+        );
     }
 }

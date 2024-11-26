@@ -1,28 +1,26 @@
 package com.lsm.model.entity;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.lsm.model.entity.base.AppUser;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "classes")
 public class ClassEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "class_seq")
+    @SequenceGenerator(name = "class_seq", sequenceName = "classes_id_seq", allocationSize = 1)
     private Long id;
 
     @Column(nullable = false, length = 100)
@@ -35,7 +33,7 @@ public class ClassEntity {
     @JoinColumn(name = "teacher_id", nullable = false)
     private AppUser teacher;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "class_students",
         joinColumns = @JoinColumn(name = "class_id"),
@@ -44,66 +42,14 @@ public class ClassEntity {
     private List<AppUser> students;
 
     @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL)
-    private List<Assignment> assignments;
+    private Set<Assignment> assignments = new HashSet<>();
 
-    // Default constructor
-    public ClassEntity() {
-    }
-
-    // Parameterized constructor
-    public ClassEntity(String name, String description, AppUser teacher) {
-        this.name = name;
-        this.description = description;
-        this.teacher = teacher;
-    }
-
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public AppUser getTeacher() {
-        return teacher;
-    }
-
-    public void setTeacher(AppUser teacher) {
-        this.teacher = teacher;
-    }
-
-    public List<AppUser> getStudents() {
-        return students;
-    }
-
-    public void setStudents(List<AppUser> students) {
-        this.students = students;
-    }
-
-    public List<Assignment> getAssignments() {
-        return assignments;
-    }
-
-    public void setAssignments(List<Assignment> assignments) {
-        this.assignments = assignments;
-    }
+    @ManyToMany
+    @JoinTable(
+            name = "class_courses",
+            joinColumns = @JoinColumn(name = "class_id"),
+            inverseJoinColumns = @JoinColumn(name = "course_id")
+    )
+    private Set<Course> courses = new HashSet<>();
 }
 

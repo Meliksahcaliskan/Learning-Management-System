@@ -1,149 +1,141 @@
 package com.lsm.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
-import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.DefaultSecurityFilterChain;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import com.lsm.security.JwtAuthenticationFilter;
 import com.lsm.service.AppUserService;
 import com.lsm.service.JwtTokenProvider;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
-@ExtendWith(MockitoExtension.class)
-public class SecurityConfigTest {
+import java.util.Collections;
+import java.util.List;
 
-    @Mock
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(SecurityConfig.class)
+@Import(SecurityConfig.class)
+class SecurityConfigTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
     private AppUserService appUserService;
 
-    @Mock
-    private AuthenticationConfiguration authenticationConfiguration;
-
-    @Mock
-    private UserDetailsService userDetailsService;
-
-    @Mock
+    @MockBean
     private JwtTokenProvider jwtTokenProvider;
 
-    @Mock
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @MockBean
+    private HandlerExceptionResolver handlerExceptionResolver;
 
-    @Mock
-    private HttpSecurity httpSecurity;
-
-    @Mock
-    private CsrfConfigurer<HttpSecurity> csrfConfigurer;
-
-    @Mock
-    private AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authRegistry;
-
-    @Mock
-    private DefaultSecurityFilterChain securityFilterChain;
-
-    @InjectMocks
-    private SecurityConfig securityConfig;
+    private UserDetails testTeacher;
+    private UserDetails testStudent;
+    private String validToken;
 
     @BeforeEach
-    void setUp() throws Exception {
-        securityConfig = new SecurityConfig(appUserService);
+    void setUp() {
+        // Setup test users
+        testTeacher = new User("teacher@test.com", "password",
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_TEACHER")));
+        testStudent = new User("student@test.com", "password",
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_STUDENT")));
 
-        // Mock the builder pattern to return httpSecurity for method chaining
-        when(httpSecurity.csrf(any())).thenReturn(httpSecurity);
-        when(httpSecurity.authorizeHttpRequests(any())).thenReturn(httpSecurity);
-        when(httpSecurity.addFilterBefore(any(), any())).thenReturn(httpSecurity);
-        when(httpSecurity.build()).thenReturn(securityFilterChain);
+        validToken = "valid.jwt.token";
+
+        // Configure JWT token provider mock
+        when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
+        when(jwtTokenProvider.getAuthentication(validToken))
+                .thenReturn(new UsernamePasswordAuthenticationToken(testTeacher, null, testTeacher.getAuthorities()));
     }
 
     @Test
-    @MockitoSettings(strictness = Strictness.LENIENT)
-    void userDetailsService_ShouldReturnAppUserService() {
-        assertEquals(appUserService, securityConfig.userDetailsService());
-    }
-
-    @Test
-    @MockitoSettings(strictness = Strictness.LENIENT)
-    void passwordEncoder_ShouldNotBeNull() {
-        assertNotNull(securityConfig.passwordEncoder());
-    }
-
-    /*
-    @Test
-    void authenticationProvider_ShouldReturnConfiguredProvider() {
-        DaoAuthenticationProvider provider = securityConfig.authenticationProvider();
-        
-        assertNotNull(provider);
-        assertEquals(appUserService, provider.getUserDetailsService());
-        assertNotNull(provider.getPasswordEncoder());
-    }
-    */
-
-    @Test
-    @MockitoSettings(strictness = Strictness.LENIENT)
-    void authenticationManager_ShouldReturnFromConfiguration() throws Exception {
-        AuthenticationManager mockAuthManager = mock(AuthenticationManager.class);
-        when(authenticationConfiguration.getAuthenticationManager()).thenReturn(mockAuthManager);
-
-        AuthenticationManager result = securityConfig.authenticationManager(authenticationConfiguration);
-
-        assertNotNull(result);
-        assertEquals(mockAuthManager, result);
-    }
-
-    @Test
-    @MockitoSettings(strictness = Strictness.LENIENT)
-    void passwordEncoder_ShouldBeBCryptPasswordEncoder() {
-        PasswordEncoder encoder = securityConfig.passwordEncoder();
-        
-        assertNotNull(encoder);
-        assertTrue(encoder.matches("password", encoder.encode("password")));
-    }
-
-    @Test
-    @MockitoSettings(strictness = Strictness.LENIENT)
-    @SuppressWarnings("unchecked")
-    void securityFilterChain_ShouldConfigureSecurityCorrectly() throws Exception {
-        // Arrange: Mock logout with the correct type
-        when(httpSecurity.logout(any(Customizer.class))).thenAnswer(invocation -> httpSecurity);
-        
-        // Act
-        SecurityFilterChain result = securityConfig.securityFilterChain(httpSecurity, jwtAuthenticationFilter);
-
-        // Assert
-        assertNotNull(result);
-        
-        // Verify all security configurations were called
-        verify(httpSecurity).csrf(any());
-        verify(httpSecurity).authorizeHttpRequests(any());
-        verify(httpSecurity).addFilterBefore(
-            eq(jwtAuthenticationFilter), 
-            eq(UsernamePasswordAuthenticationFilter.class)
+    void whenAccessingPublicEndpoints_thenSuccess() throws Exception {
+        List<String> publicEndpoints = List.of(
+                "/api/v1/auth/register",
+                "/api/v1/auth/login",
+                "/api/v1/auth/refresh",
+                "/health",
+                "/swagger-ui.html",
+                "/v3/api-docs"
         );
-        verify(httpSecurity).logout(any());  // Ensure logout is configured
-        verify(httpSecurity).build();
+
+        for (String endpoint : publicEndpoints) {
+            mockMvc.perform(get(endpoint))
+                    .andExpect(status().isNotFound()); // Expect 404 since endpoints don't exist in test context
+        }
     }
 
+    @Test
+    void whenAccessingProtectedEndpointWithoutAuth_thenUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/assignments"))
+                .andExpect(status().isUnauthorized());
+    }
 
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void whenTeacherAccessesAssignmentEndpoints_thenSuccess() throws Exception {
+        mockMvc.perform(post("/api/v1/assignments/create"))
+                .andExpect(status().isNotFound()); // 404 since endpoint doesn't exist in test context
 
+        mockMvc.perform(put("/api/v1/assignments/1"))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(delete("/api/v1/assignments/1"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void whenStudentAccessesTeacherEndpoints_thenForbidden() throws Exception {
+        mockMvc.perform(post("/api/v1/assignments/create"))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(put("/api/v1/assignments/1"))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(delete("/api/v1/assignments/1"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void whenStudentAccessesStudentEndpoints_thenSuccess() throws Exception {
+        mockMvc.perform(get("/api/v1/assignments/student/1"))
+                .andExpect(status().isNotFound()); // 404 since endpoint doesn't exist in test context
+    }
+
+    @Test
+    void testCorsConfiguration() throws Exception {
+        mockMvc.perform(options("/api/v1/assignments")
+                        .header("Access-Control-Request-Method", "GET")
+                        .header("Origin", "http://localhost:3000"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("Access-Control-Allow-Methods"))
+                .andExpect(header().exists("Access-Control-Allow-Headers"));
+    }
+
+    @Test
+    void testSecurityHeaders() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/login"))
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("X-XSS-Protection", "1; mode=block"))
+                .andExpect(header().exists("Content-Security-Policy"));
+    }
+
+    @Test
+    void whenLogout_thenSuccess() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/logout"))
+                .andExpect(status().isOk());
+    }
 }

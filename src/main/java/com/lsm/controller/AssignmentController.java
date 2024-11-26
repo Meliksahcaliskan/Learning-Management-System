@@ -1,108 +1,358 @@
 package com.lsm.controller;
 
+import com.lsm.model.DTOs.*;
+import com.lsm.model.entity.Assignment;
+import com.lsm.model.entity.AssignmentDocument;
+import com.lsm.model.entity.base.AppUser;
+import com.lsm.model.entity.enums.Role;
+import com.lsm.service.AppUserService;
+import com.lsm.service.AssignmentDocumentService;
+import com.lsm.service.AssignmentService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.security.Principal;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.lsm.model.DTOs.AssignmentDTO;
-import com.lsm.model.DTOs.AssignmentRequestDTO;
-import com.lsm.model.entity.Assignment;
-import com.lsm.model.entity.base.AppUser;
-import com.lsm.service.AppUserService;
-import com.lsm.service.AssignmentService;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-
 @RestController
-@RequestMapping("/api/assignments")
+@RequestMapping("/api/v1/assignments")
+@RequiredArgsConstructor
+@Validated
+@Tag(name = "Assignment Management", description = "APIs for managing student assignments")
+@SecurityRequirement(name = "bearerAuth")
 public class AssignmentController {
-    private AssignmentService assignmentService;
-    private AppUserService appUserService;
 
-    @Autowired
-    public AssignmentController(AssignmentService assignmentService, AppUserService appUserService) {
-        this.assignmentService = assignmentService;
-        this.appUserService = appUserService;
-    }
+    private final AssignmentService assignmentService;
+    private final AppUserService appUserService;
+    private final AssignmentDocumentService documentService;
 
+    @Operation(
+        summary = "Create a new assignment",
+        description = "Allows teachers to create a new assignment for students"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Assignment created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+        @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     @PostMapping("/createAssignment")
-    public ResponseEntity<?> createAssignment(@RequestBody AssignmentRequestDTO assignmentRequestDTO, Principal principal) {
+    public ResponseEntity<ApiResponse_<AssignmentDTO>> createAssignment(
+            @Valid @RequestBody AssignmentRequestDTO assignmentRequest,
+            Principal principal
+    ) {
         try {
-            // Extract the logged-in user's ID based on the principal (username)
-            Long loggedInUserId = appUserService.findByUsername(principal.getName()).getId();
-
-            // Call the service method with the logged-in user ID for authorization checks
-            Assignment assignment = assignmentService.createAssignment(assignmentRequestDTO, loggedInUserId);
-
-            AssignmentDTO assignmentDTO = new AssignmentDTO(assignment, "Assigned successfully.");
-            return ResponseEntity.status(HttpStatus.CREATED).body(assignmentDTO);
+            Long teacherId = appUserService.findByUsername(principal.getName()).getId();
+            Assignment assignment = assignmentService.createAssignment(assignmentRequest, teacherId);
             
+            return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(new ApiResponse_<>(
+                    true,
+                    "Assignment created successfully",
+                    new AssignmentDTO(assignment, "Created successfully")
+                ));
         } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new AssignmentDTO(null, e.getMessage()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new AssignmentDTO(null, e.getMessage()));
+            throw new SecurityException(e.getMessage());
         }
     }
 
-
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Get user assignments")
-    @GetMapping("/displayAssignments/{studentId}")
-    public ResponseEntity<?> displayAssignmentsForStudent(@PathVariable Long studentId, Authentication authentication) {
-        AppUser userDetails = (AppUser) authentication.getPrincipal();
-        Long loggedInStudentId = userDetails.getId();
-
+    @Operation(
+        summary = "Get student assignments",
+        description = "Retrieve assignments for a specific student. Students can only access their own assignments."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Assignments retrieved successfully"),
+        @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+        @ApiResponse(responseCode = "404", description = "Student not found")
+    })
+    @GetMapping("/student/{studentId}")
+    public ResponseEntity<ApiResponse_<List<AssignmentDTO>>> getStudentAssignments(
+            @Parameter(description = "ID of the student", required = true)
+            @PathVariable @Positive Long studentId,
+            Authentication authentication
+    ) {
         try {
-            List<AssignmentDTO> assignments = assignmentService.displayAssignmentsForStudent(studentId, loggedInStudentId);
-            return ResponseEntity.ok(assignments);
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            // Additional security check to ensure students can only view their own assignments
+            if (!currentUser.getId().equals(studentId)) {
+                throw new AccessDeniedException("You can only view your own assignments");
+            }
+            List<AssignmentDTO> assignments = assignmentService
+                .getAssignmentsByClass(studentId, currentUser);
+            
+            return ResponseEntity.ok(new ApiResponse_<>(
+                true,
+                "Assignments retrieved successfully",
+                assignments
+            ));
         } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            throw new SecurityException(e.getMessage());
         }
     }
 
-    @PutMapping("/updateAssignment/{assignmentId}")
-    public ResponseEntity<?> updateAssignment(@PathVariable Long assignmentId, 
-                                              @RequestBody AssignmentRequestDTO updateRequest,
-                                              Authentication authentication) {
-        AppUser userDetails = (AppUser) authentication.getPrincipal();
-        Long loggedInTeacherId = userDetails.getId();
-
+    @Operation(
+        summary = "Update an assignment",
+        description = "Allows teachers to update their own assignments"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Assignment updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+        @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+        @ApiResponse(responseCode = "404", description = "Assignment not found")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    @PutMapping("/{assignmentId}")
+    public ResponseEntity<ApiResponse_<AssignmentDTO>> updateAssignment(
+            @Parameter(description = "ID of the assignment to update", required = true)
+            @PathVariable @Positive Long assignmentId,
+            @Valid @RequestBody AssignmentRequestDTO updateRequest,
+            Authentication authentication
+    ) {
         try {
-            Assignment updatedAssignment = assignmentService.updateAssignment(assignmentId, updateRequest, loggedInTeacherId);
-            return ResponseEntity.ok(new AssignmentDTO(updatedAssignment, "Assignment updated successfully"));
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            if (currentUser.getRole() == Role.ROLE_TEACHER && currentUser.equals(assignmentService.findById(assignmentId).getAssignedBy())) {
+                throw new AccessDeniedException("Teacher can only update his/her own assignments");
+            }
+            Assignment updated = assignmentService.updateAssignment(assignmentId, updateRequest, currentUser.getId());
+            
+            return ResponseEntity.ok(new ApiResponse_<>(
+                true,
+                "Assignment updated successfully",
+                new AssignmentDTO(updated, "Updated successfully")
+            ));
         } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            throw new SecurityException(e.getMessage());
         }
     }
 
-    @DeleteMapping("/deleteAssignment/{assignmentId}")
-    public ResponseEntity<?> deleteAssignment(@PathVariable Long assignmentId, Principal principal) {
+    @Operation(
+            summary = "Update assignment status",
+            description = "Update the status of an assignment. Students can only update to SUBMITTED status. " +
+                    "Teachers can update their own assignments to GRADED status. " +
+                    "Admins and Coordinators can update to any status."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Assignment status updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid status update request"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Assignment not found")
+    })
+    @PatchMapping("/{assignmentId}/status")
+    public ResponseEntity<ApiResponse_<AssignmentDTO>> updateAssignmentStatus(
+            @Parameter(description = "ID of the assignment to update", required = true)
+            @PathVariable @Positive Long assignmentId,
+            @Valid @RequestBody AssignmentStatusUpdateDTO statusUpdate,
+            Authentication authentication
+    ) {
         try {
-            Long loggedInUserId = appUserService.findByUsername(principal.getName()).getId();
-            assignmentService.deleteAssignment(assignmentId, loggedInUserId);
-            return ResponseEntity.status(HttpStatus.OK).body("Assignment deleted successfully.");
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            Assignment updated = assignmentService.updateAssignmentStatus(assignmentId, statusUpdate.getStatus(), currentUser);
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Assignment status updated successfully",
+                    new AssignmentDTO(updated, "Status updated successfully")
+            ));
         } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            throw new SecurityException(e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Get all assignments",
+            description = "Retrieve all assignments in the system. Only accessible by administrators and coordinators."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Assignments retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    @GetMapping
+    public ResponseEntity<ApiResponse_<List<AssignmentDTO>>> getAllAssignments(
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            List<AssignmentDTO> assignments = assignmentService.getAllAssignments();
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "All assignments retrieved successfully",
+                    assignments
+            ));
+        } catch (Exception e) {
+            throw new SecurityException(e.getMessage());
+        }
+    }
+
+    @Operation(
+        summary = "Delete an assignment",
+        description = "Allows teachers to delete their own assignments"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Assignment deleted successfully"),
+        @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+        @ApiResponse(responseCode = "404", description = "Assignment not found")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    @DeleteMapping("/{assignmentId}")
+    public ResponseEntity<ApiResponse_<Void>> deleteAssignment(
+            @Parameter(description = "ID of the assignment to delete", required = true)
+            @PathVariable @Positive Long assignmentId,
+            Principal principal
+    ) {
+        try {
+            AppUser currentUser = appUserService.findByUsername(principal.getName());
+            if (currentUser.getRole() == Role.ROLE_TEACHER && currentUser.equals(assignmentService.findById(assignmentId).getAssignedBy())) {
+                throw new AccessDeniedException("Teacher can only delete his/her own assignments");
+            }
+            assignmentService.deleteAssignment(assignmentId, currentUser.getId());
+            
+            return ResponseEntity.ok(new ApiResponse_<>(
+                true,
+                "Assignment deleted successfully",
+                null
+            ));
+        } catch (AccessDeniedException e) {
+            throw new SecurityException(e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Upload assignment document",
+            description = "Upload a document for an assignment. Teachers can upload assignment materials, " +
+                    "students can upload their submissions."
+    )
+    @PostMapping("/{assignmentId}/documents")
+    public ResponseEntity<ApiResponse_<AssignmentDocumentDTO>> uploadDocument(
+            @PathVariable Long assignmentId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(defaultValue = "false") boolean isTeacherUpload,
+            Authentication authentication) {
+        AppUser currentUser = (AppUser) authentication.getPrincipal();
+        AssignmentDocument document = null;
+        try {
+            document = documentService.uploadDocument(
+                    file, assignmentId, currentUser, isTeacherUpload);
+        } catch (IOException e) {
+            throw new SecurityException(e.getMessage());
+        }
+        AssignmentDocumentDTO dto = new AssignmentDocumentDTO(
+                document.getId(),
+                document.getFileName(),
+                document.getFileType(),
+                document.getFileSize(),
+                document.getUploadTime(),
+                document.getUploadedBy().getUsername(),
+                document.isTeacherUpload()
+        );
+
+        return ResponseEntity.ok(new ApiResponse_<>(
+                true,
+                "Document uploaded successfully",
+                dto
+        ));
+    }
+
+    @Operation(
+            summary = "Download assignment document",
+            description = "Download a document associated with an assignment"
+    )
+    @GetMapping("/documents/{documentId}")
+    public ResponseEntity<Resource> downloadDocument(
+            @PathVariable Long documentId,
+            Authentication authentication) {
+        AppUser currentUser = (AppUser) authentication.getPrincipal();
+        Resource resource = null;
+        try {
+            resource = documentService.downloadDocument(documentId, currentUser);
+        } catch (IOException e) {
+            throw new SecurityException(e.getMessage());
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
+    }
+
+    @Operation(
+            summary = "Grade an assignment",
+            description = "Allows teachers to grade submitted assignments and provide feedback"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Assignment graded successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid grade data"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Assignment not found")
+    })
+    @PreAuthorize("hasRole('ROLE_TEACHER')")
+    @PatchMapping("/{assignmentId}/grade")
+    public ResponseEntity<ApiResponse_<AssignmentDTO>> gradeAssignment(
+            @PathVariable @Positive Long assignmentId,
+            @Valid @RequestBody GradeDTO gradeDTO,
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            Assignment graded = assignmentService.gradeAssignment(assignmentId, gradeDTO, currentUser);
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Assignment graded successfully",
+                    new AssignmentDTO(graded, "Graded successfully")
+            ));
+        } catch (AccessDeniedException e) {
+            throw new SecurityException(e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Unsubmit an assignment",
+            description = "Allows students to unsubmit their assignments if they haven't been graded yet"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Assignment unsubmitted successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Assignment not found")
+    })
+    @PatchMapping("/{assignmentId}/unsubmit")
+    public ResponseEntity<ApiResponse_<AssignmentDTO>> unsubmitAssignment(
+            @PathVariable @Positive Long assignmentId,
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            Assignment unsubmitted = assignmentService.unsubmitAssignment(assignmentId, currentUser);
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Assignment unsubmitted successfully",
+                    new AssignmentDTO(unsubmitted, "Unsubmitted successfully")
+            ));
+        } catch (AccessDeniedException e) {
+            throw new SecurityException(e.getMessage());
         }
     }
 }

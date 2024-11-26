@@ -1,20 +1,30 @@
 package com.lsm.config;
 
+<<<<<<< HEAD
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+=======
+import com.lsm.service.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
+>>>>>>> origin/backend_dev-v2
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -22,73 +32,178 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.lsm.security.JwtAuthenticationFilter;
 import com.lsm.service.AppUserService;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.HandlerExceptionResolver;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
+@RequiredArgsConstructor
+@PropertySource("classpath:application.properties")
+@Slf4j
 public class SecurityConfig {
 
     private final AppUserService appUserService;
+    private final HandlerExceptionResolver handlerExceptionResolver;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    @Autowired
-    public SecurityConfig(AppUserService appUserService) {
-        this.appUserService = appUserService;
+    @Value("${cors.allowed-origins}")
+    private List<String> allowedOrigins;
+
+    @Value("${cors.allowed-methods}")
+    private List<String> allowedMethods;
+
+    @Value("${cors.allowed-headers}")
+    private List<String> allowedHeaders;
+
+    @Value("${cors.max-age}")
+    private Long maxAge;
+
+    @Bean
+    public HttpSessionSecurityContextRepository httpSessionSecurityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
     }
 
     @Bean
-    public UserDetailsService userDetailsService() {
-        return appUserService;
-    }
-
-
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(appUserService);
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider;
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(
+                jwtTokenProvider,
+                appUserService,
+                handlerExceptionResolver,
+                httpSessionSecurityContextRepository()
+        );
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
-        return httpSecurity
-                .csrf(csrf -> csrf.disable()) // disable csrf for stateless API
-                .authorizeHttpRequests(registry -> { // TODO: Register should be restricted later.
-                    registry.requestMatchers("/api/auth/register", "/api/auth/login", "/swagger-ui.html", "/swagger-ui/**", "/api-docs/**", "/css/**", "/js/**").permitAll();
-                    registry.requestMatchers(HttpMethod.POST, "api/assignments/createAssignment").hasAuthority("ROLE_TEACHER"); // Require login for all POST requests to /api/assignment/**
-                    registry.requestMatchers(HttpMethod.GET, "/api/assignments/displayAssignments/{studentId}").hasAuthority("ROLE_STUDENT");
-                    registry.requestMatchers(HttpMethod.PUT, "api/assignments/updateAssignment/{assignmentId}").hasAuthority("ROLE_TEACHER");
-                    registry.requestMatchers(HttpMethod.DELETE, "api/assignments/deleteAssignment/{assignmentId}").hasAuthority("ROLE_TEACHER");
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors
+                        .configurationSource(corsConfigurationSource())
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                        .accessDeniedHandler((request, response, ex) -> {
+                            response.setStatus(HttpStatus.FORBIDDEN.value());
+                            response.getWriter().write("Access Denied");
+                        })
+                )
+                .authorizeHttpRequests(registry -> {
+                    // Public endpoints (TODO: register must restricted for non-admin users later.)
+                    registry.requestMatchers(
+                            "/api/v1/auth/register",
+                            "/api/v1/auth/login",
+                            "/api/v1/auth/refresh",
+                            "/health",
+                            "/actuator/**"
+                    ).permitAll();
+
+                    // Swagger/OpenAPI endpoints
+                    registry.requestMatchers(
+                            "/swagger-ui.html",
+                            "/swagger-ui/**",
+                            "/v3/api-docs/**",
+                            "/api-docs/**"
+                    ).permitAll();
+
+                    // Static resources
+                    registry.requestMatchers(
+                            "/css/**",
+                            "/js/**",
+                            "/images/**",
+                            "/favicon.ico"
+                    ).permitAll();
+
+                    // Class endpoints
+                    registry.requestMatchers(HttpMethod.POST, "/api/v1/classes/**")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+
+                    registry.requestMatchers(HttpMethod.GET, "/api/v1/classes/**")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_STUDENT", "ROLE_ADMIN", "ROLE_COORDINATOR");
+
+                    registry.requestMatchers(HttpMethod.PUT, "/api/v1/classes/**")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+
+                    registry.requestMatchers(HttpMethod.DELETE, "/api/v1/classes/**")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+
+                    // Student management in classes
+                    registry.requestMatchers(HttpMethod.POST, "/api/v1/classes/*/students/*")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+
+                    registry.requestMatchers(HttpMethod.DELETE, "/api/v1/classes/*/students/*")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+
+                    // Assignment endpoints
+                    registry.requestMatchers(HttpMethod.POST, "/api/v1/assignments/**")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+                    registry.requestMatchers(HttpMethod.GET, "/api/v1/assignments/student/**")
+                            .hasAuthority("ROLE_STUDENT");
+                    registry.requestMatchers(HttpMethod.PUT, "/api/v1/assignments/**")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+                    registry.requestMatchers(HttpMethod.DELETE, "/api/v1/assignments/**")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+
+                    // Default policy
                     registry.anyRequest().authenticated();
                 })
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .logout(logout -> logout.permitAll())
+                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions.deny())
+                        .xssProtection(
+                                xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK)
+                        ).contentSecurityPolicy(
+                                cps -> cps.policyDirectives("script-src 'self'")
+                        )
+                        .contentSecurityPolicy(csp ->
+                                csp.policyDirectives("default-src 'self'; frame-ancestors 'none';"))
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/api/v1/auth/logout")
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(HttpStatus.OK.value());
+                        })
+                        .clearAuthentication(true)
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                )
                 .build();
     }
 
-    
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of("http://localhost:8080"));
-        configuration.setAllowedMethods(List.of("GET","POST"));
-        configuration.setAllowedHeaders(List.of("Authorization","Content-Type"));
+        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedMethods(allowedMethods);
+        configuration.setAllowedHeaders(allowedHeaders);
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(maxAge);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-
-        source.registerCorsConfiguration("/**",configuration);
+        source.registerCorsConfiguration("/**", configuration);
 
         return source;
     }
-    
 }
