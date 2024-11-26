@@ -1,8 +1,11 @@
 package com.lsm.model.DTOs;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.lsm.model.entity.Assignment;
+import com.lsm.model.entity.AssignmentDocument;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,6 +17,8 @@ public class AssignmentDTO {
     private String description;
     private LocalDate dueDate;
     private String message;
+    private List<AssignmentDocumentDTO> teacherDocuments;
+    private List<AssignmentDocumentDTO> studentSubmissions;
 
     // Default constructor
     // public AssignmentDTO() {}
@@ -25,5 +30,23 @@ public class AssignmentDTO {
         this.description = assignment.getDescription();
         this.dueDate = assignment.getDueDate();
         this.message = message;
+        this.teacherDocuments = assignment.getTeacherDocuments().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        this.studentSubmissions = assignment.getStudentSubmissions().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private AssignmentDocumentDTO convertToDTO(AssignmentDocument doc) {
+        return new AssignmentDocumentDTO(
+                doc.getId(),
+                doc.getFileName(),
+                doc.getFileType(),
+                doc.getFileSize(),
+                doc.getUploadTime(),
+                doc.getUploadedBy().getUsername(),
+                doc.isTeacherUpload()
+        );
     }
 }

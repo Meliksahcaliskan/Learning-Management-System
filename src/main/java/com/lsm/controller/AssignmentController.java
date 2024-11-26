@@ -1,12 +1,15 @@
 package com.lsm.controller;
 
 import com.lsm.model.DTOs.AssignmentDTO;
+import com.lsm.model.DTOs.AssignmentDocumentDTO;
 import com.lsm.model.DTOs.AssignmentRequestDTO;
 import com.lsm.model.DTOs.AssignmentStatusUpdateDTO;
 import com.lsm.model.entity.Assignment;
+import com.lsm.model.entity.AssignmentDocument;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.Role;
 import com.lsm.service.AppUserService;
+import com.lsm.service.AssignmentDocumentService;
 import com.lsm.service.AssignmentService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +20,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,7 +31,9 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.security.Principal;
 import java.util.List;
@@ -41,6 +48,7 @@ public class AssignmentController {
 
     private final AssignmentService assignmentService;
     private final AppUserService appUserService;
+    private final AssignmentDocumentService documentService;
 
     @Operation(
         summary = "Create a new assignment",
@@ -233,5 +241,62 @@ public class AssignmentController {
         } catch (AccessDeniedException e) {
             throw new SecurityException(e.getMessage());
         }
+    }
+
+    @Operation(
+            summary = "Upload assignment document",
+            description = "Upload a document for an assignment. Teachers can upload assignment materials, " +
+                    "students can upload their submissions."
+    )
+    @PostMapping("/{assignmentId}/documents")
+    public ResponseEntity<ApiResponse_<AssignmentDocumentDTO>> uploadDocument(
+            @PathVariable Long assignmentId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(defaultValue = "false") boolean isTeacherUpload,
+            Authentication authentication) {
+        AppUser currentUser = (AppUser) authentication.getPrincipal();
+        AssignmentDocument document = null;
+        try {
+            document = documentService.uploadDocument(
+                    file, assignmentId, currentUser, isTeacherUpload);
+        } catch (IOException e) {
+            throw new SecurityException(e.getMessage());
+        }
+        AssignmentDocumentDTO dto = new AssignmentDocumentDTO(
+                document.getId(),
+                document.getFileName(),
+                document.getFileType(),
+                document.getFileSize(),
+                document.getUploadTime(),
+                document.getUploadedBy().getUsername(),
+                document.isTeacherUpload()
+        );
+
+        return ResponseEntity.ok(new ApiResponse_<>(
+                true,
+                "Document uploaded successfully",
+                dto
+        ));
+    }
+
+    @Operation(
+            summary = "Download assignment document",
+            description = "Download a document associated with an assignment"
+    )
+    @GetMapping("/documents/{documentId}")
+    public ResponseEntity<Resource> downloadDocument(
+            @PathVariable Long documentId,
+            Authentication authentication) {
+        AppUser currentUser = (AppUser) authentication.getPrincipal();
+        Resource resource = null;
+        try {
+            resource = documentService.downloadDocument(documentId, currentUser);
+        } catch (IOException e) {
+            throw new SecurityException(e.getMessage());
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
     }
 }

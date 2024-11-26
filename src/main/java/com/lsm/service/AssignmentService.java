@@ -101,10 +101,10 @@ public class AssignmentService {
             throws AccessDeniedException {
         AppUser teacher = appUserRepository.findById(loggedInUserId)
                 .orElseThrow(() -> new EntityNotFoundException("Teacher not found"));
-        ClassEntity classEntity = classEntityRepository.findById(dto.getClassId()).orElseThrow(
+        ClassEntity classEntity = classEntityRepository.findClassEntityByName(dto.getClassName()).orElseThrow(
                 () -> new EntityNotFoundException("Class not found")
         );
-        Course course = courseRepository.findById(dto.getCourseId()).orElseThrow(
+        Course course = courseRepository.findCourseByName(dto.getCourseName()).orElseThrow(
                 () -> new EntityNotFoundException("Course not found")
         );
 
@@ -112,7 +112,7 @@ public class AssignmentService {
             throw new AccessDeniedException("Only teachers, admins, coordinators can create assignments");
         }
 
-        if (teacher.getRole() == Role.ROLE_TEACHER && !teacher.getTeacherDetails().getClasses().contains(dto.getClassId())) {
+        if (teacher.getRole() == Role.ROLE_TEACHER && !teacher.getTeacherDetails().getClasses().contains(classEntity.getId())) {
             throw new AccessDeniedException("Teachers can create assignments only their assigned classes");
         }
 
@@ -164,11 +164,11 @@ public class AssignmentService {
             throws AccessDeniedException {
         Assignment existingAssignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
-        ClassEntity classEntity = classEntityRepository.findById(dto.getClassId()).orElseThrow(
+        ClassEntity classEntity = classEntityRepository.findClassEntityByName(dto.getClassName()).orElseThrow(
                 () -> new EntityNotFoundException("Class not found")
         );
 
-        Course course = courseRepository.findById(dto.getCourseId()).orElseThrow(
+        Course course = courseRepository.findCourseByName(dto.getCourseName()).orElseThrow(
                 () -> new EntityNotFoundException("Course not found")
         );
 

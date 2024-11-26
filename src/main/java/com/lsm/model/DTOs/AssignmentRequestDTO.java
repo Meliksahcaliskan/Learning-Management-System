@@ -27,11 +27,11 @@ public class AssignmentRequestDTO {
     @Future(message = "Due date should be in the future.")
     private LocalDate dueDate;
 
-    @NotNull(message = "Class ID is required.")
-    private Long classId;
+    @NotNull(message = "Class name is required.")
+    private String className;
 
-    @NotNull(message = "Course ID is required.")
-    private Long courseId;
+    @NotNull(message = "Course name is required.")
+    private String courseName;
 
     @NotNull(message = "Assignment date is required.")
     private LocalDate date;
@@ -42,13 +42,13 @@ public class AssignmentRequestDTO {
 
     // Parameterized constructor
     public AssignmentRequestDTO(Long teacherId, String title, String description, LocalDate dueDate, 
-                                Long classId, Long courseId) {
+                                String className, String courseName) {
         this.teacherId = teacherId;
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
-        this.classId = classId;
-        this.courseId = courseId;
+        this.className = className;
+        this.courseName = courseName;
         this.date = LocalDate.now();
     }
 }

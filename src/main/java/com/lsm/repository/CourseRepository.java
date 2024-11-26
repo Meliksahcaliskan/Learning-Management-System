@@ -21,4 +21,6 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
     @Query("SELECT c FROM Course c WHERE c.id IN (SELECT cc.id FROM ClassEntity cl JOIN cl.courses cc WHERE cl.id = :classId)")
     List<Course> findByClassId(Long classId);
+
+    Optional<Course> findCourseByName(String courseName);
 }
