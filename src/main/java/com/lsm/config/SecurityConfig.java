@@ -1,15 +1,9 @@
 package com.lsm.config;
 
-<<<<<<< HEAD
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-=======
 import com.lsm.service.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
->>>>>>> origin/backend_dev-v2
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -200,6 +194,10 @@ public class SecurityConfig {
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(maxAge);
+
+        log.debug("CORS Configuration - Allowed Origins: {}", allowedOrigins);
+    log.debug("CORS Configuration - Allowed Methods: {}", allowedMethods);
+    log.debug("CORS Configuration - Allowed Headers: {}", allowedHeaders);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

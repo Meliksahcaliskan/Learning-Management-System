@@ -11,6 +11,6 @@ import org.springframework.stereotype.Component;
 @Setter
 public class RateLimitProperties {
     private boolean enabled = true;
-    private int maxAttempts = 5;
+    private int maxAttempts = 1599;
     private int duration = 15;  // minutes
 }
