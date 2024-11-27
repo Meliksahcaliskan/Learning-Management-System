@@ -1,6 +1,6 @@
 import './NewAssignment.css';
-import { AuthContext } from '../../../../contexts/AuthContext';
-import assignmentService from '../../../../services/assignmentService';
+import { AuthContext } from '../../../../../contexts/AuthContext';
+import assignmentService from '../../../../../services/assignmentService';
 import { useState } from 'react';
 
 const NewAssignment = ({user, classes, courses}) => {

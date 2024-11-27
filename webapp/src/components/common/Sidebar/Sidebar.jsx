@@ -3,16 +3,23 @@ import LogoPlaceholder from '../LogoPlaceholder/LogoPlaceholder';
 import NavigationOption from '../NavigationOption/NavigationOption';
 import { useContext, useState } from 'react';
 import { AuthContext } from '../../../contexts/AuthContext';
+import authService from '../../../services/authService';
 
 const Sidebar = ({options, onSelect}) => {
 
     const [highlightedOption, setHighlightedOption] = useState(0);
     
-    const { logout } = useContext(AuthContext);
-    const handleLogout = () => {
-        console.log('log out the user');
-        logout();
-    }
+    const { user,logout } = useContext(AuthContext);
+
+    const handleLogout = async () => {
+        try {
+          const response = await authService.logout(user.accessToken, user.refreshToken);
+          console.log(response);
+          logout();
+        } catch (error) {
+          console.error('Error during logout:', error);
+        }
+      };
 
     return(
         <div className="sidebar">

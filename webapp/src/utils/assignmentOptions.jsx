@@ -1,10 +1,6 @@
-import NewAssignment from "../components/MainContents/Assignments/NewAssignment/NewAssignment";
-
-import ActiveHomeworksOfficer from "../components/MainContents/Assignments/ActiveHomeworksOfficer/ActiveHomeworksOfficer";
-// import ActiveHomeworksStudent from "../components/MainContents/Assignments/ActiveHomeworks/ActiveHomeworksStudent/ActiveHomeworksStudent";
-
-import PastHomeworksOfficer from "../components/MainContents/Assignments/PastHomeworksOfficer/PastHomeworksOfficer";
-// import PastHomeworksStudent from "../components/MainContents/Assignments/PastHomeworks/PastHomeworksStudent/PastHomeworksStudent";
+import NewAssignment from "../components/MainContents/Assignments/OfficerAssignments/NewAssignment/NewAssignment";
+import ActiveHomeworksOfficer from "../components/MainContents/Assignments/OfficerAssignments/ActiveHomeworksOfficer/ActiveHomeworksOfficer";
+import PastHomeworksOfficer from "../components/MainContents/Assignments/OfficerAssignments/PastHomeworksOfficer/PastHomeworksOfficer";
 
 
 const assignmentOptions = {

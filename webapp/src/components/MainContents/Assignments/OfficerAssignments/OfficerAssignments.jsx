@@ -1,35 +1,39 @@
 import { getAssignmentOptions } from "../../../../utils/assignmentOptions";
 import Navigator from "../../../common/Navigator/Navigator";
 
-import { useEffect, useState } from "react";
-import { fetchCourses } from "../../../../services/coursesService";
-import { fetchClasses } from "../../../../services/classesService";
+import { useContext, useEffect, useState } from "react";
+import { getAllCourses } from "../../../../services/coursesService";
+import { getAllClasses } from "../../../../services/classesService";
+import { AuthContext } from "../../../../contexts/AuthContext";
 
 
 
 
-const OfficerAssignments = ({ user }) => {
+const OfficerAssignments = () => {
+    const { user } = useContext(AuthContext);
 
     const assignmentOptions = getAssignmentOptions('ROLE_OFFICER');
     const [selectedOption, setSelectedOption] = useState(assignmentOptions[0]);
 
-    //get class list
-    //get course list
     const [courseList, setCourseList] = useState([]);
     const [classList, setClassList] = useState([]);
 
     useEffect(() => {
-        const loadLists = async () => {
+        console.log("get classes and courses");
+        // console.log(user.accessToken);
+        const loadData = async () => {
             try {
-                const [coursesData, classesData] = await Promise.all([fetchCourses(), fetchClasses()]);
-                setCourseList(coursesData);
-                setClassList(classesData);
-            }catch (error) {
-
+                // const [classesData, coursesData] = await Promise.all(getAllClasses(user.accessToken), getAllCourses(user.accessToken));
+                const classesData = await getAllClasses(user.accessToken);
+                console.log("classes : ", classesData);
+                const coursesData = await getAllCourses(user.accessToken);
+                console.log("courses : ", coursesData);
+                // console.log("courses : ", coursesData);
+            } catch(error) {
+                console.log(error);
             }
         }
-        loadLists();
-
+        loadData();
     }, []);
 
 

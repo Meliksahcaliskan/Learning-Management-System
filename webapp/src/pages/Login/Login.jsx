@@ -1,5 +1,4 @@
 import LogoPlaceholder from '../../components/common/LogoPlaceholder/LogoPlaceholder'
-import InputField from '../../components/common/InputField/InputField'
 import './Login.css'
 import { useContext, useState } from 'react'
 import authService from '../../services/authService'
@@ -27,8 +26,9 @@ const Login = () => {
                 username : username,
                 password : password
             });
-            login(response);
+            login(response.data);
         } catch(err) {
+            console.log(err);
             loginError('Yanlış kullanıcı adı veya şifre');
         }
     }
