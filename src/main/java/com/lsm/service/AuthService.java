@@ -87,6 +87,9 @@ public class AuthService {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
+            // Clean up any existing refresh tokens before creating a new one
+            cleanupExpiredTokens(user);
+
             String accessToken = jwtTokenProvider.generateAccessToken(user);
             RefreshToken refreshToken = createRefreshToken(user.getId());
 
@@ -100,6 +103,12 @@ public class AuthService {
             log.warn("Authentication failed for user identifier: {}", loginRequest.getLoginIdentifier());
             throw new AuthenticationException("Invalid credentials");
         }
+    }
+
+    @Transactional
+    public void cleanupExpiredTokens(AppUser user) {
+        Instant now = Instant.now();
+        refreshTokenRepository.deleteByUserAndExpiryDateBefore(user, now);
     }
 
     @Transactional
@@ -137,12 +146,13 @@ public class AuthService {
             Optional<AppUser> userOpt = appUserRepository.findByUsername(username);
             AppUser user = userOpt.orElseThrow(() -> new UserNotFoundException("User not found"));
 
-            // Invalidate specific refresh token if provided
+            // Ensure the refresh token is properly deleted
             if (refreshToken != null) {
                 refreshTokenRepository.deleteByToken(refreshToken);
+                refreshTokenRepository.flush(); // Force immediate deletion
             } else {
-                // Invalidate all refresh tokens for the user
                 refreshTokenRepository.deleteByUser(user);
+                refreshTokenRepository.flush(); // Force immediate deletion
             }
 
             jwtTokenProvider.invalidateToken(token);
