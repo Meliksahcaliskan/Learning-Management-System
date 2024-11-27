@@ -41,3 +41,5 @@ trash/
 
 # Ignore .env file
 .env
+
+/webapp/node_modules

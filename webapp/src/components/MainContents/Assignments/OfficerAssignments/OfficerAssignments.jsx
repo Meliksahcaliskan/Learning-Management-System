@@ -28,7 +28,8 @@ const OfficerAssignments = () => {
                 console.log("classes : ", classesData);
                 const coursesData = await getAllCourses(user.accessToken);
                 console.log("courses : ", coursesData);
-                // console.log("courses : ", coursesData);
+                setClassList(classesData);
+                setCourseList(coursesData);
             } catch(error) {
                 console.log(error);
             }

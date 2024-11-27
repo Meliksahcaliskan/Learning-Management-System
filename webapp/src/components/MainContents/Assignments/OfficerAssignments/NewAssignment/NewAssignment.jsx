@@ -2,14 +2,15 @@ import './NewAssignment.css';
 import { AuthContext } from '../../../../../contexts/AuthContext';
 import assignmentService from '../../../../../services/assignmentService';
 import { useState } from 'react';
+import { isDateInFuture } from '../../../../../utils/dateUtils';
 
 const NewAssignment = ({user, classes, courses}) => {
 
 
-    const [AssignmentData, setAssignmentData] = useState({
+    const [assignmentData, setAssignmentData] = useState({
         className : '',
         subjectName : '',
-        endDate : '',
+        dueDate : '',
         title : '',
         description : '',
         document : null
@@ -19,7 +20,7 @@ const NewAssignment = ({user, classes, courses}) => {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setAssignmentData({
-          ...AssignmentData,
+          ...assignmentData,
           [name]: value,
         });
       };
@@ -28,7 +29,7 @@ const NewAssignment = ({user, classes, courses}) => {
       const handleFileUpload = (e) => {
         console.log(e.target.files[0]);
         setAssignmentData({
-            ...AssignmentData,
+            ...assignmentData,
             document : e.target.files[0],
         });
       };
@@ -39,7 +40,13 @@ const NewAssignment = ({user, classes, courses}) => {
         // highlight the invalid inputs
         //else make the api call
         //if it is not successful give proper error message
-        console.log(AssignmentData);
+        console.log(assignmentData.dueDate);
+        if(assignmentData.title.length < 3) {
+            console.log("title required")
+        }
+        if(!isDateInFuture(assignmentData.dueDate)) {
+            console.log("date error");
+        }
     }
 
     const checkAssignmentData = () => {
@@ -56,7 +63,7 @@ const NewAssignment = ({user, classes, courses}) => {
                   <label className="label">Sınıf Adı</label>
                   <select
                     className="input"
-                    value={AssignmentData.className}
+                    value={assignmentData.className}
                     onChange={handleInputChange}
                     name='className'
                   >
@@ -73,7 +80,7 @@ const NewAssignment = ({user, classes, courses}) => {
                     <label className="label">Ders Adı</label>
                     <select 
                         className="input"
-                        value={AssignmentData.subjectName}
+                        value={assignmentData.subjectName}
                         onChange={handleInputChange}
                         name='subjectName'
                     >
@@ -93,8 +100,8 @@ const NewAssignment = ({user, classes, courses}) => {
                         type='date'
                         placeholder=''
                         onChange={handleInputChange}
-                        value={AssignmentData.endDate}
-                        name='endDate'
+                        value={assignmentData.dueDate}
+                        name='dueDate'
                     />
                 </div>
                 <div className="input-container">
@@ -104,7 +111,7 @@ const NewAssignment = ({user, classes, courses}) => {
                         type='text'
                         placeholder='Ödev başlığını giriniz'
                         onChange={handleInputChange}
-                        value={AssignmentData.title}
+                        value={assignmentData.title}
                         name='title'
                     />
                 </div>
@@ -115,7 +122,7 @@ const NewAssignment = ({user, classes, courses}) => {
                         type='text'
                         placeholder='Ödev açıklamasını giriniz'
                         onChange={handleInputChange}
-                        value={AssignmentData.description}
+                        value={assignmentData.description}
                         name='description'
                     />
                 </div>
@@ -125,7 +132,6 @@ const NewAssignment = ({user, classes, courses}) => {
                         className="input"
                         type="file"
                         onChange={handleFileUpload}
-                        value={AssignmentData.document || ''}
                         name='document'
                     />
                 </div>
