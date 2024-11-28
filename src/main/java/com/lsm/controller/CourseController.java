@@ -29,28 +29,28 @@ public class CourseController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get course by ID")
-    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR', 'TEACHER', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR', 'ROLE_TEACHER', 'ROLE_STUDENT')")
     public ResponseEntity<CourseDTO> getCourseById(@PathVariable Long id) {
         return ResponseEntity.ok(courseService.getCourseById(id));
     }
 
     @GetMapping
     @Operation(summary = "Get all courses")
-    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR', 'TEACHER', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR', 'ROLE_TEACHER', 'ROLE_STUDENT')")
     public ResponseEntity<List<CourseDTO>> getAllCourses() {
         return ResponseEntity.ok(courseService.getAllCourses());
     }
 
     @GetMapping("/class/{classId}")
     @Operation(summary = "Get courses by class ID")
-    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR', 'TEACHER', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR', 'ROLE_TEACHER', 'ROLE_STUDENT')")
     public ResponseEntity<List<CourseDTO>> getCoursesByClassId(@PathVariable Long classId) {
         return ResponseEntity.ok(courseService.getCoursesByClassId(classId));
     }
 
     @PostMapping
     @Operation(summary = "Create a new course")
-    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR')")
     public ResponseEntity<CourseDTO> createCourse(@Valid @RequestBody CourseDTO courseDTO) {
         CourseDTO createdCourse = courseService.createCourse(courseDTO);
         return new ResponseEntity<>(createdCourse, HttpStatus.CREATED);
@@ -58,7 +58,7 @@ public class CourseController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update an existing course")
-    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR')")
     public ResponseEntity<CourseDTO> updateCourse(
             @PathVariable Long id,
             @Valid @RequestBody CourseDTO courseDTO) {
@@ -67,7 +67,7 @@ public class CourseController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a course")
-    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR')")
     public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
         courseService.deleteCourse(id);
         return ResponseEntity.noContent().build();

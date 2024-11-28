@@ -2,17 +2,30 @@ import axios from "axios";
 
 
 
-export const createAssignment = async (credentials) => {
-    // const response = await axios.post('/api/assignments/createAssignment', credentials);
-    // return response;
+export const createAssignment = async (assignmentData, accessToken) => {
+    try {
+        const response = await axios.post(
+            '/api/v1/assignments/createAssignment',
+            assignmentData,
+            {
+                headers : {
+                    Authorization : `Bearer ${accessToken}`,
+                    "Content-Type" : "application/json",
+                },
+            }
+        );
+        return (await response).data;
+    }catch(error) {
+        console.error("error creating assignment");
+    }
 }
 
 export const getAssignmentsForStudent = async (studentID, token) => {
-    const response = await axios.get(`/api/assignments/displayAssignments/${studentID}`, {
-        headers : {
-            Authorization : `Bearer ${token}`
-        },
-    });
+    // const response = await axios.get(`/api/assignments/displayAssignments/${studentID}`, {
+    //     headers : {
+    //         Authorization : `Bearer ${token}`
+    //     },
+    // });
     // return response.data;
 
     return(

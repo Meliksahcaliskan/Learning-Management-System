@@ -1,4 +1,3 @@
-// src/utils/dateUtils.js
 
 /**
  * Checks if the given date string is in the future.
