@@ -42,66 +42,60 @@ public class RateLimiter {
                 .build(new CacheLoader<>() {
                     @Override
                     public Instant load(String key) {
-                        return Instant.now();
+                        return Instant.EPOCH; // Return a very old time (e.g., January 1, 1970)
                     }
                 });
+
     }
 
-    public void checkRateLimit(String clientIp) {
+    public void checkRateLimit(String clientIp) throws RateLimitExceededException {
         try {
+            // First check if the IP is blocked
             if (isBlocked(clientIp)) {
-                long remainingBlockTime = getRemainingBlockTime(clientIp);
+                long remainingTime = getRemainingBlockTime(clientIp);
                 throw new RateLimitExceededException(
-                        String.format("Too many attempts. Please try again in %d minutes",
-                                remainingBlockTime)
+                        String.format("Too many attempts. Please try again in %d minutes", remainingTime)
                 );
             }
 
-            AtomicInteger attempts;
-            try {
-                attempts = attemptCache.get(clientIp);
-            } catch (ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-            if (attempts.incrementAndGet() > maxAttempts) {
+            // Get current attempt count
+            AtomicInteger attempts = attemptCache.get(clientIp);
+            int currentAttempts = attempts.incrementAndGet();
+
+            // If exceeded max attempts, block the IP
+            if (currentAttempts > maxAttempts) {
                 blockCache.put(clientIp, Instant.now());
+                attempts.set(maxAttempts + 1); // Ensure it stays over limit
                 throw new RateLimitExceededException(
-                        String.format("Too many attempts. Please try again in %d minutes",
-                                blockDurationMinutes)
+                        String.format("Too many attempts. Please try again in %d minutes", blockDurationMinutes)
                 );
             }
-        } catch (Exception e) {
-            log.error("Error checking rate limit", e);
-            // Allow the request if there's an error checking the rate limit
+
+        } catch (ExecutionException e) {
+            // Only catch cache-related exceptions
+            log.error("Cache error in rate limiter", e);
+            throw new RuntimeException("Error checking rate limit", e);
         }
     }
 
     public void resetLimit(String clientIp) {
-        attemptCache.invalidate(clientIp);
-        blockCache.invalidate(clientIp);
-    }
-
-    private boolean isBlocked(String clientIp) {
         try {
-            Instant blockTime = blockCache.get(clientIp);
-            return blockTime != null &&
-                    blockTime.plus(blockDurationMinutes, ChronoUnit.MINUTES)
-                            .isAfter(Instant.now());
+            attemptCache.get(clientIp).set(0);
+            blockCache.invalidate(clientIp);
         } catch (ExecutionException e) {
-            return false;
+            log.error("Error resetting rate limit for IP: {}", clientIp, e);
         }
     }
 
-    private long getRemainingBlockTime(String clientIp) {
-        try {
-            Instant blockTime = blockCache.get(clientIp);
-            if (blockTime != null) {
-                Instant unblockTime = blockTime.plus(blockDurationMinutes, ChronoUnit.MINUTES);
-                return Duration.between(Instant.now(), unblockTime).toMinutes();
-            }
-        } catch (ExecutionException e) {
-            log.error("Error getting remaining block time", e);
-        }
-        return 0;
+    private boolean isBlocked(String clientIp) throws ExecutionException {
+        Instant blockTime = blockCache.get(clientIp);
+        return !blockTime.equals(Instant.EPOCH) &&
+                blockTime.plus(blockDurationMinutes, ChronoUnit.MINUTES).isAfter(Instant.now());
+    }
+
+    private long getRemainingBlockTime(String clientIp) throws ExecutionException {
+        Instant blockTime = blockCache.get(clientIp);
+        Instant unblockTime = blockTime.plus(blockDurationMinutes, ChronoUnit.MINUTES);
+        return Math.max(0, Duration.between(Instant.now(), unblockTime).toMinutes());
     }
 }
