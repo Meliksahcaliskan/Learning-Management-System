@@ -14,9 +14,10 @@ export const createAssignment = async (assignmentData, accessToken) => {
                 },
             }
         );
-        return (await response).data;
+        return response.data;
     }catch(error) {
         console.error("error creating assignment");
+        throw error
     }
 }
 
