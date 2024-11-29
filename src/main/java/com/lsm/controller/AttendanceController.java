@@ -39,15 +39,15 @@ public class AttendanceController {
         @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Student not found")
     })
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @PostMapping("/mark")
-    public ResponseEntity<ApiResponse_> markAttendance(
+    public ResponseEntity<ApiResponse_<Long>> markAttendance(
             @Valid @RequestBody AttendanceRequestDTO attendanceRequest
     ) {
         attendanceService.markAttendance(attendanceRequest);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(new ApiResponse_(
+                .body(new ApiResponse_<>(
                     true,
                     "Attendance marked successfully",
                     attendanceRequest.getStudentId()
@@ -63,7 +63,7 @@ public class AttendanceController {
         @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Student not found")
     })
-    @PreAuthorize("hasAnyRole('STUDENT', 'TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_STUDENT', 'ROLE_TEACHER', 'ROLE_ADMIN')")
     @GetMapping("/{studentId}")
     public ResponseEntity<List<AttendanceDTO>> getAttendanceByStudentId(
             @Parameter(description = "ID of the student", required = true)
@@ -86,7 +86,7 @@ public class AttendanceController {
         @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Student/Class not found")
     })
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @GetMapping("/stats/{studentId}")
     public ResponseEntity<AttendanceStatsDTO> getAttendanceStats(
             @Parameter(description = "ID of the student", required = true)
@@ -107,15 +107,15 @@ public class AttendanceController {
         @ApiResponse(responseCode = "400", description = "Invalid request data"),
         @ApiResponse(responseCode = "403", description = "Insufficient permissions")
     })
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @PostMapping("/bulk")
-    public ResponseEntity<ApiResponse_> markBulkAttendance(
+    public ResponseEntity<ApiResponse_<Integer>> markBulkAttendance(
             @Valid @RequestBody List<AttendanceRequestDTO> attendanceRequests
     ) {
         attendanceService.markBulkAttendance(attendanceRequests);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(new ApiResponse_(
+                .body(new ApiResponse_<>(
                     true,
                     "Bulk attendance marked successfully",
                     attendanceRequests.size()
