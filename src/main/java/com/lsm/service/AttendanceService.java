@@ -103,7 +103,7 @@ public class AttendanceService {
                 .date(request.getDate())
                 .status(request.getStatus())
                 .comment(request.getComment())
-                .classId(request.getClassId())
+                .classId(student.getStudentDetails().getClassEntity())
                 .build();
     }
 
@@ -128,7 +128,7 @@ public class AttendanceService {
     private AppUser getAuthenticatedUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Optional<AppUser> user = appUserRepository.findByUsername(username);
-        if(!user.isPresent())
+        if(user.isEmpty())
             throw new UsernameNotFoundException("User not found");
         return user.get();
     }

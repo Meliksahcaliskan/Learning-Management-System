@@ -3,6 +3,7 @@ package com.lsm.service;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.lsm.model.DTOs.GradeDTO;
@@ -149,13 +150,30 @@ public class AssignmentService {
             throws AccessDeniedException, EntityNotFoundException {
         AppUser user = appUserRepository.findById(studentId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        ClassEntity classEntity = classEntityRepository.findById(classId).orElseThrow(
-                () -> new EntityNotFoundException("Class not found")
+
+        if (loggedInUser .getRole() == Role.ROLE_TEACHER) {
+            boolean hasAccess = loggedInUser.getTeacherDetails().getClasses().stream()
+                    .map(classEntityRepository::findById)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .anyMatch(classEntity -> classEntity.getStudents().contains(user));
+
+            if (!hasAccess) {
+                throw new AccessDeniedException("Teachers can only find assignments by their own students");
+            }
+        }
+        else if (loggedInUser.getRole() == Role.ROLE_STUDENT) {
+            if(!studentId.equals(loggedInUser.getId()))
+                throw new AccessDeniedException("Student can only display their own assignments");
+        }
+
+        ClassEntity classEntity = classEntityRepository.findById(user.getStudentDetails().getClassEntity()).orElseThrow(
+                    () -> new EntityNotFoundException("Class not found")
         );
 
         // For teachers, only show their own assignments
         List<Assignment> assignments;
-        if (user.getRole() == Role.ROLE_TEACHER) {
+        if (loggedInUser.getRole() == Role.ROLE_TEACHER) {
             assignments = assignmentRepository.findByClassEntityAndAssignedBy(classEntity, loggedInUser);
         } else {
             assignments = assignmentRepository.findByClassEntityOrderByDueDateDesc(classEntity);

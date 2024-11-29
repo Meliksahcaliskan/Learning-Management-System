@@ -1,11 +1,25 @@
+CREATE SEQUENCE IF NOT EXISTS refresh_token_seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES app_users(id),
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expiry_date TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+
 -- Clear existing data and reset sequences
-TRUNCATE TABLE class_courses, class_students, assignments, classes, courses, app_users CASCADE;
+TRUNCATE TABLE class_courses, class_students, assignments, classes, courses, app_users, refresh_tokens, announcements CASCADE;
 
 -- Reset sequences
 ALTER SEQUENCE app_users_seq RESTART WITH 1;
 ALTER SEQUENCE classes_id_seq RESTART WITH 1;
 ALTER SEQUENCE assignments_seq RESTART WITH 1;
 ALTER SEQUENCE courses_seq RESTART WITH 1;
+ALTER SEQUENCE refresh_token_seq RESTART WITH 1;
+ALTER SEQUENCE announcement_seq RESTART WITH 1;
 
 -- Insert System Users (Admin & Coordinator)
 INSERT INTO app_users (id, username, name, surname, email, password, role) VALUES
@@ -59,6 +73,32 @@ INSERT INTO class_courses (class_id, course_id) VALUES
                                                     ((SELECT id FROM classes WHERE name = 'Physics 101'),
                                                      (SELECT id FROM courses WHERE code = 'PHYS101'));
 
+INSERT INTO announcements (id, title, content, class_entity_id, created_at) VALUES
+    (nextval('announcement_seq'),
+     'Welcome to Mathematics 101',
+     'Welcome to our mathematics class! This semester we will cover fundamental concepts including algebra, geometry, and calculus. Please review the syllabus and come prepared for our first lecture.',
+     (SELECT id FROM classes WHERE name = 'Mathematics 101'),
+     '2024-11-24 09:00:00'),
+
+    (nextval('announcement_seq'),
+     'Upcoming Math Quiz',
+     'There will be a quiz next week covering the topics from chapters 1-3. Make sure to review your notes and practice problems.',
+     (SELECT id FROM classes WHERE name = 'Mathematics 101'),
+     '2024-11-25 14:30:00'),
+
+    (nextval('announcement_seq'),
+     'Physics Lab Safety Guidelines',
+     'Before our first lab session, please review the safety guidelines document. Safety goggles and lab coats are mandatory for all practical sessions.',
+     (SELECT id FROM classes WHERE name = 'Physics 101'),
+     '2024-11-24 10:15:00'),
+
+    (nextval('announcement_seq'),
+     'Physics Project Groups',
+     'Project groups for this semester have been posted on the class portal. Please check your assigned group and contact your team members to begin planning.',
+     (SELECT id FROM classes WHERE name = 'Physics 101'),
+     '2024-11-26 11:00:00');
+
+
 -- Assign Students to Classes
 INSERT INTO class_students (class_id, student_id)
 SELECT c.id, s.id
@@ -82,3 +122,5 @@ SELECT setval('app_users_seq', (SELECT MAX(id) FROM app_users));
 SELECT setval('classes_id_seq', (SELECT MAX(id) FROM classes));
 SELECT setval('assignments_seq', (SELECT MAX(id) FROM assignments));
 SELECT setval('courses_seq', (SELECT MAX(id) FROM courses));
+SELECT setval('refresh_token_seq', (SELECT MAX(id) FROM refresh_tokens));
+SELECT setval('announcement_seq', (SELECT MAX(id) FROM announcements));

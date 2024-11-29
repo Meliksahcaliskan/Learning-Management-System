@@ -18,19 +18,13 @@ import java.time.LocalDate;
 @Setter
 public class AttendanceRequestDTO {
     @NotNull(message = "Student ID cannot be null")
-    @Getter @Setter
     private Long studentId;
     
     @NotNull(message = "Date cannot be null")
-    @Getter @Setter
     private LocalDate date;
     
     @NotNull(message = "Attendance status cannot be null")
-    @Getter @Setter
     private AttendanceStatus status;
-    
-    @Getter @Setter
+
     private String comment;
-    @Getter @Setter
-    private Long classId;
 }
