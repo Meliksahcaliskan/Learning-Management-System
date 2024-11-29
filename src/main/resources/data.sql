@@ -1,14 +1,14 @@
-CREATE SEQUENCE IF NOT EXISTS refresh_token_seq START WITH 1 INCREMENT BY 1;
+DROP TABLE IF EXISTS refresh_tokens CASCADE;
 
-CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id BIGINT PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES app_users(id),
-    token VARCHAR(255) NOT NULL UNIQUE,
-    expiry_date TIMESTAMP NOT NULL
+CREATE TABLE refresh_tokens (
+                                id BIGINT PRIMARY KEY,
+                                user_id BIGINT NOT NULL REFERENCES app_users(id),
+                                token VARCHAR(255) NOT NULL UNIQUE,
+                                expiry_date TIMESTAMP NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
-CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
 
 -- Clear existing data and reset sequences
 TRUNCATE TABLE class_courses, class_students, assignments, classes, courses, app_users, refresh_tokens, announcements CASCADE;
