@@ -15,8 +15,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -33,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.security.Principal;
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -41,6 +44,7 @@ import java.util.List;
 @Validated
 @Tag(name = "Assignment Management", description = "APIs for managing student assignments")
 @SecurityRequirement(name = "bearerAuth")
+@Slf4j
 public class AssignmentController {
 
     private final AssignmentService assignmentService;
@@ -56,25 +60,31 @@ public class AssignmentController {
         @ApiResponse(responseCode = "400", description = "Invalid request data"),
         @ApiResponse(responseCode = "403", description = "Insufficient permissions")
     })
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @PostMapping("/createAssignment")
     public ResponseEntity<ApiResponse_<AssignmentDTO>> createAssignment(
             @Valid @RequestBody AssignmentRequestDTO assignmentRequest,
-            Principal principal
+            Authentication authentication
     ) {
         try {
-            Long teacherId = appUserService.findByUsername(principal.getName()).getId();
-            Assignment assignment = assignmentService.createAssignment(assignmentRequest, teacherId);
-            
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            log.info("Creating assignment for teacher: {}", currentUser.getUsername());
+
+            Assignment assignment = assignmentService.createAssignment(assignmentRequest, currentUser.getId());
+
             return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(new ApiResponse_<>(
-                    true,
-                    "Assignment created successfully",
-                    new AssignmentDTO(assignment, "Created successfully")
-                ));
+                    .status(HttpStatus.CREATED)
+                    .body(new ApiResponse_<>(
+                            true,
+                            "Assignment created successfully",
+                            new AssignmentDTO(assignment, "Created successfully")
+                    ));
         } catch (AccessDeniedException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while creating assignment: {}", e.getMessage());
+            throw new SecurityException("Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error creating assignment: {}", e.getMessage());
+            throw new RuntimeException("Error creating assignment");
         }
     }
 
@@ -240,40 +250,66 @@ public class AssignmentController {
         }
     }
 
-    @Operation(
-            summary = "Upload assignment document",
-            description = "Upload a document for an assignment. Teachers can upload assignment materials, " +
-                    "students can upload their submissions."
-    )
+    @Operation(summary = "Upload assignment document")
     @PostMapping("/{assignmentId}/documents")
     public ResponseEntity<ApiResponse_<AssignmentDocumentDTO>> uploadDocument(
-            @PathVariable Long assignmentId,
-            @RequestParam("file") MultipartFile file,
+            @PathVariable @Positive Long assignmentId,
+            @RequestParam("file") @NotNull MultipartFile file,
             @RequestParam(defaultValue = "false") boolean isTeacherUpload,
             Authentication authentication) {
-        AppUser currentUser = (AppUser) authentication.getPrincipal();
-        AssignmentDocument document = null;
         try {
-            document = documentService.uploadDocument(
-                    file, assignmentId, currentUser, isTeacherUpload);
-        } catch (IOException e) {
-            throw new SecurityException(e.getMessage());
-        }
-        AssignmentDocumentDTO dto = new AssignmentDocumentDTO(
-                document.getId(),
-                document.getFileName(),
-                document.getFileType(),
-                document.getFileSize(),
-                document.getUploadTime(),
-                document.getUploadedBy().getUsername(),
-                document.isTeacherUpload()
-        );
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            log.info("Uploading document for assignment: {}, user: {}", assignmentId, currentUser.getUsername());
 
-        return ResponseEntity.ok(new ApiResponse_<>(
-                true,
-                "Document uploaded successfully",
-                dto
-        ));
+            // Validate file size and type
+            validateFile(file);
+
+            AssignmentDocument document = documentService.uploadDocument(
+                    file, assignmentId, currentUser, isTeacherUpload);
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Document uploaded successfully",
+                    convertToDTO(document)
+            ));
+        } catch (IOException e) {
+            log.error("Error uploading document: {}", e.getMessage());
+            throw new RuntimeException("Error uploading document");
+        }
+    }
+
+    private void validateFile(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File cannot be empty");
+        }
+        if (file.getSize() > 10_000_000) { // 10MB limit
+            throw new IllegalArgumentException("File size exceeds maximum limit");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !isAllowedContentType(contentType)) {
+            throw new IllegalArgumentException("Invalid file type");
+        }
+    }
+
+    private boolean isAllowedContentType(String contentType) {
+        return Arrays.asList(
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "text/plain"
+        ).contains(contentType);
+    }
+
+    private AssignmentDocumentDTO convertToDTO(AssignmentDocument document) {
+        return AssignmentDocumentDTO.builder()
+                .id(document.getId())
+                .fileName(document.getFileName())
+                .fileType(document.getFileType())
+                .fileSize(document.getFileSize())
+                .uploadTime(document.getUploadTime())
+                .uploadedByUsername(document.getUploadedBy().getUsername())
+                .isTeacherUpload(document.isTeacherUpload())
+                .build();
     }
 
     @Operation(
@@ -307,7 +343,7 @@ public class AssignmentController {
             @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
             @ApiResponse(responseCode = "404", description = "Assignment not found")
     })
-    @PreAuthorize("hasRole('ROLE_TEACHER')")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @PatchMapping("/{assignmentId}/grade")
     public ResponseEntity<ApiResponse_<AssignmentDTO>> gradeAssignment(
             @PathVariable @Positive Long assignmentId,

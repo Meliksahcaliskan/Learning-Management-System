@@ -6,13 +6,16 @@ import java.util.stream.Collectors;
 
 import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.AssignmentDocument;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class AssignmentDTO {
-    private Long id; // Unique identifier for the assignment
+    private Long id;
+
     private String title;
     private String description;
     private LocalDate dueDate;
@@ -21,11 +24,11 @@ public class AssignmentDTO {
     private List<AssignmentDocumentDTO> studentSubmissions;
     private Double grade;
     private String feedback;
+    private LocalDate createdDate;
+    private String assignedByTeacherName;
+    private String className;
+    private String courseName;
 
-    // Default constructor
-    // public AssignmentDTO() {}
-
-    // Parameterized constructor
     public AssignmentDTO(Assignment assignment, String message) {
         this.id = assignment.getId();
         this.title = assignment.getTitle();
@@ -40,17 +43,21 @@ public class AssignmentDTO {
                 .collect(Collectors.toList());
         this.grade = assignment.getGrade();
         this.feedback = assignment.getFeedback();
+        this.createdDate = assignment.getDate();
+        this.assignedByTeacherName = assignment.getAssignedBy().getUsername();
+        this.className = assignment.getClassEntity().getName();
+        this.courseName = assignment.getCourse().getName();
     }
 
     private AssignmentDocumentDTO convertToDTO(AssignmentDocument doc) {
-        return new AssignmentDocumentDTO(
-                doc.getId(),
-                doc.getFileName(),
-                doc.getFileType(),
-                doc.getFileSize(),
-                doc.getUploadTime(),
-                doc.getUploadedBy().getUsername(),
-                doc.isTeacherUpload()
-        );
+        return AssignmentDocumentDTO.builder()
+                .id(doc.getId())
+                .fileName(doc.getFileName())
+                .fileType(doc.getFileType())
+                .fileSize(doc.getFileSize())
+                .uploadTime(doc.getUploadTime())
+                .uploadedByUsername(doc.getUploadedBy().getUsername())
+                .isTeacherUpload(doc.isTeacherUpload())
+                .build();
     }
 }

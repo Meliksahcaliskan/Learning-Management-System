@@ -11,8 +11,11 @@ import com.lsm.model.entity.Course;
 import com.lsm.model.entity.enums.AssignmentStatus;
 import com.lsm.repository.ClassEntityRepository;
 import com.lsm.repository.CourseRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 
 import com.lsm.model.DTOs.AssignmentDTO;
 import com.lsm.model.DTOs.AssignmentRequestDTO;
@@ -24,14 +27,23 @@ import com.lsm.repository.AssignmentRepository;
 
 import jakarta.transaction.Transactional;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Slf4j
+@Validated
 public class AssignmentService {
 
     private final AssignmentRepository assignmentRepository;
     private final AppUserRepository appUserRepository;
     private final ClassEntityRepository classEntityRepository;
     private final CourseRepository courseRepository;
+
+    @Value("${assignment.max-title-length:100}")
+    private int maxTitleLength;
+
+    @Value("${assignment.min-due-date-days:1}")
+    private int minDueDateDays;
 
     @Autowired
     public AssignmentService(AssignmentRepository assignmentRepository, AppUserRepository appUserRepository, ClassEntityRepository classEntityRepository, CourseRepository courseRepository) {
@@ -104,48 +116,38 @@ public class AssignmentService {
     @Transactional
     public Assignment createAssignment(AssignmentRequestDTO dto, Long loggedInUserId)
             throws AccessDeniedException {
-        AppUser teacher = appUserRepository.findById(loggedInUserId)
-                .orElseThrow(() -> new EntityNotFoundException("Teacher not found"));
-        ClassEntity classEntity = classEntityRepository.findClassEntityByName(dto.getClassName()).orElseThrow(
-                () -> new EntityNotFoundException("Class not found")
-        );
-        Course course = courseRepository.findCourseByName(dto.getCourseName()).orElseThrow(
-                () -> new EntityNotFoundException("Course not found")
-        );
+        try {
+            log.info("Creating assignment with title: {}", dto.getTitle());
 
-        if (teacher.getRole() == Role.ROLE_STUDENT) {
-            throw new AccessDeniedException("Only teachers, admins, coordinators can create assignments");
+            validateAssignmentRequest(dto);
+
+            AppUser teacher = appUserRepository.findById(loggedInUserId)
+                    .orElseThrow(() -> new EntityNotFoundException("Teacher not found"));
+
+            ClassEntity classEntity = classEntityRepository.findClassEntityByName(dto.getClassName())
+                    .orElseThrow(() -> new EntityNotFoundException("Class not found"));
+
+            Course course = courseRepository.findCourseByName(dto.getCourseName())
+                    .orElseThrow(() -> new EntityNotFoundException("Course not found"));
+
+            validateTeacherAccess(teacher, classEntity);
+            validateUniqueTitle(dto.getTitle(), classEntity); // No existingAssignmentId for creation
+
+            Assignment assignment = createAssignmentEntity(dto, teacher, classEntity, course);
+
+            log.info("Assignment created successfully with ID: {}", assignment.getId());
+            return assignmentRepository.save(assignment);
+
+        } catch (Exception e) {
+            log.error("Error creating assignment: {}", e.getMessage());
+            throw e;
         }
-
-        if (teacher.getRole() == Role.ROLE_TEACHER && !teacher.getTeacherDetails().getClasses().contains(classEntity.getId())) {
-            throw new AccessDeniedException("Teachers can create assignments only their assigned classes");
-        }
-
-        // Validate that teacher ID matches logged-in user
-        if (!dto.getTeacherId().equals(loggedInUserId)) {
-            throw new AccessDeniedException("Teacher ID must match logged in user");
-        }
-
-        // Check if assignment title already exists for the class
-        if (assignmentRepository.existsByTitleAndClassEntity(dto.getTitle(), classEntity)) {
-            throw new IllegalArgumentException("An assignment with this title already exists for this class");
-        }
-
-        Assignment assignment = new Assignment();
-        assignment.setTitle(dto.getTitle());
-        assignment.setDescription(dto.getDescription());
-        assignment.setDueDate(dto.getDueDate());
-        assignment.setAssignedBy(teacher);
-        assignment.setClassEntity(classEntity);
-        assignment.setCourse(course);
-        assignment.setDate(LocalDate.now());
-
-        return assignmentRepository.save(assignment);
     }
 
-    public List<AssignmentDTO> getAssignmentsByClass(Long classId, AppUser loggedInUser)
-            throws AccessDeniedException {
-        AppUser user = appUserRepository.findById(loggedInUser.getId())
+
+    public List<AssignmentDTO> getAssignmentsByClass(Long studentId, AppUser loggedInUser)
+            throws AccessDeniedException, EntityNotFoundException {
+        AppUser user = appUserRepository.findById(studentId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         ClassEntity classEntity = classEntityRepository.findById(classId).orElseThrow(
                 () -> new EntityNotFoundException("Class not found")
@@ -167,35 +169,41 @@ public class AssignmentService {
     @Transactional
     public Assignment updateAssignment(Long assignmentId, AssignmentRequestDTO dto, Long loggedInUserId)
             throws AccessDeniedException {
-        Assignment existingAssignment = assignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
-        ClassEntity classEntity = classEntityRepository.findClassEntityByName(dto.getClassName()).orElseThrow(
-                () -> new EntityNotFoundException("Class not found")
-        );
+        try {
+            log.info("Updating assignment ID: {} with title: {}", assignmentId, dto.getTitle());
 
-        Course course = courseRepository.findCourseByName(dto.getCourseName()).orElseThrow(
-                () -> new EntityNotFoundException("Course not found")
-        );
+            Assignment existingAssignment = assignmentRepository.findById(assignmentId)
+                    .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
 
-        // Validate teacher
-        if (!existingAssignment.getAssignedBy().getId().equals(loggedInUserId)) {
-            throw new AccessDeniedException("You can only update your own assignments");
+            ClassEntity classEntity = classEntityRepository.findClassEntityByName(dto.getClassName())
+                    .orElseThrow(() -> new EntityNotFoundException("Class not found"));
+
+            Course course = courseRepository.findCourseByName(dto.getCourseName())
+                    .orElseThrow(() -> new EntityNotFoundException("Course not found"));
+
+            // Validate teacher access and title uniqueness
+            validateTeacherAccess(existingAssignment.getAssignedBy(), classEntity);
+            validateUniqueTitle(dto.getTitle(), classEntity, assignmentId);
+
+            // Update assignment fields
+            updateAssignmentFields(existingAssignment, dto, classEntity, course);
+
+            log.info("Assignment updated successfully: {}", assignmentId);
+            return assignmentRepository.save(existingAssignment);
+
+        } catch (Exception e) {
+            log.error("Error updating assignment {}: {}", assignmentId, e.getMessage());
+            throw e;
         }
+    }
 
-        // Check if updated title conflicts with existing assignments
-        if (!existingAssignment.getTitle().equals(dto.getTitle()) &&
-                assignmentRepository.existsByTitleAndClassEntity(dto.getTitle(), classEntity)) {
-            throw new IllegalArgumentException("An assignment with this title already exists for this class");
-        }
-
-        // Update fields
-        existingAssignment.setTitle(dto.getTitle());
-        existingAssignment.setDescription(dto.getDescription());
-        existingAssignment.setDueDate(dto.getDueDate());
-        existingAssignment.setClassEntity(classEntity);
-        existingAssignment.setCourse(course);
-
-        return assignmentRepository.save(existingAssignment);
+    private void updateAssignmentFields(Assignment assignment, AssignmentRequestDTO dto,
+                                        ClassEntity classEntity, Course course) {
+        assignment.setTitle(dto.getTitle().trim());
+        assignment.setDescription(dto.getDescription());
+        assignment.setDueDate(dto.getDueDate());
+        assignment.setClassEntity(classEntity);
+        assignment.setCourse(course);
     }
 
     @Transactional
@@ -273,6 +281,7 @@ public class AssignmentService {
                 .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
     }
 
+    @Cacheable(value = "assignments", key = "#courseId")
     public List<AssignmentDTO> getAssignmentsByCourse(Long courseId, AppUser loggedInUser)
             throws AccessDeniedException {
         AppUser user = appUserRepository.findById(loggedInUser.getId())
@@ -288,5 +297,92 @@ public class AssignmentService {
         return assignments.stream()
                 .map(assignment -> new AssignmentDTO(assignment, ""))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public List<Assignment> createBatchAssignments(List<AssignmentRequestDTO> dtos, Long loggedInUserId)
+            throws AccessDeniedException {
+        return dtos.stream()
+                .map(dto -> {
+                    try {
+                        return createAssignment(dto, loggedInUserId);
+                    } catch (AccessDeniedException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+
+    private void validateAssignmentRequest(AssignmentRequestDTO dto) {
+        if (dto.getTitle().length() > maxTitleLength) {
+            throw new IllegalArgumentException("Title exceeds maximum length");
+        }
+
+        if (dto.getDueDate().isBefore(LocalDate.now().plusDays(minDueDateDays))) {
+            throw new IllegalArgumentException("Due date must be at least " + minDueDateDays + " days in the future");
+        }
+    }
+
+    private void validateTeacherAccess(AppUser teacher, ClassEntity classEntity)
+            throws AccessDeniedException {
+        if (teacher.getRole() == Role.ROLE_STUDENT) {
+            throw new AccessDeniedException("Only teachers, admins, coordinators can create assignments");
+        }
+
+        if (teacher.getRole() == Role.ROLE_TEACHER &&
+                !teacher.getTeacherDetails().getClasses().contains(classEntity.getId())) {
+            throw new AccessDeniedException("Teachers can create assignments only for their assigned classes");
+        }
+    }
+
+    private Assignment createAssignmentEntity(
+            AssignmentRequestDTO dto,
+            AppUser teacher,
+            ClassEntity classEntity,
+            Course course) {
+        Assignment assignment = new Assignment();
+        assignment.setTitle(dto.getTitle());
+        assignment.setDescription(dto.getDescription());
+        assignment.setDueDate(dto.getDueDate());
+        assignment.setAssignedBy(teacher);
+        assignment.setClassEntity(classEntity);
+        assignment.setCourse(course);
+        assignment.setDate(LocalDate.now());
+        assignment.setStatus(AssignmentStatus.PENDING);
+
+        return assignment;
+    }
+
+    private void validateUniqueTitle(String title, ClassEntity classEntity, Long... existingAssignmentId) {
+        log.debug("Validating title uniqueness: {} for class: {}", title, classEntity.getName());
+
+        // Normalize the title for comparison (trim whitespace and convert to lowercase)
+        String normalizedTitle = title.trim().toLowerCase();
+
+        // Check if any assignment with the same normalized title exists in the class
+        Optional<Assignment> existingAssignment = assignmentRepository
+                .findByTitleIgnoreCaseAndClassEntity(normalizedTitle, classEntity);
+
+        if (existingAssignment.isPresent()) {
+            // For update scenario, check if the found assignment is the same as the one being updated
+            if (existingAssignmentId != null && existingAssignmentId.length > 0) {
+                if (!existingAssignment.get().getId().equals(existingAssignmentId[0])) {
+                    log.warn("Duplicate title found: {} for class: {}", title, classEntity.getName());
+                    throw new IllegalArgumentException(
+                            String.format("An assignment with title '%s' already exists in class %s",
+                                    title, classEntity.getName())
+                    );
+                }
+            } else {
+                // For create scenario, any existing assignment with same title is a conflict
+                log.warn("Attempted to create assignment with duplicate title: {} in class: {}",
+                        title, classEntity.getName());
+                throw new IllegalArgumentException(
+                        String.format("An assignment with title '%s' already exists in class %s",
+                                title, classEntity.getName())
+                );
+            }
+        }
+        log.debug("Title validation passed for: {} in class: {}", title, classEntity.getName());
     }
 }
