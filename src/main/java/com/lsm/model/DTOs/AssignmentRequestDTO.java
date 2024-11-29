@@ -1,54 +1,43 @@
 package com.lsm.model.DTOs;
 
 import java.time.LocalDate;
-import java.util.List;
-
-import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class AssignmentRequestDTO {
-
-    @NotNull(message = "Teacher ID is required.")
+    @NotNull(message = "Teacher ID is required")
+    @Positive(message = "Teacher ID must be positive")
     private Long teacherId;
 
-    @NotNull(message = "Title is required.")
-    @Size(min = 3, max = 100, message = "Title should be between 3 and 100 characters.")
+    @NotNull(message = "Title is required")
+    @Size(min = 3, max = 100, message = "Title must be between 3 and 100 characters")
     private String title;
 
-    @Size(max = 1000, message = "Description should not exceed 1000 characters.")
+    @Size(max = 1000, message = "Description must not exceed 1000 characters")
     private String description;
 
-    @Future(message = "Due date should be in the future.")
+    @NotNull(message = "Due date is required")
+    @Future(message = "Due date must be in the future")
     private LocalDate dueDate;
 
-    @NotNull(message = "Class name is required.")
+    @NotNull(message = "Class name is required")
+    @Size(min = 2, max = 50, message = "Class name must be between 2 and 50 characters")
+    @Pattern(regexp = "^[A-Za-z0-9-_ ]+$", message = "Class name can only contain letters, numbers, spaces, hyphens and underscores")
     private String className;
 
-    @NotNull(message = "Course name is required.")
+    @NotNull(message = "Course name is required")
+    @Size(min = 2, max = 100, message = "Course name must be between 2 and 100 characters")
+    @Pattern(regexp = "^[A-Za-z0-9-_ ]+$", message = "Course name can only contain letters, numbers, spaces, hyphens and underscores")
     private String courseName;
 
-    @NotNull(message = "Assignment date is required.")
-    private LocalDate date;
-
-    // Default constructor
-    public AssignmentRequestDTO() {
-    }
-
-    // Parameterized constructor
-    public AssignmentRequestDTO(Long teacherId, String title, String description, LocalDate dueDate, 
-                                String className, String courseName) {
-        this.teacherId = teacherId;
-        this.title = title;
-        this.description = description;
-        this.dueDate = dueDate;
-        this.className = className;
-        this.courseName = courseName;
-        this.date = LocalDate.now();
-    }
+    private AssignmentDocumentDTO document;
 }

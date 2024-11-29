@@ -34,4 +34,6 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 
     // Check if assignment exists by title for a class
     boolean existsByTitleAndClassEntity(String title, ClassEntity classEntity);
+
+    Optional<Assignment> findByTitleIgnoreCaseAndClassEntity(String title, ClassEntity classEntity);
 }
