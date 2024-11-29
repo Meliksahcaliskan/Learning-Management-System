@@ -42,9 +42,10 @@ public class RateLimiter {
                 .build(new CacheLoader<>() {
                     @Override
                     public Instant load(String key) {
-                        return Instant.now();
+                        return Instant.EPOCH; // Return a very old time (e.g., January 1, 1970)
                     }
                 });
+
     }
 
     public void checkRateLimit(String clientIp) throws RateLimitExceededException {
@@ -88,16 +89,13 @@ public class RateLimiter {
 
     private boolean isBlocked(String clientIp) throws ExecutionException {
         Instant blockTime = blockCache.get(clientIp);
-        return blockTime != null &&
+        return !blockTime.equals(Instant.EPOCH) &&
                 blockTime.plus(blockDurationMinutes, ChronoUnit.MINUTES).isAfter(Instant.now());
     }
 
     private long getRemainingBlockTime(String clientIp) throws ExecutionException {
         Instant blockTime = blockCache.get(clientIp);
-        if (blockTime != null) {
-            Instant unblockTime = blockTime.plus(blockDurationMinutes, ChronoUnit.MINUTES);
-            return Math.max(0, Duration.between(Instant.now(), unblockTime).toMinutes());
-        }
-        return 0;
+        Instant unblockTime = blockTime.plus(blockDurationMinutes, ChronoUnit.MINUTES);
+        return Math.max(0, Duration.between(Instant.now(), unblockTime).toMinutes());
     }
 }

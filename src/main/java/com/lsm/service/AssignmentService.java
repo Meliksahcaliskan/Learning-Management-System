@@ -145,7 +145,7 @@ public class AssignmentService {
         }
     }
 
-
+    @Transactional
     public List<AssignmentDTO> getAssignmentsByClass(Long studentId, AppUser loggedInUser)
             throws AccessDeniedException, EntityNotFoundException {
         AppUser user = appUserRepository.findById(studentId)
