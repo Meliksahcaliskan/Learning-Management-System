@@ -14,6 +14,7 @@
     --icon-color : #4D4D4D;
     --background : #FAFAFA;
     --border-color : #E9EDF7;
+    --success-message-color : #28A745;
 
     /* Fonts */
 
@@ -109,4 +110,11 @@ body{
 
 ul li {
     margin-bottom: 12px;
+}
+
+.success-message {
+    color: var(--success-message-color);
+    font-family: var(--label-font);
+    font-size: var(--label-size);
+    font-weight: var(--label-weight);
 }

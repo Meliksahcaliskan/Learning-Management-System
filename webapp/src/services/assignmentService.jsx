@@ -22,13 +22,6 @@ export const createAssignment = async (assignmentData, accessToken) => {
 }
 
 export const getAssignmentsForStudent = async (studentID, accessToken) => {
-    // const response = await axios.get(`/api/assignments/displayAssignments/${studentID}`, {
-    //     headers : {
-    //         Authorization : `Bearer ${token}`
-    //     },
-    // });
-    // return response.data;
-
     try {
         const response = await axios.get(
             `/api/v1/assignments/student/${studentID}`,
@@ -38,6 +31,7 @@ export const getAssignmentsForStudent = async (studentID, accessToken) => {
                 }
             }
         );
+        console.log(response.data);
         return response.data;
     }catch(error) {
         console.error(error);

@@ -23,13 +23,15 @@ const StudentAssignments = ({ user }) => {
     const fetchAssignments = async () => {
       setLoading(true);
       setError(null);
-      console.log(user.id);
-      console.log(user.accessToken);
       try {
         const data = await getAssignmentsForStudent(user.id, user.accessToken);
+        console.log(data);
         setAssignments(data);
-        setSelectedAssignments(data.filter((assignment) => assignment.status === selectedOption.status));
+        // setSelectedAssignments(data.filter((assignment) => assignment.status === selectedOption.status));
+        setSelectedAssignments(data);
+        // setSelectedAssignments(data.filter((assignment) => classifyAssignment(assignment)));
       } catch (err) {
+        console.log(err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -37,6 +39,10 @@ const StudentAssignments = ({ user }) => {
     };
     fetchAssignments();
   }, [user]);
+
+  const classifyAssignment = (assignment) => {
+    console.log(assignment);
+  }
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);

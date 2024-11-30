@@ -34,13 +34,31 @@ const NewAssignment = () => {
     const [assignmentDocument, setAssignmentDocument] = useState(null);
     const [fileError, setFileError] = useState('');
 
-    const [creationError, setCreationError] = useState('');
+    const [creationError, setCreationError] = useState(false);
+    const [creationSuccess, setCreationSuccess] = useState(false);
 
     useEffect(() => {
         getAllClasses(user.accessToken)
             .then(data => setAllClasses(data))
             .catch(error => console.error(error));
     }, [user.accessToken]);
+
+
+    // useEffect(() => {
+    //     setCreationError(false);
+    // },[
+    //     assignmentClass,
+    //     assignmentSubject,
+    //     assignmentDueDate,
+    //     assignmentTitle,
+    //     assignmentDescription,
+    //     assignmentDocument,
+    // ]);
+
+    const clearMessages = () => {
+        setCreationError(false);
+        setCreationSuccess(false);
+    }
 
     const loadCourses = async (className) => {
         const classID = allClasses.find(singleClass => singleClass.name === className)?.id;
@@ -59,11 +77,13 @@ const NewAssignment = () => {
         setAssignmentClass(newClassName);
         loadCourses(newClassName);
         setClassError('');
+        clearMessages();
     };
 
     const handleSubjectChange = (event) => {
         setAssignmentSubject(event.target.value);
         setSubjectError('');
+        clearMessages();
     };
 
     const handleDueDateChange = (event) => {
@@ -71,6 +91,7 @@ const NewAssignment = () => {
         if (isDateInFuture(dateInput)) {
             setAssignmnentDueDate(dateInput);
             setDateError('');
+            clearMessages();
         } else {
             setDateError('Bitiş tarihi gelecekte olmalıdır.');
             setAssignmnentDueDate('');
@@ -81,6 +102,7 @@ const NewAssignment = () => {
         const newTitle = event.target.value;
         setAssignmentTitle(newTitle);
         setTitleError('');
+        clearMessages();
     };
 
     const handleDescriptionChange = (event) => {
@@ -154,9 +176,17 @@ const NewAssignment = () => {
 
             try {
                 const response = await createAssignment(payload, user.accessToken);
-                console.log(response);
+                if(response.success) {
+                    setAssignmentClass('');
+                    setAssignmentSubject('');
+                    setAssignmnentDueDate('');
+                    setAssignmentTitle('');
+                    setAssignmentDescription('');
+                    setAssignmentDocument(null);
+                    setCreationSuccess(true);
+                }
             } catch (error) {
-                setCreationError('Ödev oluşturulukren hata!\nAynı başlığa sahip bir ödev olabilir.\nÖdev oluşturma yetkiniz olmayabilir.');
+                setCreationError(true);
             }
         }
     };
@@ -255,7 +285,8 @@ const NewAssignment = () => {
             >
                 Oluştur
             </button>
-            {creationError && <p className='error-message' style={{ whiteSpace : 'pre-line'}}>{creationError}</p>}
+            {creationError && <p className='error-message' style={{ whiteSpace : 'pre-line'}}>Ödev oluşturulukren hata!\nAynı başlığa sahip bir ödev olabilir.\nÖdev oluşturma yetkiniz olmayabilir.</p>}
+            {creationSuccess && <p className='success-message'>Ödev başarıyla oluşturuldu.</p>}
         </div>
     );
 };

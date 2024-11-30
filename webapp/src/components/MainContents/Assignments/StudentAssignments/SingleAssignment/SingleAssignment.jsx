@@ -40,7 +40,7 @@ const SingleAssigment = ({ assignment }) => {
             <div className="assignment-header" onClick={() => setIsExpanded((prev) => !prev)}>
                 <div className="assignment-header-info">
                     <img src="https://placeholder.pics/svg/32x32" alt="icon" />
-                    <span className="assignment-subject">{assignment.subject}</span>
+                    <span className="assignment-subject">{assignment.courseName}</span>
                     <span className="assignment-title">{assignment.title}</span>
                     <span className="assignment-dueDate">{(new Date(assignment.dueDate)).toLocaleDateString("en-GB")}</span>
                 </div>
