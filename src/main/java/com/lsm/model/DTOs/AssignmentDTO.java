@@ -6,6 +6,9 @@ import java.util.stream.Collectors;
 
 import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.AssignmentDocument;
+import com.lsm.model.entity.enums.AssignmentStatus;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.*;
 
 @Getter
@@ -28,6 +31,9 @@ public class AssignmentDTO {
     private String assignedByTeacherName;
     private String className;
     private String courseName;
+    @Enumerated(EnumType.STRING)
+    private AssignmentStatus status;
+
 
     public AssignmentDTO(Assignment assignment, String message) {
         this.id = assignment.getId();
@@ -47,11 +53,12 @@ public class AssignmentDTO {
         this.assignedByTeacherName = assignment.getAssignedBy().getUsername();
         this.className = assignment.getClassEntity().getName();
         this.courseName = assignment.getCourse().getName();
+        this.status = assignment.getStatus();
     }
 
     private AssignmentDocumentDTO convertToDTO(AssignmentDocument doc) {
         return AssignmentDocumentDTO.builder()
-                .id(doc.getId())
+                .assignmentId(doc.getId())
                 .fileName(doc.getFileName())
                 .fileType(doc.getFileType())
                 .fileSize(doc.getFileSize())

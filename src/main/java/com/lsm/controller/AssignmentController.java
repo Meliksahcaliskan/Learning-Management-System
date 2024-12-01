@@ -305,7 +305,7 @@ public class AssignmentController {
 
     private AssignmentDocumentDTO convertToDTO(AssignmentDocument document) {
         return AssignmentDocumentDTO.builder()
-                .id(document.getId())
+                .assignmentId(document.getId())
                 .fileName(document.getFileName())
                 .fileType(document.getFileType())
                 .fileSize(document.getFileSize())
