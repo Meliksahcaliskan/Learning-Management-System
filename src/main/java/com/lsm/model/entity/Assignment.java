@@ -1,8 +1,6 @@
 package com.lsm.model.entity;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
 
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.AssignmentStatus;
@@ -40,6 +38,9 @@ public class Assignment {
     @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
 
+    @Column(name = "submission_date")
+    private LocalDate submissionDate;
+
     @ManyToOne
     @JoinColumn(name = "assigned_by_teacher_id", nullable = false)
     private AppUser assignedBy;
@@ -60,15 +61,19 @@ public class Assignment {
     @Column(name = "assignment_date", nullable = false)
     private LocalDate date;
 
-    @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL)
-    private Set<AssignmentDocument> teacherDocuments = new HashSet<>();
+    @ManyToOne
+    @JoinColumn(name = "teacher_document")
+    private AssignmentDocument teacherDocument;
 
-    @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL)
-    private Set<AssignmentDocument> studentSubmissions = new HashSet<>();
+    @ManyToOne
+    @JoinColumn(name = "student_submission")
+    private AssignmentDocument studentSubmission;
 
     @Column(name = "grade")
     private Double grade;
 
     @Column(name = "feedback")
     private String feedback;
+
+
 }

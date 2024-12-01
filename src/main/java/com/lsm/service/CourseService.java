@@ -2,6 +2,7 @@ package com.lsm.service;
 
 import com.lsm.model.DTOs.CourseDTO;
 import com.lsm.model.entity.Course;
+import com.lsm.repository.ClassEntityRepository;
 import com.lsm.repository.CourseRepository;
 import com.lsm.exception.DuplicateResourceException;
 import com.lsm.exception.ResourceNotFoundException;
@@ -20,10 +21,12 @@ import java.util.stream.Collectors;
 public class CourseService {
 
     private final CourseRepository courseRepository;
+    private final ClassEntityRepository classEntityRepository;
 
     @Autowired
-    public CourseService(CourseRepository courseRepository) {
+    public CourseService(CourseRepository courseRepository, ClassEntityRepository classEntityRepository) {
         this.courseRepository = courseRepository;
+        this.classEntityRepository = classEntityRepository;
     }
 
     @Cacheable(value = "courses", key = "#id")
@@ -57,6 +60,9 @@ public class CourseService {
                 .description(courseDTO.getDescription())
                 .code(courseDTO.getCode())
                 .credits(courseDTO.getCredits())
+                .classes(courseDTO.getClassEntityIds().stream()
+                        .flatMap(id -> classEntityRepository.getClassEntityById(id).stream())
+                        .toList())
                 .build();
 
         Course savedCourse = courseRepository.save(course);

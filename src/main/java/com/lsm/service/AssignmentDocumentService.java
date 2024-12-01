@@ -33,7 +33,8 @@ public class AssignmentDocumentService {
     private String uploadDir;
 
     public AssignmentDocument uploadDocument(MultipartFile file, Long assignmentId,
-                                             AppUser currentUser, boolean isTeacherUpload) throws IOException {
+                                             AppUser currentUser, boolean isTeacherUpload)
+            throws IOException {
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
 
@@ -53,8 +54,10 @@ public class AssignmentDocumentService {
 
         // Generate unique filename
         String originalFilename = file.getOriginalFilename();
-        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
+        String fileExtension = "";
+        if (originalFilename != null)
+            fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String uniqueFilename = UUID.randomUUID() + fileExtension;
         String filePath = dirPath + "/" + uniqueFilename;
 
         // Save file

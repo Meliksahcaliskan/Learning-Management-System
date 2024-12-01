@@ -1,6 +1,8 @@
 package com.lsm.model.DTOs;
 
 import java.time.LocalDate;
+
+import com.lsm.model.entity.AssignmentDocument;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;

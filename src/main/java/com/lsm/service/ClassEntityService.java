@@ -12,17 +12,20 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ClassEntityService implements ClassEntityServiceInterface {
 
     private final ClassEntityRepository classRepository;
     private final AppUserRepository appUserRepository;
+    private final ClassEntityRepository classEntityRepository;
 
     @Autowired
-    public ClassEntityService(ClassEntityRepository classRepository, AppUserRepository appUserRepository) {
+    public ClassEntityService(ClassEntityRepository classRepository, AppUserRepository appUserRepository, ClassEntityRepository classEntityRepository) {
         this.classRepository = classRepository;
         this.appUserRepository = appUserRepository;
+        this.classEntityRepository = classEntityRepository;
     }
 
     @Override
@@ -160,4 +163,18 @@ public class ClassEntityService implements ClassEntityServiceInterface {
         classRepository.save(classEntity);
         return classEntity;
     }
+
+    @Transactional(readOnly = true)
+    public List<ClassEntity> getTeacherClasses(Authentication authentication) {
+        AppUser teacher = (AppUser) authentication.getPrincipal();
+        return classEntityRepository.findClassesByTeacherId(teacher.getId());
+    }
+
+    @Transactional
+    public ClassEntity getStudentClasses(Authentication authentication) {
+        AppUser student = (AppUser) authentication.getPrincipal();
+        return classEntityRepository.getClassEntityById(student.getStudentDetails().getClassEntity()).orElseThrow
+                (() -> new EntityNotFoundException("Class not found with id: " + student.getStudentDetails().getClassEntity()));
+    }
+
 }

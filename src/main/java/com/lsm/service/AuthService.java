@@ -206,6 +206,7 @@ public class AuthService {
         TeacherDetails teacherDetails = new TeacherDetails();
         teacherDetails.setTc(registerRequest.getTc());
         teacherDetails.setClasses(registerRequest.getClasses());
+        teacherDetails.setCourses(registerRequest.getCourses());
         teacherDetails.setPhone(registerRequest.getPhone());
         teacherDetails.setBirthDate(registerRequest.getBirthDate());
         return teacherDetails;

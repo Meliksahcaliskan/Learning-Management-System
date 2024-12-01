@@ -55,6 +55,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws InvalidTokenException {
         try {
+            request.setCharacterEncoding("UTF-8");
+            response.setCharacterEncoding("UTF-8");
+            response.setContentType("text/html;charset=UTF-8");
+
             if (shouldNotFilter(request)) {
                 filterChain.doFilter(request, response);
                 return;
