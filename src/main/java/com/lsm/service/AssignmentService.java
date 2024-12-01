@@ -364,9 +364,9 @@ public class AssignmentService {
         assignment.setDueDate(dto.getDueDate());
         assignment.setAssignedBy(teacher);
         if (dto.getDocument().isTeacherUpload())
-            assignment.getTeacherDocuments().add(dto.getDocument().DTOtoDocument(assignmentRepository, appUserRepository));
+            assignment.setTeacherDocuments(dto.getDocument().DTOtoDocument(assignmentRepository, appUserRepository));
         else
-            assignment.getStudentSubmissions().add(dto.getDocument().DTOtoDocument(assignmentRepository, appUserRepository));
+            assignment.setTeacherDocuments(dto.getDocument().DTOtoDocument(assignmentRepository, appUserRepository));
         assignment.setClassEntity(classEntity);
         assignment.setCourse(course);
         assignment.setDate(LocalDate.now());

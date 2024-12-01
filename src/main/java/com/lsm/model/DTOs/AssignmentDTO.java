@@ -23,8 +23,8 @@ public class AssignmentDTO {
     private String description;
     private LocalDate dueDate;
     private String message;
-    private List<AssignmentDocumentDTO> teacherDocuments;
-    private List<AssignmentDocumentDTO> studentSubmissions;
+    private AssignmentDocumentDTO teacherDocuments;
+    private AssignmentDocumentDTO studentSubmissions;
     private Double grade;
     private String feedback;
     private LocalDate createdDate;
@@ -41,12 +41,8 @@ public class AssignmentDTO {
         this.description = assignment.getDescription();
         this.dueDate = assignment.getDueDate();
         this.message = message;
-        this.teacherDocuments = assignment.getTeacherDocuments().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-        this.studentSubmissions = assignment.getStudentSubmissions().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        this.teacherDocuments = convertToDTO(assignment.getTeacherDocuments());
+        this.studentSubmissions = convertToDTO(assignment.getStudentSubmissions());
         this.grade = assignment.getGrade();
         this.feedback = assignment.getFeedback();
         this.createdDate = assignment.getDate();
