@@ -141,4 +141,31 @@ public class ClassEntityController {
         ClassEntity updatedClass = classService.removeStudent(classId, studentId);
         return ResponseEntity.ok(classMapper.toDTO(updatedClass));
     }
+
+    @Operation(summary = "Get all classes of the teacher", description = "Teachers can view all their classes")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Classes retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    @GetMapping("/teacher")
+    public ResponseEntity<List<ClassEntityResponseDTO>> getTeacherClasses(Authentication authentication) {
+        List<ClassEntityResponseDTO> classes = classService.getTeacherClasses(authentication)
+                .stream()
+                .map(classMapper::toDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(classes);
+    }
+
+    @Operation(summary = "Get all classes of the student", description = "Students can view all their enrolled classes")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Classes retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_STUDENT', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    @GetMapping("/student")
+    public ResponseEntity<ClassEntityResponseDTO> getStudentClasses(Authentication authentication) {
+        ClassEntityResponseDTO classEntity = classMapper.toDTO(classService.getStudentClasses(authentication));
+        return ResponseEntity.ok(classEntity);
+    }
 }
