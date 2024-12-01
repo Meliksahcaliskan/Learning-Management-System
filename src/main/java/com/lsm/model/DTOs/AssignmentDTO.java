@@ -41,8 +41,8 @@ public class AssignmentDTO {
         this.description = assignment.getDescription();
         this.dueDate = assignment.getDueDate();
         this.message = message;
-        this.teacherDocuments = convertToDTO(assignment.getTeacherDocument());
-        this.studentSubmissions = convertToDTO(assignment.getStudentSubmission());
+        this.teacherDocuments = (assignment.getTeacherDocument() == null) ? null : convertToDTO(assignment.getTeacherDocument());
+        this.studentSubmissions = (assignment.getStudentSubmission() == null) ? null : convertToDTO(assignment.getStudentSubmission());
         this.grade = assignment.getGrade();
         this.feedback = assignment.getFeedback();
         this.createdDate = assignment.getDate();
@@ -54,7 +54,7 @@ public class AssignmentDTO {
 
     private AssignmentDocumentDTO convertToDTO(AssignmentDocument doc) {
         return AssignmentDocumentDTO.builder()
-                .assignmentId(doc.getId())
+                .assignmentId(id)
                 .fileName(doc.getFileName())
                 .fileType(doc.getFileType())
                 .fileSize(doc.getFileSize())

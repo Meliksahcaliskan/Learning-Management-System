@@ -140,6 +140,7 @@ public class AssignmentService {
             validateUniqueTitle(dto.getTitle(), classEntity); // No existingAssignmentId for creation
 
             Assignment assignment = createAssignmentEntity(dto, teacher, classEntity, course);
+            classEntity.getAssignments().add(assignment);
 
             log.info("Assignment created successfully with ID: {}", assignment.getId());
             return assignmentRepository.save(assignment);
@@ -243,8 +244,14 @@ public class AssignmentService {
         AppUser user = appUserRepository.findById(loggedInUserId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
+        user.getTeacherDetails().getClasses().stream()
+                .map(classEntityRepository::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(classEntity -> classEntity.getAssignments().remove(assignment));
+
         // Only teacher who created the assignment or admin can delete it
-        if (user.getRole() != Role.ROLE_ADMIN && !assignment.getAssignedBy().getId().equals(loggedInUserId)) {
+        if ((user.getRole() != Role.ROLE_ADMIN || user.getRole() != Role.ROLE_COORDINATOR) && !assignment.getAssignedBy().getId().equals(loggedInUserId)) {
             throw new AccessDeniedException("You can only delete your own assignments");
         }
 

@@ -54,8 +54,10 @@ public class AssignmentDocumentService {
 
         // Generate unique filename
         String originalFilename = file.getOriginalFilename();
-        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
+        String fileExtension = "";
+        if (originalFilename != null)
+            fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String uniqueFilename = UUID.randomUUID() + fileExtension;
         String filePath = dirPath + "/" + uniqueFilename;
 
         // Save file

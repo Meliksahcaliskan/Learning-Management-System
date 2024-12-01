@@ -106,13 +106,13 @@ FROM classes c, app_users s
 WHERE s.role = 'ROLE_STUDENT';
 
 -- Create Assignments
-INSERT INTO assignments (id, title, description, due_date, assigned_by_teacher_id,
+INSERT INTO assignments (id, title, description, due_date, submission_date,assigned_by_teacher_id,
                          status, class_id, course_id, assignment_date) VALUES
-                                                                           (nextval('assignments_seq'), 'Math Homework 1', 'Complete exercises 1-10', '2024-12-01',
+                                                                           (nextval('assignments_seq'), 'Math Homework 1', 'Complete exercises 1-10', '2024-12-01', null,
                                                                             (SELECT id FROM app_users WHERE username = 'teacher1'), 'PENDING',
                                                                             (SELECT id FROM classes WHERE name = 'Mathematics 101'),
                                                                             (SELECT id FROM courses WHERE code = 'MATH101'), '2024-11-24'),
-                                                                           (nextval('assignments_seq'), 'Physics Lab Report', 'Write report on gravity experiment', '2024-12-05',
+                                                                           (nextval('assignments_seq'), 'Physics Lab Report', 'Write report on gravity experiment', '2024-12-05', null,
                                                                             (SELECT id FROM app_users WHERE username = 'teacher2'), 'PENDING',
                                                                             (SELECT id FROM classes WHERE name = 'Physics 101'),
                                                                             (SELECT id FROM courses WHERE code = 'PHYS101'), '2024-11-24');
