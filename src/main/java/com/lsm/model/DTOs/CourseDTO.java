@@ -1,7 +1,9 @@
 package com.lsm.model.DTOs;
 
+import com.lsm.model.entity.ClassEntity;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -9,6 +11,7 @@ import lombok.AllArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 @Builder
@@ -30,4 +33,7 @@ public class CourseDTO implements Serializable {
 
     @Min(value = 1, message = "Credits must be at least 1")
     private Integer credits;
+
+    @NotNull
+    private List<Long> classEntityIds;
 }

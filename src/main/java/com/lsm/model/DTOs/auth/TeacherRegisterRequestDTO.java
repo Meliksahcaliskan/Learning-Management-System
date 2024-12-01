@@ -15,4 +15,5 @@ public class TeacherRegisterRequestDTO extends RegisterRequestDTO {
     private String tc;
     private LocalDate birthDate;
     private List<Long> classes;
+    private List<Long> courses;
 }

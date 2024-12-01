@@ -24,5 +24,10 @@ public class TeacherDetails {
     @CollectionTable(name = "teacher_classes", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "class_id")
     private List<Long> classes = new ArrayList<>();
+
+    @ElementCollection
+    @CollectionTable(name = "teacher_courses", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "course_id")
+    private List<Long> courses = new ArrayList<>();
 }
 
