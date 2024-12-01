@@ -1,5 +1,6 @@
 package com.lsm.service;
 
+import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.util.List;
@@ -7,6 +8,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.lsm.model.DTOs.GradeDTO;
+import com.lsm.model.DTOs.SubmitAssignmentDTO;
+import com.lsm.model.entity.AssignmentDocument;
 import com.lsm.model.entity.ClassEntity;
 import com.lsm.model.entity.Course;
 import com.lsm.model.entity.enums.AssignmentStatus;
@@ -39,6 +42,7 @@ public class AssignmentService {
     private final AppUserRepository appUserRepository;
     private final ClassEntityRepository classEntityRepository;
     private final CourseRepository courseRepository;
+    private final AssignmentDocumentService assignmentDocumentService;
 
     @Value("${assignment.max-title-length:100}")
     private int maxTitleLength;
@@ -47,11 +51,12 @@ public class AssignmentService {
     private int minDueDateDays;
 
     @Autowired
-    public AssignmentService(AssignmentRepository assignmentRepository, AppUserRepository appUserRepository, ClassEntityRepository classEntityRepository, CourseRepository courseRepository) {
+    public AssignmentService(AssignmentRepository assignmentRepository, AppUserRepository appUserRepository, ClassEntityRepository classEntityRepository, CourseRepository courseRepository, AssignmentDocumentService assignmentDocumentService) {
         this.assignmentRepository = assignmentRepository;
         this.appUserRepository = appUserRepository;
         this.classEntityRepository = classEntityRepository;
         this.courseRepository = courseRepository;
+        this.assignmentDocumentService = assignmentDocumentService;
     }
 
     @Transactional
@@ -187,6 +192,11 @@ public class AssignmentService {
     @Transactional
     public Assignment updateAssignment(Long assignmentId, AssignmentRequestDTO dto, Long loggedInUserId)
             throws AccessDeniedException {
+        AppUser user = appUserRepository.findById(loggedInUserId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        if(user.getRole() == Role.ROLE_STUDENT) {
+            throw new AccessDeniedException("Students can't update assignments");
+        }
         try {
             log.info("Updating assignment ID: {} with title: {}", assignmentId, dto.getTitle());
 
@@ -294,6 +304,43 @@ public class AssignmentService {
         return assignmentRepository.save(assignment);
     }
 
+    public Assignment submitAssignment(Long assignmentId, SubmitAssignmentDTO submitDTO, AppUser currentUser)
+            throws IllegalStateException, IOException {
+        Assignment assignment = findById(assignmentId);
+
+        // Verify the assignment belongs to the student
+        if (!assignment.getCourse().getAssignments().equals(currentUser)) {
+            throw new AccessDeniedException("You can only submit your own assignments");
+        }
+
+        // Check if assignment is already submitted
+        if (assignment.getStatus() == AssignmentStatus.SUBMITTED
+                || assignment.getStatus() == AssignmentStatus.GRADED) {
+            throw new IllegalStateException("Assignment is already submitted or graded");
+        }
+
+        // Check deadline
+        if (LocalDate.now().isAfter(assignment.getDueDate())) {
+            throw new IllegalStateException("Assignment deadline has passed");
+        }
+
+        // Upload document
+        AssignmentDocument document = assignmentDocumentService.uploadDocument(
+                submitDTO.getDocument(),
+                assignmentId,
+                currentUser,
+                false // not a teacher upload
+        );
+
+        // Update assignment
+        assignment.setStatus(AssignmentStatus.SUBMITTED);
+        assignment.setDescription(submitDTO.getSubmissionComment());
+        assignment.setSubmissionDate(LocalDate.now());
+        assignment.setStudentSubmission(document);
+
+        return assignmentRepository.save(assignment);
+    }
+
     public Assignment findById(Long id) {
         return assignmentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
@@ -364,9 +411,9 @@ public class AssignmentService {
         assignment.setDueDate(dto.getDueDate());
         assignment.setAssignedBy(teacher);
         if (dto.getDocument().isTeacherUpload())
-            assignment.setTeacherDocuments(dto.getDocument().DTOtoDocument(assignmentRepository, appUserRepository));
+            assignment.setTeacherDocument(dto.getDocument().DTOtoDocument(assignmentRepository, appUserRepository));
         else
-            assignment.setTeacherDocuments(dto.getDocument().DTOtoDocument(assignmentRepository, appUserRepository));
+            assignment.setTeacherDocument(dto.getDocument().DTOtoDocument(assignmentRepository, appUserRepository));
         assignment.setClassEntity(classEntity);
         assignment.setCourse(course);
         assignment.setDate(LocalDate.now());

@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -366,6 +367,47 @@ public class AssignmentController {
             throw new SecurityException(e.getMessage());
         }
     }
+
+    @Operation(
+            summary = "Submit an assignment",
+            description = "Allows students to submit their assignments with documents before the deadline"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Assignment submitted successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid submission or past deadline"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Assignment not found")
+    })
+    @PatchMapping(value = "/{assignmentId}/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse_<AssignmentDTO>> submitAssignment(
+            @Parameter(description = "ID of the assignment to submit", required = true)
+            @PathVariable @Positive Long assignmentId,
+            @Valid @ModelAttribute SubmitAssignmentDTO submitDTO,
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            log.info("Submitting assignment: {}, user: {}", assignmentId, currentUser.getUsername());
+
+            // Validate file
+            validateFile(submitDTO.getDocument());
+
+            Assignment submitted = assignmentService.submitAssignment(assignmentId, submitDTO, currentUser);
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Assignment submitted successfully",
+                    new AssignmentDTO(submitted, "Submitted successfully")
+            ));
+        } catch (IOException e) {
+            log.error("Error uploading document: {}", e.getMessage());
+            throw new RuntimeException("Error uploading document");
+        } catch (Exception e) {
+            log.error("Error submitting assignment: {}", e.getMessage());
+            throw new RuntimeException("Error submitting assignment: " + e.getMessage());
+        }
+    }
+
 
     @Operation(
             summary = "Unsubmit an assignment",

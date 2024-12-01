@@ -33,7 +33,8 @@ public class AssignmentDocumentService {
     private String uploadDir;
 
     public AssignmentDocument uploadDocument(MultipartFile file, Long assignmentId,
-                                             AppUser currentUser, boolean isTeacherUpload) throws IOException {
+                                             AppUser currentUser, boolean isTeacherUpload)
+            throws IOException {
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
 

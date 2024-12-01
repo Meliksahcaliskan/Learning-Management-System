@@ -38,6 +38,9 @@ public class Assignment {
     @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
 
+    @Column(name = "submission_date")
+    private LocalDate submissionDate;
+
     @ManyToOne
     @JoinColumn(name = "assigned_by_teacher_id", nullable = false)
     private AppUser assignedBy;
@@ -60,15 +63,17 @@ public class Assignment {
 
     @ManyToOne
     @JoinColumn(name = "teacher_document")
-    private AssignmentDocument teacherDocuments;
+    private AssignmentDocument teacherDocument;
 
     @ManyToOne
     @JoinColumn(name = "student_submission")
-    private AssignmentDocument studentSubmissions;
+    private AssignmentDocument studentSubmission;
 
     @Column(name = "grade")
     private Double grade;
 
     @Column(name = "feedback")
     private String feedback;
+
+
 }
