@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.AssignmentDocument;
+import com.lsm.model.entity.enums.AssignmentStatus;
 import lombok.*;
 
 @Getter
@@ -15,7 +16,6 @@ import lombok.*;
 @Builder
 public class AssignmentDTO {
     private Long id;
-
     private String title;
     private String description;
     private LocalDate dueDate;
@@ -28,6 +28,7 @@ public class AssignmentDTO {
     private String assignedByTeacherName;
     private String className;
     private String courseName;
+    private AssignmentStatus status; // New field for status
 
     public AssignmentDTO(Assignment assignment, String message) {
         this.id = assignment.getId();
@@ -47,6 +48,7 @@ public class AssignmentDTO {
         this.assignedByTeacherName = assignment.getAssignedBy().getUsername();
         this.className = assignment.getClassEntity().getName();
         this.courseName = assignment.getCourse().getName();
+        this.status = assignment.getStatus(); // Set the status from the entity
     }
 
     private AssignmentDocumentDTO convertToDTO(AssignmentDocument doc) {

@@ -24,11 +24,11 @@ const StudentAssignments = ({ user }) => {
       setLoading(true);
       setError(null);
       try {
-        const data = await getAssignmentsForStudent(user.id, user.accessToken);
-        console.log(data);
-        setAssignments(data);
+        const response = await getAssignmentsForStudent(user.id, user.accessToken);
+        console.log(response.data);
+        setSelectedAssignments(response.data);
+        // setAssignments(data);
         // setSelectedAssignments(data.filter((assignment) => assignment.status === selectedOption.status));
-        setSelectedAssignments(data);
         // setSelectedAssignments(data.filter((assignment) => classifyAssignment(assignment)));
       } catch (err) {
         console.log(err);

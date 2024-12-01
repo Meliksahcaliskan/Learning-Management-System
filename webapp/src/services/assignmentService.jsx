@@ -17,9 +17,47 @@ export const createAssignment = async (assignmentData, accessToken) => {
         return response.data;
     }catch(error) {
         console.error("error creating assignment");
+        console.log(error);
         throw error
     }
 }
+
+export const submitStudentAssignment = async (assignmentID, newStatus, accessToken) => {
+    try {
+        const response = await axios.patch(
+            `/api/v1/assignments/${assignmentID}/status`,
+            { status : newStatus},
+            {
+                headers : {
+                    'Content-Type' : 'application/json',
+                    Authorization : `Bearer ${accessToken}`
+                },
+            }
+        );
+        return response.data;
+    }catch(error) {
+        console.log(error);
+    }
+}
+
+export const unsubmitStudentAssignment = async (assignmentID, accessToken) => {
+    try {
+        const response = await axios.patch(
+            `/api/v1/assignments/${assignmentID}/unsubmit`,
+            {},
+            {
+                headers : {
+                    'Content-Type' : 'application/json',
+                    Authorization : `Bearer ${accessToken}`
+                },
+            }
+        );
+        return response.data;
+    }catch(error) {
+        console.log(error);
+    }
+}
+
 
 export const getAssignmentsForStudent = async (studentID, accessToken) => {
     try {
@@ -31,12 +69,12 @@ export const getAssignmentsForStudent = async (studentID, accessToken) => {
                 }
             }
         );
-        console.log(response.data);
         return response.data;
     }catch(error) {
-        console.error(error);
         throw error;
     }
+
+
 
     // return(
 

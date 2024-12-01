@@ -7,7 +7,6 @@ import StudentAssignments from './StudentAssignments/StudentAssignments';
 import OfficerAssignments from './OfficerAssignments/OfficerAssignments';
 
 const Assignments = () => {
-
     const { user } = useContext(AuthContext);
     return(
         <div className="assignments">

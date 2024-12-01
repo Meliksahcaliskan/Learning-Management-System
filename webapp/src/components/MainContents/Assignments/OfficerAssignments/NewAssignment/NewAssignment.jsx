@@ -39,21 +39,11 @@ const NewAssignment = () => {
 
     useEffect(() => {
         getAllClasses(user.accessToken)
-            .then(data => setAllClasses(data))
+            .then(data => {
+                console.log(data);
+                setAllClasses(data)})
             .catch(error => console.error(error));
     }, [user.accessToken]);
-
-
-    // useEffect(() => {
-    //     setCreationError(false);
-    // },[
-    //     assignmentClass,
-    //     assignmentSubject,
-    //     assignmentDueDate,
-    //     assignmentTitle,
-    //     assignmentDescription,
-    //     assignmentDocument,
-    // ]);
 
     const clearMessages = () => {
         setCreationError(false);
@@ -285,7 +275,14 @@ const NewAssignment = () => {
             >
                 Oluştur
             </button>
-            {creationError && <p className='error-message' style={{ whiteSpace : 'pre-line'}}>Ödev oluşturulukren hata!\nAynı başlığa sahip bir ödev olabilir.\nÖdev oluşturma yetkiniz olmayabilir.</p>}
+            {creationError && 
+                <p className='error-message' style={{ whiteSpace : 'pre-line'}}>
+                    Ödev oluşturulukren hata! <br />
+                    Aynı başlığa sahip bir ödev olabilir. <br />
+                    Seçilen sınıfa ödev oluşturma yetkiniz olmayabilir. <br />
+                    Seçilen derse ödev oluşturma yetkiniz olmayabilir.
+                </p>
+            }
             {creationSuccess && <p className='success-message'>Ödev başarıyla oluşturuldu.</p>}
         </div>
     );

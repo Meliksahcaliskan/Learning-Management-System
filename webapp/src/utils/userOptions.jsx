@@ -20,6 +20,14 @@ const userOptionsMap = {
         { title: 'Sınav Sonuçları', component: null },
         { title: 'Duyurular', component: null }
     ],
+    ROLE_COORDINATOR: [
+        { title: 'Ana Menü', component: null },
+        { title: 'Öğrenci Bul', component: null },
+        { title: 'Ödev Takibi', component: Assignments },
+        { title: 'Yoklama', component: null },
+        { title: 'Sınav Sonuçları', component: null },
+        { title: 'Duyurular', component: null }
+    ],
     ROLE_STUDENT: [
         { title: 'Ana Menü', component: null },
         { title: 'Ödevler', component: Assignments },
@@ -29,9 +37,6 @@ const userOptionsMap = {
     ]
 }
 
-
 export const getSidebarOptions = (role) => {
     return userOptionsMap[role];
 }
-
-

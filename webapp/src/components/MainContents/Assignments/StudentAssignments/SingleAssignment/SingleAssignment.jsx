@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import arrowDown from '/icons/arrow-down.svg';
 import arrowUp from '/icons/arrow-up.svg';
 import deleteIcon from '/icons/delete.svg';
 
 import './SingleAssignment.css';
+import { submitStudentAssignment } from "../../../../../services/assignmentService";
+import { AuthContext } from "../../../../../contexts/AuthContext";
 
 const SingleAssigment = ({ assignment }) => {
+    const { user } = useContext(AuthContext);
 
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -20,6 +23,15 @@ const SingleAssigment = ({ assignment }) => {
 
     const handleAssignmentSubmit = () => {
         console.log("handling assignment submit");
+        try {
+
+            if(uploadedFile) {
+                console.log("upload file");
+            }
+            const response = submitStudentAssignment(assignment.id, 'SUBMITTED', user.accessToken);
+        }catch(err) {
+            console.log("error submitting assignment.");
+        }
     }
     
     const handleAssignmentUnsubmit = () => {
@@ -42,7 +54,7 @@ const SingleAssigment = ({ assignment }) => {
                     <img src="https://placeholder.pics/svg/32x32" alt="icon" />
                     <span className="assignment-subject">{assignment.courseName}</span>
                     <span className="assignment-title">{assignment.title}</span>
-                    <span className="assignment-dueDate">{(new Date(assignment.dueDate)).toLocaleDateString("en-GB")}</span>
+                    <span className="assignment-dueDate">{(new Date(assignment.createdDate)).toLocaleDateString("en-GB")} - {(new Date(assignment.dueDate)).toLocaleDateString("en-GB")}</span>
                 </div>
                 <button className="expand-btn">
                     <img src={isExpanded ? arrowUp : arrowDown} alt="toggle assignment details" />
@@ -54,15 +66,28 @@ const SingleAssigment = ({ assignment }) => {
 
                     <div className="assignment-body-section">
                         <label className="assignment-section-title">Açıklama</label>
-                        <p className="assignment-section-text">{assignment.description}</p>
+                        {assignment.description ? (
+                            <p className="assignment-section-text">{assignment.description}</p>
+                        ) : (
+                            <i className="assignment-section-text">Açıklama yok.</i>
+                        )}
                     </div>
-                    
-                    {assignment.document &&
+
+                    <div className="assignment-body-section">
+                        <label className="assignment-section-title">Yardımcı materyaller</label>
+                        {assignment.teacherDocuments[0] ? (
+                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.teacherDocuments[0]}</span>
+                        ) : (
+                            <i className="assignment-section-text">Döküman eklenmedi.</i>
+                        )}
+                    </div>
+
+                    {/* {assignment.document &&
                         <div className="assignment-body-section">
                             <label className="assignment-section-title">Yardımcı materyaller</label>
                             <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.document}</span>
                         </div>    
-                    }
+                    } */}
                     
                     {assignment.status === 'PENDING' && (
                         <>
@@ -86,10 +111,10 @@ const SingleAssigment = ({ assignment }) => {
                         </>
                     )}
 
-                    {(assignment.status !== 'PENDING' && assignment.uploadedDocument) &&
+                    {(assignment.status !== 'PENDING' && assignment.studentSubmissions[0]) &&
                         <div className="assignment-body-section">
                             <label className="assignment-section-title">Eklenen dökümanlar</label>
-                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.uploadedDocument}</span>
+                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.studentSubmissions[0].fileName}</span>
                         </div>
                     }
                     {assignment.status === 'SUBMITTED' &&

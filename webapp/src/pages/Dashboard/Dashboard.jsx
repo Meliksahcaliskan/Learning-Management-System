@@ -32,7 +32,7 @@ const Dashboard = () => {
                 <Header
                     title={selectedOption.title}
                     user={{
-                        name : user.username,
+                        name : user.name + ' ' + user.surname,
                         imgSource : '/icons/profile-picture.svg'
                     }}
                 />
