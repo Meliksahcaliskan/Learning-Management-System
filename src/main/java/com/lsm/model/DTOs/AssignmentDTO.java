@@ -41,8 +41,8 @@ public class AssignmentDTO {
         this.description = assignment.getDescription();
         this.dueDate = assignment.getDueDate();
         this.message = message;
-        this.teacherDocuments = convertToDTO(assignment.getTeacherDocuments());
-        this.studentSubmissions = convertToDTO(assignment.getStudentSubmissions());
+        this.teacherDocuments = convertToDTO(assignment.getTeacherDocument());
+        this.studentSubmissions = convertToDTO(assignment.getStudentSubmission());
         this.grade = assignment.getGrade();
         this.feedback = assignment.getFeedback();
         this.createdDate = assignment.getDate();
