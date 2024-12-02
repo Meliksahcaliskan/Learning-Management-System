@@ -1,12 +1,13 @@
 package com.lsm.model.entity;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import com.lsm.model.entity.base.AppUser;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 @Entity
@@ -23,9 +24,12 @@ public class ClassEntity {
     @SequenceGenerator(name = "class_seq", sequenceName = "classes_id_seq", allocationSize = 1)
     private Long id;
 
+    @NotBlank
+    @Size(max = 100)
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Size(max = 500)
     @Column(length = 500)
     private String description;
 
@@ -35,13 +39,13 @@ public class ClassEntity {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-        name = "class_students",
-        joinColumns = @JoinColumn(name = "class_id"),
-        inverseJoinColumns = @JoinColumn(name = "student_id")
+            name = "class_students",
+            joinColumns = @JoinColumn(name = "class_id"),
+            inverseJoinColumns = @JoinColumn(name = "student_id")
     )
-    private List<AppUser> students;
+    private Set<AppUser> students = new HashSet<>(); // Changed to Set for consistency
 
-    @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Assignment> assignments = new HashSet<>();
 
     @ManyToMany
@@ -52,4 +56,3 @@ public class ClassEntity {
     )
     private Set<Course> courses = new HashSet<>();
 }
-
