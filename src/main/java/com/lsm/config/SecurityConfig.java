@@ -159,6 +159,9 @@ public class SecurityConfig {
                             .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
                     registry.requestMatchers(HttpMethod.DELETE, "/api/v1/assignments/**")
                             .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+                    registry.requestMatchers(HttpMethod.PATCH, "/api/v1/assignments/**")
+                            .hasAnyAuthority("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+
 
                     // Default policy
                     registry.anyRequest().authenticated();

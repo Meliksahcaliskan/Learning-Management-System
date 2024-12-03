@@ -10,8 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityNotFoundException;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,13 +39,12 @@ public class ClassEntityService implements ClassEntityServiceInterface {
 
         // Find and set students if provided
         if (studentIds != null && !studentIds.isEmpty()) {
-            List<AppUser> students = new ArrayList<>();
-            for (Long studentId : studentIds) {
-                AppUser student = appUserRepository.findById(studentId)
-                        .orElseThrow(() -> new EntityNotFoundException("Student not found with id: " + studentId));
-                students.add(student);
-                student.getStudentDetails().setClassEntity(classEntity.getId());
-            }
+            Set<AppUser > students = studentIds.stream()
+                    .map(studentId -> appUserRepository.findById(studentId)
+                            .orElseThrow(() -> new EntityNotFoundException("Student not found with id: " + studentId)))
+                    .peek(student -> student.getStudentDetails().setClassEntity(classEntity.getId()))
+                    .collect(Collectors.toSet());
+
             classEntity.setStudents(students);
         }
 
@@ -85,12 +85,11 @@ public class ClassEntityService implements ClassEntityServiceInterface {
 
         // Update students if provided
         if (studentIds != null) {
-            List<AppUser> students = new ArrayList<>();
-            for (Long studentId : studentIds) {
-                AppUser student = appUserRepository.findById(studentId)
-                        .orElseThrow(() -> new EntityNotFoundException("Student not found with id: " + studentId));
-                students.add(student);
-            }
+            Set<AppUser > students = studentIds.stream()
+                    .map(studentId -> appUserRepository.findById(studentId)
+                            .orElseThrow(() -> new EntityNotFoundException("Student not found with id: " + studentId)))
+                    .collect(Collectors.toSet());
+
             existingClass.setStudents(students);
         }
 
@@ -135,7 +134,7 @@ public class ClassEntityService implements ClassEntityServiceInterface {
                 .orElseThrow(() -> new EntityNotFoundException("Student not found with id: " + studentId));
 
         if (classEntity.getStudents() == null) {
-            classEntity.setStudents(new ArrayList<>());
+            classEntity.setStudents(new HashSet<>());
         }
 
         // Check if student is already in the class
