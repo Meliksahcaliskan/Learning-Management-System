@@ -137,7 +137,7 @@ public class AssignmentService {
                     .orElseThrow(() -> new EntityNotFoundException("Course not found"));
 
             validateTeacherAccess(teacher, classEntity);
-            validateUniqueTitle(dto.getTitle(), classEntity); // No existingAssignmentId for creation
+            // validateUniqueTitle(dto.getTitle(), classEntity); // No existingAssignmentId for creation
 
             Assignment assignment = createAssignmentEntity(dto, teacher, classEntity, course);
 
@@ -257,7 +257,7 @@ public class AssignmentService {
 
             // Validate teacher access and title uniqueness
             validateTeacherAccess(existingAssignment.getAssignedBy(), classEntity);
-            validateUniqueTitle(dto.getTitle(), classEntity, assignmentId);
+            // validateUniqueTitle(dto.getTitle(), classEntity, assignmentId);
 
             // Update assignment fields
             updateAssignmentFields(existingAssignment, dto, classEntity, course);
@@ -472,6 +472,7 @@ public class AssignmentService {
         return assignment;
     }
 
+    /*
     private void validateUniqueTitle(String title, ClassEntity classEntity, Long... existingAssignmentId) {
         log.debug("Validating title uniqueness: {} for class: {}", title, classEntity.getName());
 
@@ -504,4 +505,5 @@ public class AssignmentService {
         }
         log.debug("Title validation passed for: {} in class: {}", title, classEntity.getName());
     }
+     */
 }

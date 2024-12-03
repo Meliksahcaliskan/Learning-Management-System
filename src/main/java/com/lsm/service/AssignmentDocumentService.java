@@ -38,9 +38,11 @@ public class AssignmentDocumentService {
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
 
+        if(isTeacherUpload && currentUser.getRole().equals(Role.ROLE_STUDENT))
+            throw new AccessDeniedException("Students are not allowed to upload teacher documents");
+
         // Validate permissions
-        if (isTeacherUpload && !currentUser.getRole().equals(Role.ROLE_TEACHER)
-                && !currentUser.equals(assignment.getAssignedBy())) {
+        if (isTeacherUpload && !currentUser.getId().equals(assignment.getAssignedBy().getId())) {
             throw new AccessDeniedException("Only the assigned teacher can upload documents");
         }
 
