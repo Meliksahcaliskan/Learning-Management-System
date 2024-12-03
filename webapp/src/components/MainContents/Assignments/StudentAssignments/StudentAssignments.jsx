@@ -26,10 +26,8 @@ const StudentAssignments = ({ user }) => {
       try {
         const response = await getAssignmentsForStudent(user.id, user.accessToken);
         console.log(response.data);
-        setSelectedAssignments(response.data);
-        // setAssignments(data);
-        // setSelectedAssignments(data.filter((assignment) => assignment.status === selectedOption.status));
-        // setSelectedAssignments(data.filter((assignment) => classifyAssignment(assignment)));
+        setAssignments(response.data);
+        setSelectedAssignments(response.data.filter((assignment) => assignment.status === selectedOption.status));
       } catch (err) {
         console.log(err);
         setError(err.message);
@@ -39,10 +37,6 @@ const StudentAssignments = ({ user }) => {
     };
     fetchAssignments();
   }, [user]);
-
-  const classifyAssignment = (assignment) => {
-    console.log(assignment);
-  }
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);

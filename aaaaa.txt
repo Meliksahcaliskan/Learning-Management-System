@@ -1,0 +1,954 @@
+024-12-01 21:53:50 [http-nio-8080-exec-2] INFO  com.lsm.aspect.LoggingAspect - Executed method: getUsernameFromToken in 0 ms
+Hibernate:
+    select
+        au1_0.id,
+        au1_0.email,
+        au1_0.name,
+        au1_0.password,
+        au1_0.role,
+        au1_0.student_birth_date,
+        au1_0.class_id_student,
+        au1_0.student_parent_name,
+        au1_0.student_parent_phone,
+        au1_0.student_phone,
+        au1_0.student_registration_date,
+        au1_0.student_tc,
+        au1_0.surname,
+        au1_0.teacher_birth_date,
+        au1_0.teacher_phone,
+        au1_0.teacher_tc,
+        au1_0.username
+    from
+        app_users au1_0
+    where
+        au1_0.username=?
+        or au1_0.email=?
+2024-12-01 21:53:50 [http-nio-8080-exec-2] INFO  com.lsm.aspect.LoggingAspect - Executed method: findByUsernameOrEmail in 15 ms
+2024-12-01 21:53:50 [http-nio-8080-exec-2] INFO  com.lsm.aspect.LoggingAspect - Executed method: loadUserByUsername in 15 ms
+2024-12-01 21:53:50 [http-nio-8080-exec-2] INFO  com.lsm.aspect.LoggingAspect - Executed method: validateToken in 8 ms
+2024-12-01 21:53:50 [http-nio-8080-exec-2] INFO  com.lsm.aspect.LoggingAspect - Entering method: getStudentAssignments with arguments: [5, UsernamePasswordAuthenticationToken [Principal=com.lsm.model.entity.base.AppUser@13133fbf, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=7684FD90AC0703CFC951EFEBA5031705], Granted Authorities=[ROLE_STUDENT]]]     
+Hibernate:
+    select
+        au1_0.id,
+        au1_0.email,
+        au1_0.name,
+        au1_0.password,
+        au1_0.role,
+        au1_0.student_birth_date,
+        au1_0.class_id_student,
+        au1_0.student_parent_name,
+        au1_0.student_parent_phone,
+        au1_0.student_phone,
+        au1_0.student_registration_date,
+        au1_0.student_tc,
+        au1_0.surname,
+        au1_0.teacher_birth_date,
+        au1_0.teacher_phone,
+        au1_0.teacher_tc,
+        au1_0.username
+    from
+        app_users au1_0
+    where
+        au1_0.id=?
+2024-12-01 21:53:50 [http-nio-8080-exec-2] INFO  com.lsm.aspect.LoggingAspect - Executed method: findById in 8 ms
+Hibernate: 
+    select
+        ce1_0.id,
+        ce1_0.description,
+        ce1_0.name,
+        ce1_0.teacher_id,
+        t1_0.id,
+        t1_0.email,
+        t1_0.name,
+        t1_0.password,
+        t1_0.role,
+        t1_0.student_birth_date,
+        t1_0.class_id_student,
+        t1_0.student_parent_name,
+        t1_0.student_parent_phone,
+        t1_0.student_phone,
+        t1_0.student_registration_date,
+        t1_0.student_tc,
+        t1_0.surname,
+        t1_0.teacher_birth_date,
+        t1_0.teacher_phone,
+        t1_0.teacher_tc,
+        t1_0.username,
+        s1_0.class_id,
+        s1_1.id,
+        s1_1.email,
+        s1_1.name,
+        s1_1.password,
+        s1_1.role,
+        s1_1.student_birth_date,
+        s1_1.class_id_student,
+        s1_1.student_parent_name,
+        s1_1.student_parent_phone,
+        s1_1.student_phone,
+        s1_1.student_registration_date,
+        s1_1.student_tc,
+        s1_1.surname,
+        s1_1.teacher_birth_date,
+        s1_1.teacher_phone,
+        s1_1.teacher_tc,
+        s1_1.username
+    from
+        classes ce1_0
+    join
+        app_users t1_0
+            on t1_0.id=ce1_0.teacher_id
+    left join
+        class_students s1_0
+            on ce1_0.id=s1_0.class_id
+    left join
+        app_users s1_1
+            on s1_1.id=s1_0.student_id
+    where
+        ce1_0.id=?
+2024-12-01 21:53:50 [http-nio-8080-exec-2] INFO  com.lsm.aspect.LoggingAspect - Executed method: findById in 0 ms
+Hibernate: 
+    select
+        a1_0.id,
+        a1_0.assigned_by_teacher_id,
+        a1_0.class_id,
+        a1_0.course_id,
+        a1_0.assignment_date,
+        a1_0.description,
+        a1_0.due_date,
+        a1_0.feedback,
+        a1_0.grade,
+        a1_0.status,
+        a1_0.student_submission,
+        a1_0.submission_date,
+        a1_0.teacher_document,
+        a1_0.title
+    from
+        assignments a1_0
+    where
+        a1_0.class_id=?
+    order by
+        a1_0.due_date desc
+Hibernate:
+    select
+        c1_0.id,
+        c1_0.code,
+        c1_0.credits,
+        c1_0.description,
+        c1_0.name
+    from
+        courses c1_0
+    where
+        c1_0.id=?
+2024-12-01 21:53:50 [http-nio-8080-exec-2] INFO  com.lsm.aspect.LoggingAspect - Executed method: findByClassEntityOrderByDueDateDesc in 13 ms
+2024-12-01 21:53:50 [http-nio-8080-exec-2] INFO  com.lsm.aspect.LoggingAspect - Executed method: getAssignmentsByClass in 29 ms
+2024-12-01 21:53:50 [http-nio-8080-exec-3] INFO  com.lsm.aspect.LoggingAspect - Executed method: getUsernameFromToken in 13 ms
+Hibernate:
+    select
+        au1_0.id,
+        au1_0.email,
+        au1_0.name,
+        au1_0.password,
+        au1_0.role,
+        au1_0.student_birth_date,
+        au1_0.class_id_student,
+        au1_0.student_parent_name,
+        au1_0.student_parent_phone,
+        au1_0.student_phone,
+        au1_0.student_registration_date,
+        au1_0.student_tc,
+        au1_0.surname,
+        au1_0.teacher_birth_date,
+        au1_0.teacher_phone,
+        au1_0.teacher_tc,
+        au1_0.username
+    from
+        app_users au1_0
+    where
+        au1_0.username=?
+        or au1_0.email=?
+2024-12-01 21:53:50 [http-nio-8080-exec-3] INFO  com.lsm.aspect.LoggingAspect - Executed method: findByUsernameOrEmail in 7 ms
+2024-12-01 21:53:50 [http-nio-8080-exec-3] INFO  com.lsm.aspect.LoggingAspect - Executed method: loadUserByUsername in 7 ms
+2024-12-01 21:53:50 [http-nio-8080-exec-3] INFO  com.lsm.aspect.LoggingAspect - Executed method: validateToken in 0 ms
+2024-12-01 21:53:50 [http-nio-8080-exec-3] INFO  com.lsm.aspect.LoggingAspect - Entering method: getStudentAssignments with arguments: [5, UsernamePasswordAuthenticationToken [Principal=com.lsm.model.entity.base.AppUser@227e0257, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=null], Granted Authorities=[ROLE_STUDENT]]]
+Hibernate: 
+    select
+        au1_0.id,
+        au1_0.email,
+        au1_0.name,
+        au1_0.password,
+        au1_0.role,
+        au1_0.student_birth_date,
+        au1_0.class_id_student,
+        au1_0.student_parent_name,
+        au1_0.student_parent_phone,
+        au1_0.student_phone,
+        au1_0.student_registration_date,
+        au1_0.student_tc,
+        au1_0.surname,
+        au1_0.teacher_birth_date,
+        au1_0.teacher_phone,
+        au1_0.teacher_tc,
+        au1_0.username
+    from
+        app_users au1_0
+    where
+        au1_0.id=?
+2024-12-01 21:53:50 [http-nio-8080-exec-3] INFO  com.lsm.aspect.LoggingAspect - Executed method: findById in 12 ms
+Hibernate:
+    select
+        ce1_0.id,
+        ce1_0.description,
+        ce1_0.name,
+        ce1_0.teacher_id,
+        t1_0.id,
+        t1_0.email,
+        t1_0.name,
+        t1_0.password,
+        t1_0.role,
+        t1_0.student_birth_date,
+        t1_0.class_id_student,
+        t1_0.student_parent_name,
+        t1_0.student_parent_phone,
+        t1_0.student_phone,
+        t1_0.student_registration_date,
+        t1_0.student_tc,
+        t1_0.surname,
+        t1_0.teacher_birth_date,
+        t1_0.teacher_phone,
+        t1_0.teacher_tc,
+        t1_0.username,
+        s1_0.class_id,
+        s1_1.id,
+        s1_1.email,
+        s1_1.name,
+        s1_1.password,
+        s1_1.role,
+        s1_1.student_birth_date,
+        s1_1.class_id_student,
+        s1_1.student_parent_name,
+        s1_1.student_parent_phone,
+        s1_1.student_phone,
+        s1_1.student_registration_date,
+        s1_1.student_tc,
+        s1_1.surname,
+        s1_1.teacher_birth_date,
+        s1_1.teacher_phone,
+        s1_1.teacher_tc,
+        s1_1.username
+    from
+        classes ce1_0
+    join
+        app_users t1_0
+            on t1_0.id=ce1_0.teacher_id
+    left join
+        class_students s1_0
+            on ce1_0.id=s1_0.class_id
+    left join
+        app_users s1_1
+            on s1_1.id=s1_0.student_id
+    where
+        ce1_0.id=?
+2024-12-01 21:53:50 [http-nio-8080-exec-3] INFO  com.lsm.aspect.LoggingAspect - Executed method: findById in 6 ms
+Hibernate:
+    select
+        a1_0.id,
+        a1_0.assigned_by_teacher_id,
+        a1_0.class_id,
+        a1_0.course_id,
+        a1_0.assignment_date,
+        a1_0.description,
+        a1_0.due_date,
+        a1_0.feedback,
+        a1_0.grade,
+        a1_0.status,
+        a1_0.student_submission,
+        a1_0.submission_date,
+        a1_0.teacher_document,
+        a1_0.title
+    from
+        assignments a1_0
+    where
+        a1_0.class_id=?
+    order by
+        a1_0.due_date desc
+Hibernate:
+    select
+        c1_0.id,
+        c1_0.code,
+        c1_0.credits,
+        c1_0.description,
+        c1_0.name
+    from
+        courses c1_0
+    where
+        c1_0.id=?
+2024-12-01 21:53:50 [http-nio-8080-exec-3] INFO  com.lsm.aspect.LoggingAspect - Executed method: findByClassEntityOrderByDueDateDesc in 8 ms
+2024-12-01 21:53:50 [http-nio-8080-exec-3] INFO  com.lsm.aspect.LoggingAspect - Executed method: getAssignmentsByClass in 26 ms
+2024-12-01 21:53:52 [http-nio-8080-exec-4] INFO  com.lsm.aspect.LoggingAspect - Executed method: getUsernameFromToken in 0 ms
+Hibernate:
+    select
+        au1_0.id,
+        au1_0.email,
+        au1_0.name,
+        au1_0.password,
+        au1_0.role,
+        au1_0.student_birth_date,
+        au1_0.class_id_student,
+        au1_0.student_parent_name,
+        au1_0.student_parent_phone,
+        au1_0.student_phone,
+        au1_0.student_registration_date,
+        au1_0.student_tc,
+        au1_0.surname,
+        au1_0.teacher_birth_date,
+        au1_0.teacher_phone,
+        au1_0.teacher_tc,
+        au1_0.username
+    from
+        app_users au1_0
+    where
+        au1_0.username=?
+        or au1_0.email=?
+2024-12-01 21:53:52 [http-nio-8080-exec-4] INFO  com.lsm.aspect.LoggingAspect - Executed method: findByUsernameOrEmail in 16 ms
+2024-12-01 21:53:52 [http-nio-8080-exec-4] INFO  com.lsm.aspect.LoggingAspect - Executed method: loadUserByUsername in 16 ms
+2024-12-01 21:53:52 [http-nio-8080-exec-4] INFO  com.lsm.aspect.LoggingAspect - Executed method: validateToken in 8 ms
+2024-12-01 21:53:52 [http-nio-8080-exec-4] INFO  com.lsm.aspect.LoggingAspect - Entering method: unsubmitAssignment with arguments: [1, UsernamePasswordAuthenticationToken [Principal=com.lsm.model.entity.base.AppUser@19691c0, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=02F18F22CEF89B27D52D53F679A2EDA3], Granted Authorities=[ROLE_STUDENT]]]
+Hibernate:
+    select
+        a1_0.id,
+        a1_0.assigned_by_teacher_id,
+        ab1_0.id,
+        ab1_0.email,
+        ab1_0.name,
+        ab1_0.password,
+        ab1_0.role,
+        ab1_0.student_birth_date,
+        ab1_0.class_id_student,
+        ab1_0.student_parent_name,
+        ab1_0.student_parent_phone,
+        ab1_0.student_phone,
+        ab1_0.student_registration_date,
+        ab1_0.student_tc,
+        ab1_0.surname,
+        ab1_0.teacher_birth_date,
+        ab1_0.teacher_phone,
+        ab1_0.teacher_tc,
+        ab1_0.username,
+        a1_0.class_id,
+        ce1_0.id,
+        ce1_0.description,
+        ce1_0.name,
+        ce1_0.teacher_id,
+        t1_0.id,
+        t1_0.email,
+        t1_0.name,
+        t1_0.password,
+        t1_0.role,
+        t1_0.student_birth_date,
+        t1_0.class_id_student,
+        t1_0.student_parent_name,
+        t1_0.student_parent_phone,
+        t1_0.student_phone,
+        t1_0.student_registration_date,
+        t1_0.student_tc,
+        t1_0.surname,
+        t1_0.teacher_birth_date,
+        t1_0.teacher_phone,
+        t1_0.teacher_tc,
+        t1_0.username,
+        s1_0.class_id,
+        s1_1.id,
+        s1_1.email,
+        s1_1.name,
+        s1_1.password,
+        s1_1.role,
+        s1_1.student_birth_date,
+        s1_1.class_id_student,
+        s1_1.student_parent_name,
+        s1_1.student_parent_phone,
+        s1_1.student_phone,
+        s1_1.student_registration_date,
+        s1_1.student_tc,
+        s1_1.surname,
+        s1_1.teacher_birth_date,
+        s1_1.teacher_phone,
+        s1_1.teacher_tc,
+        s1_1.username,
+        a1_0.course_id,
+        c1_0.id,
+        c1_0.code,
+        c1_0.credits,
+        c1_0.description,
+        c1_0.name,
+        a1_0.assignment_date,
+        a1_0.description,
+        a1_0.due_date,
+        a1_0.feedback,
+        a1_0.grade,
+        a1_0.status,
+        ss1_0.id,
+        ss1_0.assignment_id,
+        a2_0.id,
+        a2_0.assigned_by_teacher_id,
+        ab2_0.id,
+        ab2_0.email,
+        ab2_0.name,
+        ab2_0.password,
+        ab2_0.role,
+        ab2_0.student_birth_date,
+        ab2_0.class_id_student,
+        ab2_0.student_parent_name,
+        ab2_0.student_parent_phone,
+        ab2_0.student_phone,
+        ab2_0.student_registration_date,
+        ab2_0.student_tc,
+        ab2_0.surname,
+        ab2_0.teacher_birth_date,
+        ab2_0.teacher_phone,
+        ab2_0.teacher_tc,
+        ab2_0.username,
+        a2_0.class_id,
+        ce2_0.id,
+        ce2_0.description,
+        ce2_0.name,
+        ce2_0.teacher_id,
+        t2_0.id,
+        t2_0.email,
+        t2_0.name,
+        t2_0.password,
+        t2_0.role,
+        t2_0.student_birth_date,
+        t2_0.class_id_student,
+        t2_0.student_parent_name,
+        t2_0.student_parent_phone,
+        t2_0.student_phone,
+        t2_0.student_registration_date,
+        t2_0.student_tc,
+        t2_0.surname,
+        t2_0.teacher_birth_date,
+        t2_0.teacher_phone,
+        t2_0.teacher_tc,
+        t2_0.username,
+        a2_0.course_id,
+        c2_0.id,
+        c2_0.code,
+        c2_0.credits,
+        c2_0.description,
+        c2_0.name,
+        a2_0.assignment_date,
+        a2_0.description,
+        a2_0.due_date,
+        a2_0.feedback,
+        a2_0.grade,
+        a2_0.status,
+        a2_0.student_submission,
+        a2_0.submission_date,
+        td1_0.id,
+        td1_0.assignment_id,
+        td1_0.file_name,
+        td1_0.file_path,
+        td1_0.file_size,
+        td1_0.file_type,
+        td1_0.is_teacher_upload,
+        td1_0.upload_time,
+        td1_0.uploaded_by,
+        ub1_0.id,
+        ub1_0.email,
+        ub1_0.name,
+        ub1_0.password,
+        ub1_0.role,
+        ub1_0.student_birth_date,
+        ub1_0.class_id_student,
+        ub1_0.student_parent_name,
+        ub1_0.student_parent_phone,
+        ub1_0.student_phone,
+        ub1_0.student_registration_date,
+        ub1_0.student_tc,
+        ub1_0.surname,
+        ub1_0.teacher_birth_date,
+        ub1_0.teacher_phone,
+        ub1_0.teacher_tc,
+        ub1_0.username,
+        a2_0.title,
+        ss1_0.file_name,
+        ss1_0.file_path,
+        ss1_0.file_size,
+        ss1_0.file_type,
+        ss1_0.is_teacher_upload,
+        ss1_0.upload_time,
+        ss1_0.uploaded_by,
+        ub2_0.id,
+        ub2_0.email,
+        ub2_0.name,
+        ub2_0.password,
+        ub2_0.role,
+        ub2_0.student_birth_date,
+        ub2_0.class_id_student,
+        ub2_0.student_parent_name,
+        ub2_0.student_parent_phone,
+        ub2_0.student_phone,
+        ub2_0.student_registration_date,
+        ub2_0.student_tc,
+        ub2_0.surname,
+        ub2_0.teacher_birth_date,
+        ub2_0.teacher_phone,
+        ub2_0.teacher_tc,
+        ub2_0.username,
+        a1_0.submission_date,
+        td2_0.id,
+        td2_0.assignment_id,
+        a4_0.id,
+        a4_0.assigned_by_teacher_id,
+        ab3_0.id,
+        ab3_0.email,
+        ab3_0.name,
+        ab3_0.password,
+        ab3_0.role,
+        ab3_0.student_birth_date,
+        ab3_0.class_id_student,
+        ab3_0.student_parent_name,
+        ab3_0.student_parent_phone,
+        ab3_0.student_phone,
+        ab3_0.student_registration_date,
+        ab3_0.student_tc,
+        ab3_0.surname,
+        ab3_0.teacher_birth_date,
+        ab3_0.teacher_phone,
+        ab3_0.teacher_tc,
+        ab3_0.username,
+        a4_0.class_id,
+        ce3_0.id,
+        ce3_0.description,
+        ce3_0.name,
+        ce3_0.teacher_id,
+        t3_0.id,
+        t3_0.email,
+        t3_0.name,
+        t3_0.password,
+        t3_0.role,
+        t3_0.student_birth_date,
+        t3_0.class_id_student,
+        t3_0.student_parent_name,
+        t3_0.student_parent_phone,
+        t3_0.student_phone,
+        t3_0.student_registration_date,
+        t3_0.student_tc,
+        t3_0.surname,
+        t3_0.teacher_birth_date,
+        t3_0.teacher_phone,
+        t3_0.teacher_tc,
+        t3_0.username,
+        a4_0.course_id,
+        c3_0.id,
+        c3_0.code,
+        c3_0.credits,
+        c3_0.description,
+        c3_0.name,
+        a4_0.assignment_date,
+        a4_0.description,
+        a4_0.due_date,
+        a4_0.feedback,
+        a4_0.grade,
+        a4_0.status,
+        ss3_0.id,
+        ss3_0.assignment_id,
+        ss3_0.file_name,
+        ss3_0.file_path,
+        ss3_0.file_size,
+        ss3_0.file_type,
+        ss3_0.is_teacher_upload,
+        ss3_0.upload_time,
+        ss3_0.uploaded_by,
+        ub3_0.id,
+        ub3_0.email,
+        ub3_0.name,
+        ub3_0.password,
+        ub3_0.role,
+        ub3_0.student_birth_date,
+        ub3_0.class_id_student,
+        ub3_0.student_parent_name,
+        ub3_0.student_parent_phone,
+        ub3_0.student_phone,
+        ub3_0.student_registration_date,
+        ub3_0.student_tc,
+        ub3_0.surname,
+        ub3_0.teacher_birth_date,
+        ub3_0.teacher_phone,
+        ub3_0.teacher_tc,
+        ub3_0.username,
+        a4_0.submission_date,
+        a4_0.teacher_document,
+        a4_0.title,
+        td2_0.file_name,
+        td2_0.file_path,
+        td2_0.file_size,
+        td2_0.file_type,
+        td2_0.is_teacher_upload,
+        td2_0.upload_time,
+        td2_0.uploaded_by,
+        ub4_0.id,
+        ub4_0.email,
+        ub4_0.name,
+        ub4_0.password,
+        ub4_0.role,
+        ub4_0.student_birth_date,
+        ub4_0.class_id_student,
+        ub4_0.student_parent_name,
+        ub4_0.student_parent_phone,
+        ub4_0.student_phone,
+        ub4_0.student_registration_date,
+        ub4_0.student_tc,
+        ub4_0.surname,
+        ub4_0.teacher_birth_date,
+        ub4_0.teacher_phone,
+        ub4_0.teacher_tc,
+        ub4_0.username,
+        a1_0.title
+    from
+        assignments a1_0
+    join
+        app_users ab1_0
+            on ab1_0.id=a1_0.assigned_by_teacher_id
+    join
+        classes ce1_0
+            on ce1_0.id=a1_0.class_id
+    left join
+        app_users t1_0
+            on t1_0.id=ce1_0.teacher_id 
+    left join
+        class_students s1_0
+            on ce1_0.id=s1_0.class_id
+    left join
+        app_users s1_1
+            on s1_1.id=s1_0.student_id
+    join
+        courses c1_0
+            on c1_0.id=a1_0.course_id
+    left join
+        assignment_documents ss1_0
+            on ss1_0.id=a1_0.student_submission
+    left join
+        assignments a2_0
+            on a2_0.id=ss1_0.assignment_id
+    left join
+        app_users ab2_0
+            on ab2_0.id=a2_0.assigned_by_teacher_id
+    left join
+        classes ce2_0
+            on ce2_0.id=a2_0.class_id
+    left join
+        app_users t2_0
+            on t2_0.id=ce2_0.teacher_id
+    left join
+        courses c2_0
+            on c2_0.id=a2_0.course_id
+    left join
+        assignment_documents td1_0
+            on td1_0.id=a2_0.teacher_document
+    left join
+        app_users ub1_0
+            on ub1_0.id=td1_0.uploaded_by
+    left join
+        app_users ub2_0
+            on ub2_0.id=ss1_0.uploaded_by
+    left join
+        assignment_documents td2_0
+            on td2_0.id=a1_0.teacher_document
+    left join
+        assignments a4_0
+            on a4_0.id=td2_0.assignment_id
+    left join
+        app_users ab3_0
+            on ab3_0.id=a4_0.assigned_by_teacher_id
+    left join
+        classes ce3_0
+            on ce3_0.id=a4_0.class_id
+    left join
+        app_users t3_0
+            on t3_0.id=ce3_0.teacher_id
+    left join
+        courses c3_0
+            on c3_0.id=a4_0.course_id
+    left join
+        assignment_documents ss3_0
+            on ss3_0.id=a4_0.student_submission
+    left join
+        app_users ub3_0
+            on ub3_0.id=ss3_0.uploaded_by
+    left join
+        app_users ub4_0
+            on ub4_0.id=td2_0.uploaded_by
+    where
+        a1_0.id=?
+2024-12-01 21:53:52 [http-nio-8080-exec-4] INFO  com.lsm.aspect.LoggingAspect - Executed method: findById in 76 ms
+2024-12-01 21:53:52 [http-nio-8080-exec-4] ERROR com.lsm.aspect.LoggingAspect - Exception in method: unsubmitAssignment after 76 ms with error: You can only unsubmit your own assignments
+java.nio.file.AccessDeniedException: You can only unsubmit your own assignments
+        at com.lsm.service.AssignmentService.unsubmitAssignment(AssignmentService.java:296)
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+        at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+        at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:355)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163)
+        at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+        at org.springframework.aop.aspectj.MethodInvocationProceedingJoinPoint.proceed(MethodInvocationProceedingJoinPoint.java:89)
+        at com.lsm.aspect.LoggingAspect.logAroundMethods(LoggingAspect.java:47)
+        at jdk.internal.reflect.GeneratedMethodAccessor34.invoke(Unknown Source)
+        at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+        at org.springframework.aop.aspectj.AbstractAspectJAdvice.invokeAdviceMethodWithGivenArgs(AbstractAspectJAdvice.java:637)
+        at org.springframework.aop.aspectj.AbstractAspectJAdvice.invokeAdviceMethod(AbstractAspectJAdvice.java:627)
+        at org.springframework.aop.aspectj.AspectJAroundAdvice.invoke(AspectJAroundAdvice.java:71)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+        at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+        at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:379)
+        at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+        at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+        at org.springframework.aop.interceptor.ExposeInvocationInterceptor.invoke(ExposeInvocationInterceptor.java:97)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+        at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+        at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:720)
+        at com.lsm.service.AssignmentService$$SpringCGLIB$$0.unsubmitAssignment(<generated>)
+        at com.lsm.controller.AssignmentController.unsubmitAssignment(AssignmentController.java:428)
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+        at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+        at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:355)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163)
+        at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+        at org.springframework.aop.framework.adapter.MethodBeforeAdviceInterceptor.invoke(MethodBeforeAdviceInterceptor.java:58)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+        at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+        at org.springframework.aop.interceptor.ExposeInvocationInterceptor.invoke(ExposeInvocationInterceptor.java:97)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+        at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+        at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:720)
+        at com.lsm.controller.AssignmentController$$SpringCGLIB$$0.unsubmitAssignment(<generated>)
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+        at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+        at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255)
+        at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:188)
+        at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118)
+        at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:926)
+        at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:831)
+        at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87)
+        at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089)
+        at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979)
+        at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014)
+        at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:888)
+        at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:110)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+        at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:231)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:365)
+        at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:100)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:126)
+        at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:120)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:131)
+        at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:85)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:179)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at com.lsm.security.JwtAuthenticationFilter.doFilterInternal(JwtAuthenticationFilter.java:82)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107)
+        at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.web.filter.CorsFilter.doFilterInternal(CorsFilter.java:91)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+        at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+        at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233)
+        at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191)
+        at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+        at org.springframework.web.servlet.handler.HandlerMappingIntrospector.lambda$createCacheFilter$3(HandlerMappingIntrospector.java:195)
+        at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+        at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+        at org.springframework.security.config.annotation.web.configuration.WebMvcSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebMvcSecurityConfiguration.java:230)
+        at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:352)
+        at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:268)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167)
+        at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90)
+        at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483)
+        at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115)
+        at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93)
+        at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74)
+        at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344)
+        at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:384)
+        at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+        at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905)
+        at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741)
+        at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+        at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190)
+        at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659)
+        at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+        at java.base/java.lang.Thread.run(Thread.java:842)
+2024-12-01 21:53:52 [http-nio-8080-exec-4] ERROR c.l.security.JwtAuthenticationFilter - Security exception occurred
+jakarta.servlet.ServletException: Request processing failed: java.lang.SecurityException: You can only unsubmit your own assignments
+        at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1022)
+        at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:888)
+        at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:110)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+        at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:231)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:365)
+        at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:100)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:126)
+        at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:120)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:131)
+        at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:85)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:179)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at com.lsm.security.JwtAuthenticationFilter.doFilterInternal(JwtAuthenticationFilter.java:82)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107)
+        at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.web.filter.CorsFilter.doFilterInternal(CorsFilter.java:91)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+        at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+        at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+        at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233)
+        at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191)
+        at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+        at org.springframework.web.servlet.handler.HandlerMappingIntrospector.lambda$createCacheFilter$3(HandlerMappingIntrospector.java:195)
+        at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+        at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+        at org.springframework.security.config.annotation.web.configuration.WebMvcSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebMvcSecurityConfiguration.java:230)
+        at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:352)
+        at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:268)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201)
+        at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+        at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167)
+        at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90)
+        at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483)
+        at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115)
+        at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93)
+        at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74)
+        at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344)
+        at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:384)
+        at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+        at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905)
+        at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741)
+        at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+        at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190)
+        at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659)
+        at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+        at java.base/java.lang.Thread.run(Thread.java:842)
+Caused by: java.lang.SecurityException: You can only unsubmit your own assignments
+        at com.lsm.controller.AssignmentController.unsubmitAssignment(AssignmentController.java:436)
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+        at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+        at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:355)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163)
+        at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+        at org.springframework.aop.framework.adapter.MethodBeforeAdviceInterceptor.invoke(MethodBeforeAdviceInterceptor.java:58)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+        at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+        at org.springframework.aop.interceptor.ExposeInvocationInterceptor.invoke(ExposeInvocationInterceptor.java:97)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+        at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+        at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:720)
+        at com.lsm.controller.AssignmentController$$SpringCGLIB$$0.unsubmitAssignment(<generated>)
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+        at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+        at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255)
+        at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:188)
+        at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118)
+        at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:926)
+        at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:831)
+        at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87)
+        at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089)
+        at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979)
+        at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014)
+        ... 88 common frames omitted

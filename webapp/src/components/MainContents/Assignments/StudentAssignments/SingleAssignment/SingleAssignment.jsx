@@ -4,7 +4,7 @@ import arrowUp from '/icons/arrow-up.svg';
 import deleteIcon from '/icons/delete.svg';
 
 import './SingleAssignment.css';
-import { submitStudentAssignment } from "../../../../../services/assignmentService";
+import { submitStudentAssignment, unsubmitStudentAssignment } from "../../../../../services/assignmentService";
 import { AuthContext } from "../../../../../contexts/AuthContext";
 
 const SingleAssigment = ({ assignment }) => {
@@ -21,21 +21,27 @@ const SingleAssigment = ({ assignment }) => {
         setuploadedFile(file);
     }
 
-    const handleAssignmentSubmit = () => {
+    const handleAssignmentSubmit = async () => {
         console.log("handling assignment submit");
         try {
 
             if(uploadedFile) {
                 console.log("upload file");
             }
-            const response = submitStudentAssignment(assignment.id, 'SUBMITTED', user.accessToken);
+            const response = await submitStudentAssignment(assignment.id, 'SUBMITTED', user.accessToken);
         }catch(err) {
             console.log("error submitting assignment.");
         }
     }
     
-    const handleAssignmentUnsubmit = () => {
+    const handleAssignmentUnsubmit = async () => {
         console.log("handling assignment unsubmit");
+        try {
+            const response = await unsubmitStudentAssignment(assignment.id, user.accessToken);
+            console.log(response);
+        }catch(error) {
+            console.log(error);
+        }
     }
 
     const handleDocumentRemoval = () => {
@@ -75,8 +81,8 @@ const SingleAssigment = ({ assignment }) => {
 
                     <div className="assignment-body-section">
                         <label className="assignment-section-title">Yardımcı materyaller</label>
-                        {assignment.teacherDocuments[0] ? (
-                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.teacherDocuments[0]}</span>
+                        {assignment.teacherDocuments ? (
+                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.teacherDocuments}</span>
                         ) : (
                             <i className="assignment-section-text">Döküman eklenmedi.</i>
                         )}
@@ -111,10 +117,10 @@ const SingleAssigment = ({ assignment }) => {
                         </>
                     )}
 
-                    {(assignment.status !== 'PENDING' && assignment.studentSubmissions[0]) &&
+                    {(assignment.status !== 'PENDING' && assignment.studentSubmissions) &&
                         <div className="assignment-body-section">
                             <label className="assignment-section-title">Eklenen dökümanlar</label>
-                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.studentSubmissions[0].fileName}</span>
+                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.studentSubmissions.fileName}</span>
                         </div>
                     }
                     {assignment.status === 'SUBMITTED' &&
