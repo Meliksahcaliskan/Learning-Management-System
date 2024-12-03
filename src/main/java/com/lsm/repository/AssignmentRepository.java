@@ -36,4 +36,6 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
     boolean existsByTitleAndClassEntity(String title, ClassEntity classEntity);
 
     Optional<Assignment> findByTitleIgnoreCaseAndClassEntity(String title, ClassEntity classEntity);
+
+    List<Assignment> findByAssignedByOrderByDueDateDesc(AppUser teacher);
 }

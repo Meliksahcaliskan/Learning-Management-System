@@ -2,7 +2,6 @@ package com.lsm.model.DTOs;
 
 import java.time.LocalDate;
 
-import com.lsm.model.entity.AssignmentDocument;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,7 +33,7 @@ public class AssignmentRequestDTO {
     @NotNull(message = "Class name is required")
     @Size(min = 2, max = 50, message = "Class name must be between 2 and 50 characters")
     @Pattern(regexp = "^[A-Za-z0-9-_ ]+$", message = "Class name can only contain letters, numbers, spaces, hyphens and underscores")
-    private String className;
+    private String className; // TODO: should be classId instead of className.
 
     @NotNull(message = "Course name is required")
     @Size(min = 2, max = 100, message = "Course name must be between 2 and 100 characters")

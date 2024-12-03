@@ -222,6 +222,79 @@ public class AssignmentController {
     }
 
     @Operation(
+            summary = "Get teacher's assignments",
+            description = "Retrieve all assignments created by a specific teacher"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Assignments retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Teacher not found")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    @GetMapping("/teacher/{teacherId}")
+    public ResponseEntity<ApiResponse_<List<AssignmentDTO>>> getTeacherAssignments(
+            @Parameter(description = "ID of the teacher", required = true)
+            @PathVariable @Positive Long teacherId,
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            // Additional security check to ensure teachers can only view their own assignments
+            if (currentUser.getRole() == Role.ROLE_TEACHER && !currentUser.getId().equals(teacherId)) {
+                throw new AccessDeniedException("Teachers can only view their own assignments");
+            }
+
+            List<AssignmentDTO> assignments = assignmentService.getAssignmentsByTeacher(teacherId);
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Teacher assignments retrieved successfully",
+                    assignments
+            ));
+        } catch (AccessDeniedException e) {
+            throw new SecurityException(e.getMessage());
+        } catch (EntityNotFoundException e) {
+            throw new EntityNotFoundException(e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Get assignments by student",
+            description = "Retrieve all assignments assigned to a specific student"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Assignments retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Student not found")
+    })
+    @GetMapping("/student/{studentId}/assignments")
+    public ResponseEntity<ApiResponse_<List<AssignmentDTO>>> getAssignmentsByStudent(
+            @Parameter(description = "ID of the student", required = true)
+            @PathVariable @Positive Long studentId,
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            // Students can only view their own assignments
+            if (currentUser.getRole() == Role.ROLE_STUDENT && !currentUser.getId().equals(studentId)) {
+                throw new AccessDeniedException("Students can only view their own assignments");
+            }
+
+            List<AssignmentDTO> assignments = assignmentService.getAssignmentsByStudent(studentId);
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Student assignments retrieved successfully",
+                    assignments
+            ));
+        } catch (AccessDeniedException e) {
+            throw new SecurityException(e.getMessage());
+        } catch (EntityNotFoundException e) {
+            throw new EntityNotFoundException(e.getMessage());
+        }
+    }
+
+    @Operation(
         summary = "Delete an assignment",
         description = "Allows teachers to delete their own assignments"
     )

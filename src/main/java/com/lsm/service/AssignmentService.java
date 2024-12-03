@@ -191,6 +191,52 @@ public class AssignmentService {
     }
 
     @Transactional
+    public List<AssignmentDTO> getAssignmentsByTeacher(Long teacherId)
+            throws AccessDeniedException, EntityNotFoundException {
+        // Find teacher
+        AppUser teacher = appUserRepository.findById(teacherId)
+                .orElseThrow(() -> new EntityNotFoundException("Teacher not found"));
+
+        // Validate that user is actually a teacher
+        if (teacher.getRole() != Role.ROLE_TEACHER) {
+            throw new IllegalArgumentException("Specified user is not a teacher");
+        }
+
+        // Get all assignments created by the teacher
+        List<Assignment> assignments = assignmentRepository.findByAssignedByOrderByDueDateDesc(teacher);
+
+        return assignments.stream()
+                .map(assignment -> new AssignmentDTO(assignment, "Retrieved successfully"))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public List<AssignmentDTO> getAssignmentsByStudent(Long studentId)
+            throws AccessDeniedException, EntityNotFoundException {
+        // Find student
+        AppUser student = appUserRepository.findById(studentId)
+                .orElseThrow(() -> new EntityNotFoundException("Student not found"));
+
+        // Validate that user is actually a student
+        if (student.getRole() != Role.ROLE_STUDENT) {
+            throw new IllegalArgumentException("Specified user is not a student");
+        }
+
+        // Get student's class
+        Optional<ClassEntity> classEntityOpt = classEntityRepository.findById(student.getStudentDetails().getClassEntity());
+        if (classEntityOpt.isEmpty())
+            throw new EntityNotFoundException("Class not found by id: " + student.getStudentDetails().getClassEntity());
+        ClassEntity classEntity = classEntityOpt.get();
+
+        // Get all assignments for the student's class
+        List<Assignment> assignments = assignmentRepository.findByClassEntityOrderByDueDateDesc(classEntity);
+
+        return assignments.stream()
+                .map(assignment -> new AssignmentDTO(assignment, "Retrieved successfully"))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
     public Assignment updateAssignment(Long assignmentId, AssignmentRequestDTO dto, Long loggedInUserId)
             throws AccessDeniedException {
         AppUser user = appUserRepository.findById(loggedInUserId)
@@ -417,9 +463,7 @@ public class AssignmentService {
         assignment.setDescription(dto.getDescription());
         assignment.setDueDate(dto.getDueDate());
         assignment.setAssignedBy(teacher);
-        if (dto.getDocument().isTeacherUpload())
-            assignment.setTeacherDocument(dto.getDocument().DTOtoDocument(assignmentRepository, appUserRepository));
-        else
+        if(dto.getDocument() != null)
             assignment.setTeacherDocument(dto.getDocument().DTOtoDocument(assignmentRepository, appUserRepository));
         assignment.setClassEntity(classEntity);
         assignment.setCourse(course);
