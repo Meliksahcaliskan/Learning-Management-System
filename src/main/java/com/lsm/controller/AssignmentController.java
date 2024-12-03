@@ -90,6 +90,7 @@ public class AssignmentController {
         }
     }
 
+    /*
     @Operation(
         summary = "Get student assignments",
         description = "Retrieve assignments for a specific student. Students can only access their own assignments."
@@ -108,7 +109,7 @@ public class AssignmentController {
         try {
             AppUser currentUser = (AppUser) authentication.getPrincipal();
             // Additional security check to ensure students can only view their own assignments
-            if (!currentUser.getId().equals(studentId)) {
+            if (currentUser.getRole() == Role.ROLE_STUDENT && !currentUser.getId().equals(studentId)) {
                 throw new AccessDeniedException("You can only view your own assignments");
             }
             List<AssignmentDTO> assignments = assignmentService
@@ -125,6 +126,7 @@ public class AssignmentController {
             throw new EntityNotFoundException(e.getMessage());
         }
     }
+     */
 
     @Operation(
         summary = "Update an assignment",
@@ -267,7 +269,7 @@ public class AssignmentController {
             @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
             @ApiResponse(responseCode = "404", description = "Student not found")
     })
-    @GetMapping("/student/{studentId}/assignments")
+    @GetMapping("/student/{studentId}")
     public ResponseEntity<ApiResponse_<List<AssignmentDTO>>> getAssignmentsByStudent(
             @Parameter(description = "ID of the student", required = true)
             @PathVariable @Positive Long studentId,
