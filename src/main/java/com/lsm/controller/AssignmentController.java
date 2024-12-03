@@ -149,7 +149,7 @@ public class AssignmentController {
         try {
             AppUser currentUser = (AppUser) authentication.getPrincipal();
             if (currentUser.getRole() == Role.ROLE_TEACHER && currentUser.equals(assignmentService.findById(assignmentId).getAssignedBy())) {
-                throw new AccessDeniedException("Teacher can only update his/her own assignments");
+                throw new AccessDeniedException("Teachers can only update their own assignments");
             }
             Assignment updated = assignmentService.updateAssignment(assignmentId, updateRequest, currentUser.getId());
             

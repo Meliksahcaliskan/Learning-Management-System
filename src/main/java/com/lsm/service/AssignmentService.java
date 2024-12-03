@@ -140,7 +140,6 @@ public class AssignmentService {
             validateUniqueTitle(dto.getTitle(), classEntity); // No existingAssignmentId for creation
 
             Assignment assignment = createAssignmentEntity(dto, teacher, classEntity, course);
-            classEntity.getAssignments().add(assignment);
 
             log.info("Assignment created successfully with ID: {}", assignment.getId());
             return assignmentRepository.save(assignment);
@@ -311,7 +310,7 @@ public class AssignmentService {
 
         // Validate that only teachers can grade their own assignments
         if (currentUser.getRole() != Role.ROLE_TEACHER ||
-                !assignment.getAssignedBy().equals(currentUser)) {
+                !assignment.getAssignedBy().getId().equals(currentUser.getId())) {
             throw new AccessDeniedException("Only the assigned teacher can grade this assignment");
         }
 
