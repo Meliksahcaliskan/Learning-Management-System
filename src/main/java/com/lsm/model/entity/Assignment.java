@@ -61,12 +61,12 @@ public class Assignment {
     @Column(name = "assignment_date", nullable = false)
     private LocalDate date;
 
-    @OneToOne(mappedBy = "assignment", cascade = CascadeType.ALL)
-    // @JoinColumn(name = "teacher_document")
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "teacher_document_id", referencedColumnName = "id")
     private AssignmentDocument teacherDocument;
 
-    @OneToOne(mappedBy = "assignment", cascade = CascadeType.ALL)
-    // @JoinColumn(name = "student_submission")
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "student_document_id", referencedColumnName = "id")
     private AssignmentDocument studentSubmission;
 
     @Column(name = "grade")

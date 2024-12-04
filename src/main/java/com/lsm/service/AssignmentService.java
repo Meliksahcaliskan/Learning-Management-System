@@ -2,6 +2,8 @@ package com.lsm.service;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -356,12 +358,18 @@ public class AssignmentService {
         return assignmentRepository.save(assignment);
     }
 
+    @Transactional
     public Assignment submitAssignment(Long assignmentId, SubmitAssignmentDTO submitDTO, AppUser currentUser)
             throws IllegalStateException, IOException {
         Assignment assignment = findById(assignmentId);
 
+        Optional<ClassEntity> classEntityOpt = classEntityRepository.findById(currentUser.getStudentDetails().getClassEntity());
+        if (classEntityOpt.isEmpty())
+            throw new EntityNotFoundException("Class not found");
+        ClassEntity classEntity = classEntityOpt.get();
+
         // Verify the assignment belongs to the student
-        if (!assignment.getCourse().getAssignments().equals(currentUser)) {
+        if (!classEntity.getCourses().contains(assignment.getCourse())) {
             throw new AccessDeniedException("You can only submit your own assignments");
         }
 
@@ -376,19 +384,27 @@ public class AssignmentService {
             throw new IllegalStateException("Assignment deadline has passed");
         }
 
+        if (assignment.getStudentSubmission() != null) {
+            // Delete the old file
+            Files.deleteIfExists(Paths.get(assignment.getStudentSubmission().getFilePath()));
+            // Remove the old document
+            assignment.setStudentSubmission(null);
+            assignmentRepository.save(assignment);
+        }
+
         // Upload document
         AssignmentDocument document = assignmentDocumentService.uploadDocument(
                 submitDTO.getDocument(),
                 assignmentId,
                 currentUser,
-                false // not a teacher upload
+                false
         );
 
         // Update assignment
         assignment.setStatus(AssignmentStatus.SUBMITTED);
         assignment.setDescription(submitDTO.getSubmissionComment());
         assignment.setSubmissionDate(LocalDate.now());
-        assignment.setStudentSubmission(document);
+        // assignment.setStudentSubmission(document);
 
         return assignmentRepository.save(assignment);
     }
