@@ -34,15 +34,23 @@ public class AssignmentDTO {
     @Enumerated(EnumType.STRING)
     private AssignmentStatus status;
 
-
     public AssignmentDTO(Assignment assignment, String message) {
         this.id = assignment.getId();
         this.title = assignment.getTitle();
         this.description = assignment.getDescription();
         this.dueDate = assignment.getDueDate();
         this.message = message;
-        this.teacherDocuments = (assignment.getTeacherDocument() == null) ? null : convertToDTO(assignment.getTeacherDocument());
-        this.studentSubmissions = (assignment.getStudentSubmission() == null) ? null : convertToDTO(assignment.getStudentSubmission());
+
+        // Only set teacherDocuments if the document is a teacher upload
+        if (assignment.getTeacherDocument() != null && assignment.getTeacherDocument().isTeacherUpload()) {
+            this.teacherDocuments = convertToDTO(assignment.getTeacherDocument());
+        }
+
+        // Only set studentSubmissions if the document is a student upload
+        if (assignment.getStudentSubmission() != null && !assignment.getStudentSubmission().isTeacherUpload()) {
+            this.studentSubmissions = convertToDTO(assignment.getStudentSubmission());
+        }
+
         this.grade = assignment.getGrade();
         this.feedback = assignment.getFeedback();
         this.createdDate = assignment.getDate();
@@ -52,9 +60,10 @@ public class AssignmentDTO {
         this.status = assignment.getStatus();
     }
 
+
     private AssignmentDocumentDTO convertToDTO(AssignmentDocument doc) {
         return AssignmentDocumentDTO.builder()
-                .assignmentId(id)
+                .assignmentId(doc.getAssignment().getId())
                 .fileName(doc.getFileName())
                 .fileType(doc.getFileType())
                 .fileSize(doc.getFileSize())

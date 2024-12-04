@@ -61,12 +61,12 @@ public class Assignment {
     @Column(name = "assignment_date", nullable = false)
     private LocalDate date;
 
-    @ManyToOne
-    @JoinColumn(name = "teacher_document")
+    @OneToOne(mappedBy = "assignment", cascade = CascadeType.ALL)
+    // @JoinColumn(name = "teacher_document")
     private AssignmentDocument teacherDocument;
 
-    @ManyToOne
-    @JoinColumn(name = "student_submission")
+    @OneToOne(mappedBy = "assignment", cascade = CascadeType.ALL)
+    // @JoinColumn(name = "student_submission")
     private AssignmentDocument studentSubmission;
 
     @Column(name = "grade")
@@ -74,6 +74,4 @@ public class Assignment {
 
     @Column(name = "feedback")
     private String feedback;
-
-
 }

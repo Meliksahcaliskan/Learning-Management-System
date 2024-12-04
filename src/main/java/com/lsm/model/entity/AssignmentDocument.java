@@ -33,7 +33,7 @@ public class AssignmentDocument {
     @Column(name = "file_size")
     private Long fileSize;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "assignment_id", nullable = false)
     private Assignment assignment;
 

@@ -72,12 +72,23 @@ public class AssignmentDocumentService {
                 .fileType(file.getContentType())
                 .fileSize(file.getSize())
                 .uploadTime(LocalDateTime.now())
-                .assignment(assignment)
                 .uploadedBy(currentUser)
                 .isTeacherUpload(isTeacherUpload)
+                .assignment(assignment)
                 .build();
 
-        return documentRepository.save(document);
+        // Set both sides of the relationship
+        // document.setAssignment(assignment);
+        if (isTeacherUpload) {
+            assignment.setTeacherDocument(document);
+        } else {
+            assignment.setStudentSubmission(document);
+        }
+
+        // Save assignment which will cascade to document
+        if (isTeacherUpload)
+            return assignmentRepository.save(assignment).getTeacherDocument();
+        return assignmentRepository.save(assignment).getStudentSubmission();
     }
 
     public Resource downloadDocument(Long documentId, AppUser currentUser) throws IOException {
