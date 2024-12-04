@@ -333,13 +333,26 @@ public class AssignmentService {
             throws AccessDeniedException {
         Assignment assignment = findById(assignmentId);
 
+        if(assignment.getStatus() != AssignmentStatus.SUBMITTED) {
+            throw new IllegalStateException("Can only unsubmit assignments that have been submitted.");
+        }
+
+        if(assignment.getDueDate().isBefore(LocalDate.now())) {
+            throw new IllegalStateException("Can only unsubmit assignments that have been due.");
+        }
+
         // Validate that only the student can unsubmit their assignment
         if (currentUser.getRole() != Role.ROLE_STUDENT) {
             throw new AccessDeniedException("Only students can unsubmit assignments");
         }
 
-        // Check if the assignment belongs to the student's class
-        if (!assignment.getClassEntity().getStudents().contains(currentUser)) {
+        Optional<ClassEntity> classEntityOpt = classEntityRepository.findById(currentUser.getStudentDetails().getClassEntity());
+        if (classEntityOpt.isEmpty())
+            throw new EntityNotFoundException("Class not found");
+        ClassEntity classEntity = classEntityOpt.get();
+
+        // Verify the assignment belongs to the student
+        if (!classEntity.getCourses().contains(assignment.getCourse())) {
             throw new AccessDeniedException("You can only unsubmit your own assignments");
         }
 
@@ -354,6 +367,7 @@ public class AssignmentService {
 
         // Reset to pending status
         assignment.setStatus(AssignmentStatus.PENDING);
+        assignment.setStudentSubmission(null);
 
         return assignmentRepository.save(assignment);
     }
