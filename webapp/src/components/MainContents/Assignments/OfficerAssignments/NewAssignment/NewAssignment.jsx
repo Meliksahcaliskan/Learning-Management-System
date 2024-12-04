@@ -4,9 +4,9 @@ import deleteIcon from '/icons/delete.svg';
 import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../../../../../contexts/AuthContext';
 
-import { getAllClasses } from '../../../../../services/classesService';
+import { getAllClasses, getTeacherClasses } from '../../../../../services/classesService';
 import { getAllSubjectsOf } from '../../../../../services/coursesService';
-import { createAssignment } from '../../../../../services/assignmentService';
+import { createAssignment, uploadDocument } from '../../../../../services/assignmentService';
 
 import { isDateInFuture } from '../../../../../utils/dateUtils';
 import { calculateFileSize } from '../../../../../utils/fileUtils';
@@ -37,12 +37,27 @@ const NewAssignment = () => {
     const [creationError, setCreationError] = useState(false);
     const [creationSuccess, setCreationSuccess] = useState(false);
 
+    const [fetchError, setFecthError] = useState(false);
+    const [uploadError, setUploadError] = useState(false);
+
     useEffect(() => {
-        getAllClasses(user.accessToken)
-            .then(data => {
-                console.log(data);
-                setAllClasses(data)})
-            .catch(error => console.error(error));
+        if(user.role === 'ROLE_TEACHER') {
+            getTeacherClasses(user.accessToken)
+                .then(data => {
+                    setAllClasses(data)})
+                .catch(error => {
+                    console.log(error);
+                    setFecthError(true)
+                })
+        }else {
+            getAllClasses(user.accessToken)
+                .then(data => setAllClasses(data))
+                .catch(error => {
+                    console.log(error);
+                    setFecthError(true);
+                })
+        }
+        console.log();
     }, [user.accessToken]);
 
     const clearMessages = () => {
@@ -52,14 +67,15 @@ const NewAssignment = () => {
 
     const loadCourses = async (className) => {
         const classID = allClasses.find(singleClass => singleClass.name === className)?.id;
-        if (classID) {
-            getAllSubjectsOf(user.accessToken, classID)
-                .then(data => {
-                    setAllSubjectsOfClass(data);
-                    setAssignmentSubject('');
-                })
-                .catch(error => console.error(error));
-        }
+        getAllSubjectsOf(classID, user.accessToken)
+            .then(data => {
+                setAllSubjectsOfClass(data);
+                setAssignmentSubject('');
+            })
+            .catch(error => {
+                console.error(error);
+                setFecthError(true);
+            });
     };
 
     const handleClassChange = (event) => {
@@ -103,15 +119,7 @@ const NewAssignment = () => {
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         if (file && calculateFileSize(file) < 10) {
-            const documentData = {
-                fileName: file.name,
-                fileType: file.type,
-                fileSize: calculateFileSize(file),
-                uploadTime: new Date().toISOString(),
-                uploadedByUsername: user.username,
-                isTeacherUpload: true,
-            };
-            setAssignmentDocument(documentData);
+            setAssignmentDocument(file);
             setFileError('');
         } else {
             setFileError("Dosya boyutu 10 MB'den büyük olamaz.");
@@ -124,24 +132,20 @@ const NewAssignment = () => {
     };
 
     const handleSubmit = async () => {
-        setCreationError('');
         let hasError = false;
 
         if (!assignmentClass) {
             setClassError('Sınıf seçimi yapınız.');
             hasError = true;
         }
-
         if (!assignmentSubject) {
             setSubjectError('Ders seçimi yapınız');
             hasError = true;
         }
-
         if (!assignmentDueDate) {
             setDateError('Bitiş tarihi seçiniz.');
             hasError = true;
         }
-
         if (!assignmentTitle) {
             setTitleError('Ödev Başlığı giriniz.');
             hasError = true;
@@ -150,38 +154,52 @@ const NewAssignment = () => {
             setTitleError('Ödev başlığı 3 karakterden fazla olmalıdır.');
             hasError = true;
         }
-
         if (!hasError) {
             const payload = {
                 teacherId: user.id,
                 title: assignmentTitle,
                 description: assignmentDescription,
                 dueDate: assignmentDueDate,
-                className: assignmentClass,
+                className: assignmentClass, // TODO: it will change to classID later on
                 courseName: assignmentSubject,
-                date: new Date().toISOString().split("T")[0],
-                document: assignmentDocument, // Include the document
+                document: null,
             };
-            console.log(payload);
 
-            try {
-                const response = await createAssignment(payload, user.accessToken);
-                if(response.success) {
-                    setAssignmentClass('');
-                    setAssignmentSubject('');
-                    setAssignmnentDueDate('');
-                    setAssignmentTitle('');
-                    setAssignmentDescription('');
-                    setAssignmentDocument(null);
-                    setCreationSuccess(true);
-                }
-            } catch (error) {
-                setCreationError(true);
-            }
+            createAssignment(payload, user.accessToken)
+                .then(response => {
+                    console.log('assignment creation response ',response);
+                    if(response.success) {
+                        if(assignmentDocument) {
+                            const assignmentID = response.data.id;
+                            uploadDocument(assignmentID, assignmentDocument, true, user.accessToken)
+                                .then(response => {
+                                    console.log('upload document to assignment response', response);
+                                })
+                                .catch(error => {
+                                    setUploadError(true);
+                                });
+                        }
+                        resetForm();
+                        setCreationSuccess(true);
+                    }
+                })
+                .catch(error => {
+                    setCreationError(true);
+                })
         }
     };
 
+    const resetForm = () => {
+        setAssignmentClass('');
+        setAssignmentSubject('');
+        setAssignmnentDueDate('');
+        setAssignmentTitle('');
+        setAssignmentDescription('');
+        setAssignmentDocument(null);
+    }
+
     return (
+        <>
         <div className="newAssignmentForm">
             <div className="input-container">
                 <label className="label">Sınıf Adı</label>
@@ -209,10 +227,11 @@ const NewAssignment = () => {
                     disabled={assignmentClass === ''}
                 >
                     <option value="" disabled>Ders Seçiniz</option>
-                    {allSubjectsOfClass.map((singleSubject) => (
-                        <option value={singleSubject.name} key={singleSubject.id}>
-                            {singleSubject.name}
-                        </option>
+                    {allSubjectsOfClass &&
+                        allSubjectsOfClass.map((singleSubject) => (
+                            <option value={singleSubject.name} key={singleSubject.id}>
+                                {singleSubject.name}
+                            </option>
                     ))}
                 </select>
                 {subjectError && <p className='error-message'>{subjectError}</p>}
@@ -252,7 +271,7 @@ const NewAssignment = () => {
 
             {assignmentDocument ? (
                 <div style={{ display: 'flex' }}>
-                    <span className="assignment-document">{assignmentDocument.fileName}</span>
+                    <span className="assignment-document">{assignmentDocument.name}</span>
                     <button type="submit" className="delete-btn" onClick={handleFileRemove}><img src={deleteIcon} alt="remove file" /></button>
                 </div>
             ) : (
@@ -279,13 +298,22 @@ const NewAssignment = () => {
                 <p className='error-message' style={{ whiteSpace : 'pre-line'}}>
                     Ödev oluşturulukren hata! <br />
                     Aynı başlığa sahip bir ödev olabilir. <br />
-                    Seçilen sınıfa ödev oluşturma yetkiniz olmayabilir. <br />
-                    Seçilen derse ödev oluşturma yetkiniz olmayabilir.
                 </p>
             }
             {creationSuccess && <p className='success-message'>Ödev başarıyla oluşturuldu.</p>}
         </div>
+        {fetchError && 
+            <p className='error-message'>
+                Sayfa yüklenirken hata oluştu! <br/>
+                Lütfen sayfayı yenileyiniz. <br />
+            </p>
+        }
+        {uploadError &&
+            <p className='error-message'>
+                Döküman eklenemedi!
+            </p>
+        }
+        </>
     );
 };
-
 export default NewAssignment;

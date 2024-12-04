@@ -1,38 +1,104 @@
+import { AuthContext } from '../../contexts/AuthContext';
+import { getAssignmentsForTeacher } from '../../services/assignmentService';
+import { getAllClasses, getTeacherClasses } from '../../services/classesService';
+import { getAllSubjectsOf } from '../../services/coursesService';
+import { isDateInFuture } from '../dateUtils';
 import './AssignmentSearch.css';
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 
 
 const AssignmentSearch = ({onSearchResults}) => {
+    const { user } = useContext(AuthContext);
 
+    const [allClasses, setAllClasses] = useState([]);
+    const [allSubjectsOfClass, setAllSubjectsOfClass] = useState([]);
 
+    const [searchClass, setSearchClass] = useState('');
+    const [searchSubject, setSearchSubject] = useState('');
 
+    const [searchDueDate, setSearchDueDate] = useState('');
+    const [dateError, setDateError] = useState('');
 
+    useEffect(() => {
+        if(user.role === 'ROLE_TEACHER') {
+            getTeacherClasses(user.accessToken)
+                .then(data => {
+                    setAllClasses(data)})
+                .catch(error => {
+                    console.log(error);
+                })
+        }else {
+            getAllClasses(user.accessToken)
+                .then(data => setAllClasses(data))
+                .catch(error => {
+                    console.log(error);
+                })
+        }
+    }, [user.accessToken]);
 
-
-    const [searchData, setSearchData] = useState({
-        className : '',
-        subjectName : '',
-        endDate : ''
-    });
-
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setSearchData({
-          ...searchData,
-          [name]: value,
-        });
+    const handleClassChange = (event) => {
+        const newClassName = event.target.value;
+        if(newClassName === '') {
+            setAllSubjectsOfClass([]);
+            setSearchSubject('');
+        }else {
+            loadCourses(newClassName);  
+        }
+        setSearchClass(newClassName);
     }
+
+    const loadCourses = async (className) => {
+        const classID = allClasses.find(singleClass => singleClass.name === className)?.id;
+        getAllSubjectsOf(classID, user.accessToken)
+            .then(data => {
+                setAllSubjectsOfClass(data);
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    };
+
+    const handleSubjectChange = (event) => {
+        setSearchSubject(event.target.value);
+    }
+
+    const handleDueDateChange = (event) => {
+        const dateInput = event.target.value;
+        if(isDateInFuture(dateInput)) {
+            setSearchDueDate(dateInput);
+            setDateError('');
+        } else {
+            setDateError('Bitiş tarihi gelecekte olmalıdır.');
+            setSearchDueDate('');
+        }
+    }
+
 
     const handleSearch = () => {
-        console.log(searchData);
+        console.log('searching');
+        
+        // if the user is a teacher get all assignments created by the teacher
+        //if the user is an admin or a coordinator get all assignments in the system
+        //based on the search inputs filter the retrieved assignments
+        //return the filtered list
+        if(user.role === 'ROLE_TEACHER') {
+            getAssignmentsForTeacher(user.id, user.accessToken)
+                .then(data => {
+                    console.log("retrieved successfully");
+                })
+                .catch(error => {
+                    console.log(error);
+                })
+        }
 
-        // check validity of the search
-
-
-
-        // onSearchResults(reponse of the api call);
+        
+        // onSearchResults("ewfgewfeefewfw");
     }
+
+    useEffect(() => {
+
+
+    }, []);
 
 
     return(
@@ -43,16 +109,15 @@ const AssignmentSearch = ({onSearchResults}) => {
                     <select 
                         className='input'
                         name='className'
-                        onChange={handleInputChange}
-                        value={searchData.className}
+                        onChange={handleClassChange}
+                        value={searchClass}
                     >
-                        {/* options */}
                         <option value="">Sınıf seçiniz</option>
-                        <option value="classIDA">12-A</option>
-                        <option value="classIDB">12-B</option>
-                        <option value="classIDC">12-C</option>
-                        <option value="classIDD">12-D</option>
-                        <option value="classIDE">12-E</option>
+                        {allClasses.map((singleClass) => (
+                            <option value={singleClass.name} key={singleClass.id}>
+                                {singleClass.name}
+                            </option>
+                        ))}
                     </select>
                 </div>
 
@@ -61,16 +126,17 @@ const AssignmentSearch = ({onSearchResults}) => {
                     <select 
                         className="input"
                         name='subjectName'
-                        onChange={handleInputChange}
-                        value={searchData.subjectName}
+                        onChange={handleSubjectChange}
+                        value={searchSubject}
+                        disabled={searchClass === ''}
                     >
-                        {/* options */}
                         <option value="">Ders seçiniz</option>
-                        <option value="subjectID">Türkçe</option>
-                        <option value="subjectID">Matematik</option>
-                        <option value="subjectID">Tarih</option>
-                        <option value="subjectID">Geometri</option>
-                        <option value="subjectID">Felsefe</option>
+                        {allSubjectsOfClass &&
+                            allSubjectsOfClass.map((singleSubject) => (
+                                <option value={singleSubject.name} key={singleSubject.id}>
+                                    {singleSubject.name}
+                                </option>
+                        ))}
                     </select>
                 </div>
                 <div className="input-container">
@@ -79,9 +145,10 @@ const AssignmentSearch = ({onSearchResults}) => {
                         className="input"
                         type="date"
                         name='endDate'
-                        onChange={handleInputChange}    
-                        value={searchData.endDate}
+                        onChange={handleDueDateChange}    
+                        value={searchDueDate}
                     />
+                    {dateError && <p className='error-message'>{dateError}</p>}
                 </div>
             </div>
             <button className="save-btn btn" onClick={handleSearch}>Ara</button>

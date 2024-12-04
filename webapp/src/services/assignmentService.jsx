@@ -3,41 +3,63 @@ import axios from "axios";
 
 
 export const createAssignment = async (assignmentData, accessToken) => {
-    try {
-        const response = await axios.post(
-            '/api/v1/assignments/createAssignment',
-            assignmentData,
-            {
-                headers : {
-                    Authorization : `Bearer ${accessToken}`,
-                    "Content-Type" : "application/json",
-                },
-            }
-        );
-        return response.data;
-    }catch(error) {
-        console.error("error creating assignment");
-        console.log(error);
-        throw error
-    }
+    const response = await axios.post(
+        '/api/v1/assignments/createAssignment',
+        assignmentData,
+        {
+            headers : {
+                "Content-Type" : "application/json",
+                Authorization : `Bearer ${accessToken}`,
+            },
+        }
+    );
+    return response.data;
 }
 
-export const submitStudentAssignment = async (assignmentID, newStatus, accessToken) => {
-    try {
-        const response = await axios.patch(
-            `/api/v1/assignments/${assignmentID}/status`,
-            { status : newStatus},
-            {
-                headers : {
-                    'Content-Type' : 'application/json',
-                    Authorization : `Bearer ${accessToken}`
-                },
-            }
-        );
-        return response.data;
-    }catch(error) {
-        console.log(error);
-    }
+export const uploadDocument = async (assignmentID, file, isTeacherUpload, accessToken) => {
+    const fileData = new FormData();
+    fileData.append('file', file);
+    fileData.append('isTeacherUpload', isTeacherUpload);
+
+    const response = await axios.post(
+        `/api/v1/assignments/${assignmentID}/documents`,
+        fileData,
+        {
+            headers : {
+                'Content-Type' : 'multipart/form-data',
+                Authorization : `Bearer ${accessToken}`,
+            },
+        }
+    );
+    return response;
+}
+
+// export const submitStudentAssignment = async (assignmentID, newStatus, accessToken) => {
+//     const response = await axios.patch(
+//         `/api/v1/assignments/${assignmentID}/status`,
+//         { status : newStatus},
+//         {
+//             headers : {
+//                 'Content-Type' : 'application/json',
+//                 Authorization : `Bearer ${accessToken}`
+//             },
+//         }
+//     );
+//     return response.data;
+// }
+
+export const submitAssignment = async (assignmentID, fileData, accessToken) => {
+    const response = await axios.patch(
+        `/api/v1/assignments/${assignmentID}/submit`,
+        fileData,
+        {
+            headers : {
+                'Content-Type' : 'multipart/form-data',
+                Authorization : `Bearer ${accessToken}`,
+            },
+        }
+    );
+    return response.data;
 }
 
 export const unsubmitStudentAssignment = async (assignmentID, accessToken) => {
@@ -57,7 +79,6 @@ export const unsubmitStudentAssignment = async (assignmentID, accessToken) => {
         console.log(error);
     }
 }
-
 
 export const getAssignmentsForStudent = async (studentID, accessToken) => {
     try {
@@ -193,5 +214,17 @@ export const getAssignmentsForStudent = async (studentID, accessToken) => {
     // );
 }
 
+export const getAssignmentsForTeacher = async (teacherID, accessToken) => {
+    const response = await axios.get(
+        `/api/v1/assignments/teacher/${teacherID}`,
+        {
+            headers : {
+                Authorization : `Bearer ${accessToken}`
+            }
+        }
+    );
+    console.log('fetch teacher assignments response : ', response);
+    return response.data;
+}
 
 export default { createAssignment, getAssignmentsForStudent };

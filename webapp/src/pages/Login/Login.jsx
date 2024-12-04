@@ -1,6 +1,6 @@
 import LogoPlaceholder from '../../components/common/LogoPlaceholder/LogoPlaceholder'
 import './Login.css'
-import { useContext, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import authService from '../../services/authService'
 import { AuthContext } from '../../contexts/AuthContext'
 
@@ -12,6 +12,15 @@ const Login = () => {
     const [rememberMe, setRememberMe] = useState(false);
 
     const [errorMessage, setErrorMessage] = useState('');
+
+
+
+    //!!!! remove before deployment
+    useEffect(() => {
+        // localStorage.setItem('password', 'securePassword123_@');
+        const loginPassword = localStorage.getItem('password');
+        setPassword(loginPassword);
+    }, []);
 
 
     const handleLogin = async (e) => {
@@ -26,6 +35,7 @@ const Login = () => {
                 username : username,
                 password : password
             });
+            console.log('login request response : ', response);
             login(response.data);
         } catch(err) {
             console.log(err);

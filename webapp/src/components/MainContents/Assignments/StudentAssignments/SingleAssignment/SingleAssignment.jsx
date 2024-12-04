@@ -4,10 +4,11 @@ import arrowUp from '/icons/arrow-up.svg';
 import deleteIcon from '/icons/delete.svg';
 
 import './SingleAssignment.css';
-import { submitStudentAssignment, unsubmitStudentAssignment } from "../../../../../services/assignmentService";
+import { submitAssignment, unsubmitStudentAssignment } from "../../../../../services/assignmentService";
 import { AuthContext } from "../../../../../contexts/AuthContext";
 
 const SingleAssigment = ({ assignment }) => {
+    console.log(assignment);
     const { user } = useContext(AuthContext);
 
     const [isExpanded, setIsExpanded] = useState(false);
@@ -16,22 +17,17 @@ const SingleAssigment = ({ assignment }) => {
 
 
     const handleFileUpload = (event) => {
-        console.log("handling file upload");
         const file = event.target.files[0];
         setuploadedFile(file);
     }
 
     const handleAssignmentSubmit = async () => {
-        console.log("handling assignment submit");
-        try {
 
-            if(uploadedFile) {
-                console.log("upload file");
-            }
-            const response = await submitStudentAssignment(assignment.id, 'SUBMITTED', user.accessToken);
-        }catch(err) {
-            console.log("error submitting assignment.");
-        }
+        const fileData = new FormData();
+        fileData.append('document', uploadedFile);
+        fileData.append('submissionComment', 'submit comment goes here');
+
+        submitAssignment(assignment.id, fileData)
     }
     
     const handleAssignmentUnsubmit = async () => {
@@ -49,6 +45,7 @@ const SingleAssigment = ({ assignment }) => {
         setuploadedFile(null);
     }
 
+    // TODO
     const handleDocumentDownload = () => {
         console.log("handling document download");
     }
@@ -82,18 +79,11 @@ const SingleAssigment = ({ assignment }) => {
                     <div className="assignment-body-section">
                         <label className="assignment-section-title">Yardımcı materyaller</label>
                         {assignment.teacherDocuments ? (
-                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.teacherDocuments}</span>
+                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.teacherDocuments.fileName}</span>
                         ) : (
                             <i className="assignment-section-text">Döküman eklenmedi.</i>
                         )}
                     </div>
-
-                    {/* {assignment.document &&
-                        <div className="assignment-body-section">
-                            <label className="assignment-section-title">Yardımcı materyaller</label>
-                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.document}</span>
-                        </div>    
-                    } */}
                     
                     {assignment.status === 'PENDING' && (
                         <>
