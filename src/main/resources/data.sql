@@ -78,20 +78,19 @@ SELECT c.id, s.id
 FROM classes c, app_users s
 WHERE s.role = 'ROLE_STUDENT';
 
--- First create Assignments without teacher_document
+-- Create Assignments
 INSERT INTO assignments (id, title, description, due_date, submission_date, assigned_by_teacher_id,
                          status, class_id, course_id, assignment_date) VALUES
                                                                            (nextval('assignments_seq'), 'Math Homework 1', 'Complete exercises 1-10', '2024-12-01', null,
                                                                             (SELECT id FROM app_users WHERE username = 'teacher1'), 'PENDING',
                                                                             (SELECT id FROM classes WHERE name = '11-A-MF'),
                                                                             (SELECT id FROM courses WHERE code = 'MAT-1'), '2024-11-24'),
-
                                                                            (nextval('assignments_seq'), 'Literacy Report', 'Write report on turkish literacy', '2024-12-05', null,
                                                                             (SELECT id FROM app_users WHERE username = 'teacher2'), 'PENDING',
                                                                             (SELECT id FROM classes WHERE name = '11-B-TM'),
                                                                             (SELECT id FROM courses WHERE code = 'EDB-1'), '2024-11-24');
 
--- Then create Assignment Documents with assignment_id
+-- Create Assignment Documents
 INSERT INTO assignment_documents (id, file_name, file_path, upload_time, file_type, file_size,
                                   uploaded_by, is_teacher_upload, assignment_id) VALUES
                                                                                      (nextval('assignment_docs_seq'),
@@ -103,7 +102,6 @@ INSERT INTO assignment_documents (id, file_name, file_path, upload_time, file_ty
                                                                                       (SELECT id FROM app_users WHERE username = 'teacher1'),
                                                                                       true,
                                                                                       (SELECT id FROM assignments WHERE title = 'Math Homework 1')),
-
                                                                                      (nextval('assignment_docs_seq'),
                                                                                       'literature_hw.pdf',
                                                                                       'assignments/literature/literature_hw.pdf',
@@ -114,11 +112,7 @@ INSERT INTO assignment_documents (id, file_name, file_path, upload_time, file_ty
                                                                                       true,
                                                                                       (SELECT id FROM assignments WHERE title = 'Literacy Report'));
 
--- Finally update assignments with their teacher_documents
-UPDATE assignments SET teacher_document =
-                           (SELECT id FROM assignment_documents WHERE assignment_id = assignments.id AND is_teacher_upload = true);
-
--- Update sequences to match current maximum values
+-- Update sequences
 SELECT setval('app_users_seq', (SELECT MAX(id) FROM app_users));
 SELECT setval('classes_id_seq', (SELECT MAX(id) FROM classes));
 SELECT setval('assignments_seq', (SELECT MAX(id) FROM assignments));

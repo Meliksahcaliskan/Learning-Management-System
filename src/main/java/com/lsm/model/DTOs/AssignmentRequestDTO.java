@@ -38,7 +38,7 @@ public class AssignmentRequestDTO {
     @NotNull(message = "Course name is required")
     @Size(min = 2, max = 100, message = "Course name must be between 2 and 100 characters")
     @Pattern(regexp = "^[A-Za-z0-9-_ ]+$", message = "Course name can only contain letters, numbers, spaces, hyphens and underscores")
-    private String courseName;
+    private String courseName; // TODO: should be courseId instead of courseName.
 
     private AssignmentDocumentDTO document;
 }

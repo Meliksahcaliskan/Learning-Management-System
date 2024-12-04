@@ -7,6 +7,7 @@ import com.lsm.model.entity.enums.Role;
 import com.lsm.repository.AppUserRepository;
 import com.lsm.repository.AssignmentDocumentRepository;
 import com.lsm.repository.AssignmentRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -32,21 +33,26 @@ public class AssignmentDocumentService {
     @Value("${app.upload.dir}")
     private String uploadDir;
 
+    @Transactional
     public AssignmentDocument uploadDocument(MultipartFile file, Long assignmentId,
                                              AppUser currentUser, boolean isTeacherUpload)
             throws IOException {
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
 
-        // Validate permissions
-        if (isTeacherUpload && !currentUser.getRole().equals(Role.ROLE_TEACHER)
-                && !currentUser.equals(assignment.getAssignedBy())) {
-            throw new AccessDeniedException("Only the assigned teacher can upload documents");
+        // First, delete existing document if any
+        if (isTeacherUpload && assignment.getTeacherDocument() != null) {
+            AssignmentDocument oldDoc = assignment.getTeacherDocument();
+            assignment.setTeacherDocument(null);
+            Files.deleteIfExists(Paths.get(oldDoc.getFilePath()));
+            documentRepository.delete(oldDoc);
+        } else if (!isTeacherUpload && assignment.getStudentSubmission() != null) {
+            AssignmentDocument oldDoc = assignment.getStudentSubmission();
+            assignment.setStudentSubmission(null);
+            Files.deleteIfExists(Paths.get(oldDoc.getFilePath()));
+            documentRepository.delete(oldDoc);
         }
-
-        if (!isTeacherUpload && !currentUser.getRole().equals(Role.ROLE_STUDENT)) {
-            throw new AccessDeniedException("Only students can submit assignments");
-        }
+        assignmentRepository.save(assignment);
 
         // Create directory if it doesn't exist
         String dirPath = uploadDir + "/" + assignmentId;
@@ -54,30 +60,42 @@ public class AssignmentDocumentService {
 
         // Generate unique filename
         String originalFilename = file.getOriginalFilename();
-        String fileExtension = "";
-        if (originalFilename != null)
-            fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String fileExtension = originalFilename != null
+                ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                : "";
         String uniqueFilename = UUID.randomUUID() + fileExtension;
         String filePath = dirPath + "/" + uniqueFilename;
 
         // Save file
         Files.copy(file.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
 
-        // Create document entity
+        // Create and save new document
         AssignmentDocument document = AssignmentDocument.builder()
                 .fileName(originalFilename)
                 .filePath(filePath)
                 .fileType(file.getContentType())
                 .fileSize(file.getSize())
                 .uploadTime(LocalDateTime.now())
-                .assignment(assignment)
                 .uploadedBy(currentUser)
                 .isTeacherUpload(isTeacherUpload)
+                .assignment(assignment)
                 .build();
 
-        return documentRepository.save(document);
+        // Save document first
+        document = documentRepository.save(document);
+
+        // Update assignment with the new document
+        if (isTeacherUpload) {
+            assignment.setTeacherDocument(document);
+        } else {
+            assignment.setStudentSubmission(document);
+        }
+        assignmentRepository.save(assignment);
+
+        return document;
     }
 
+    @Transactional
     public Resource downloadDocument(Long documentId, AppUser currentUser) throws IOException {
         AssignmentDocument document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new EntityNotFoundException("Document not found"));
