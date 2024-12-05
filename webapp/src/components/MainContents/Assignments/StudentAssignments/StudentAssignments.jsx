@@ -24,9 +24,9 @@ const StudentAssignments = ({ user }) => {
     setError(null);
     try {
       const response = await getAssignmentsForStudent(user.id, user.accessToken);
-      // console.log(response.data);
+      console.log(response.data);
       setAssignments(response.data);
-      setSelectedAssignments(response.data.filter((assignment) => assignment.status === selectedOption.status));
+      setSelectedAssignments(response.data.filter((assignment) => selectedOption.compare(assignment)));
     } catch (err) {
       console.log(err);
       setError(err.message);
@@ -39,17 +39,12 @@ const StudentAssignments = ({ user }) => {
     fetchAssignments();
   }, []);
 
-  useEffect(() => {
-    console.log(selectedOption);
-    console.log(selectedAssignments);
-    console.log("lenght of it : ",selectedAssignments.length);
-
-  }, [selectedAssignments]);
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);
-    setSelectedAssignments(assignments.filter((assignment) => assignment.status === option.status));
+    setSelectedAssignments(assignments.filter((assignment) => option.compare(assignment)));
   };
+
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;

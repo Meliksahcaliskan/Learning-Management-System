@@ -6,12 +6,12 @@ import deleteIcon from '/icons/delete.svg';
 import './SingleAssignment.css';
 import { submitAssignment, unsubmitStudentAssignment } from "../../../../../services/assignmentService";
 import { AuthContext } from "../../../../../contexts/AuthContext";
+import { isDateInFuture } from "../../../../../utils/dateUtils";
 
 const SingleAssigment = ({ assignment, refreshAssignments }) => {
     const { user } = useContext(AuthContext);
 
     const [isExpanded, setIsExpanded] = useState(false);
-
     const [uploadedFile, setuploadedFile] = useState(null);
 
 
@@ -21,12 +21,11 @@ const SingleAssigment = ({ assignment, refreshAssignments }) => {
     }
 
     const handleAssignmentSubmit = async () => {
+        const formData = new FormData();
+        formData.append('document', uploadedFile);
+        formData.append('submissionComment', null);
 
-        const fileData = new FormData();
-        fileData.append('document', uploadedFile);
-        fileData.append('submissionComment', 'submit comment goes here');
-
-        submitAssignment(assignment.id, fileData, user.accessToken)
+        submitAssignment(assignment.id, formData, user.accessToken)
             .then(response => {
                 console.log(response);
                 refreshAssignments();
@@ -87,49 +86,54 @@ const SingleAssigment = ({ assignment, refreshAssignments }) => {
 
                     <div className="assignment-body-section">
                         <label className="assignment-section-title">Yardımcı materyaller</label>
-                        {assignment.teacherDocuments ? (
-                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.teacherDocuments.fileName}</span>
+                        {assignment.teacherDocument ? (
+                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.teacherDocument.fileName}</span>
                         ) : (
                             <i className="assignment-section-text">Döküman eklenmedi.</i>
                         )}
                     </div>
                     
-                    {assignment.status === 'PENDING' && (
+                    {!assignment.mySubmission && (
                         <>
                             <div className="assignment-body-section">
-                                {uploadedFile ? (
-                                    <>
-                                        <label className="assignment-section-title">Yüklenen döküman</label>
-                                        <div className="assignment-document-container">
-                                            <span className="assignment-document">{uploadedFile.name}</span>
-                                            <button type="submit" className="delete-btn" onClick={handleDocumentRemoval}><img src={deleteIcon} alt="remove file"/></button>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <label className="assignment-section-title">Döküman ekle</label>
-                                        <input type="file" onChange={handleFileUpload}/>
-                                    </>
-                                )}
+                                {isDateInFuture(assignment.dueDate) ?
+                                    (uploadedFile ? (
+                                            <>
+                                                <label className="assignment-section-title">Yüklenen döküman</label>
+                                                <div className="assignment-document-container">
+                                                    <span className="assignment-document">{uploadedFile.name}</span>
+                                                    <button type="submit" className="delete-btn" onClick={handleDocumentRemoval}><img src={deleteIcon} alt="remove file"/></button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <label className="assignment-section-title">Döküman ekle</label>
+                                                <input type="file" onChange={handleFileUpload}/>
+                                            </>
+                                        )
+                                    ) : (
+                                        <i className="assignment-section-text">Ödev teslim edilmedi</i>
+                                    )
+                                }
                             </div>
                             <button className="btn" onClick={handleAssignmentSubmit}>Teslim Et</button>
                         </>
                     )}
 
-                    {(assignment.status !== 'PENDING' && assignment.studentSubmissions) &&
+                    {(assignment.mySubmission && assignment.mySubmission.document) &&
                         <div className="assignment-body-section">
                             <label className="assignment-section-title">Eklenen dökümanlar</label>
-                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.studentSubmissions.fileName}</span>
+                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.mySubmission.document.fileName}</span>
                         </div>
                     }
-                    {assignment.status === 'SUBMITTED' &&
+                    {assignment.mySubmission && assignment.mySubmission.status === 'SUBMITTED' && isDateInFuture(assignment.dueDate) &&
                         <button className="btn" onClick={handleAssignmentUnsubmit}>Teslimi geri al</button>
                     }
-                    {assignment.status === 'GRADED' &&
+                    {!isDateInFuture(assignment.dueDate) &&
                         <div className="assignment-body-section">
                             <label className="assignment-section-title">Ödev sonucu</label>
-                            {assignment.grade ? (
-                                <span className="assignment-grade">{assignment.grade}/100</span>
+                            {assignment.mySubmission.grade ? (
+                                <span className="assignment-grade">{assignment.mySubmission.grade}/100</span>
                             ) : (
                                 <i>Daha sonuçlandırılmadı</i>
                             )}

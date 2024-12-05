@@ -10,9 +10,30 @@ const assignmentOptions = {
         { title: 'Geçmiş Ödevler', component: PastHomeworksOfficer },
     ],
     ROLE_STUDENT: [
-        { title: 'Aktif Ödevler', status : 'PENDING', index : 0},
-        { title: 'Gönderilmiş', status : 'SUBMITTED', index : 1},
-        { title: 'Geçmiş Ödevler', status : 'GRADED', index : 2},
+        { 
+            title: 'Aktif Ödevler',
+            status : 'PENDING',
+            index : 0,
+            compare : (assignment) =>
+                        !assignment.mySubmission &&
+                        ((new Date(assignment.dueDate)) >= (new Date()))
+        },
+        {
+            title: 'Gönderilmiş',
+            status : 'SUBMITTED',
+            index : 1,
+            compare : (assignment) =>
+                        assignment.mySubmission &&
+                        assignment.mySubmission.status === 'SUBMITTED' &&
+                        ((new Date(assignment.dueDate)) >= (new Date()))
+        },
+        {
+            title: 'Geçmiş Ödevler',
+            status : 'GRADED',
+            index : 2,
+            compare : (assignment) => 
+                        ((new Date(assignment.dueDate)) < (new Date()))
+        },
     ]
 }
 

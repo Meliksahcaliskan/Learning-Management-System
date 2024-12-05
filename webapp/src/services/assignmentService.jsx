@@ -64,13 +64,13 @@ export const unsubmitStudentAssignment = async (assignmentID, accessToken) => {
     }
 }
 
-export const getAssignments = async (userRole, userID, accessToken) => {
+export const getAssignments = async (userRole, userID, filter, accessToken) => {
     if(userRole === 'ROLE_STUDENT') {
         return await getAssignmentsForStudent(userID,accessToken);
     } else if(userRole === 'ROLE_TEACHER') {
-        return await getAssignmentsForTeacher(userID, accessToken);
+        return await getAssignmentsForTeacher(userID, filter, accessToken);
     } else if(userRole === 'ROLE_ADMIN' || userRole === 'ROLE_COORDINATOR') {
-        return await getAllAssignments(accessToken);
+        return await getAllAssignments(filter, accessToken);
     }
 }
 
