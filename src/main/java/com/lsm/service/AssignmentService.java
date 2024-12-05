@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.lsm.model.DTOs.GradeDTO;
-import com.lsm.model.DTOs.SubmitAssignmentDTO;
+import com.lsm.model.DTOs.*;
+import com.lsm.model.entity.StudentSubmission;
 import com.lsm.model.entity.AssignmentDocument;
 import com.lsm.model.entity.ClassEntity;
 import com.lsm.model.entity.Course;
@@ -23,8 +23,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.Cacheable;
 
-import com.lsm.model.DTOs.AssignmentDTO;
-import com.lsm.model.DTOs.AssignmentRequestDTO;
 import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.Role;
@@ -45,6 +43,7 @@ public class AssignmentService {
     private final ClassEntityRepository classEntityRepository;
     private final CourseRepository courseRepository;
     private final AssignmentDocumentService assignmentDocumentService;
+    private final StudentSubmissionService studentSubmissionService;
 
     @Value("${assignment.max-title-length:100}")
     private int maxTitleLength;
@@ -53,68 +52,19 @@ public class AssignmentService {
     private int minDueDateDays;
 
     @Autowired
-    public AssignmentService(AssignmentRepository assignmentRepository, AppUserRepository appUserRepository, ClassEntityRepository classEntityRepository, CourseRepository courseRepository, AssignmentDocumentService assignmentDocumentService) {
+    public AssignmentService(AssignmentRepository assignmentRepository, AppUserRepository appUserRepository, ClassEntityRepository classEntityRepository, CourseRepository courseRepository, AssignmentDocumentService assignmentDocumentService, StudentSubmissionService studentSubmissionService) {
         this.assignmentRepository = assignmentRepository;
         this.appUserRepository = appUserRepository;
         this.classEntityRepository = classEntityRepository;
         this.courseRepository = courseRepository;
         this.assignmentDocumentService = assignmentDocumentService;
+        this.studentSubmissionService = studentSubmissionService;
     }
 
     @Transactional
-    public Assignment updateAssignmentStatus(Long assignmentId, AssignmentStatus newStatus, AppUser currentUser) throws AccessDeniedException {
-        Assignment assignment = findById(assignmentId);
-
-        // Validate the status update based on user role and current status
-        try {
-            validateStatusUpdate(assignment, newStatus, currentUser);
-        } catch (AccessDeniedException e) {
-            throw new AccessDeniedException(e.getMessage());
-        }
-
-        assignment.setStatus(newStatus);
-        return assignmentRepository.save(assignment);
-    }
-
-    private void validateStatusUpdate(Assignment assignment, AssignmentStatus newStatus, AppUser currentUser) throws AccessDeniedException {
-        Role userRole = currentUser.getRole();
-
-        // Admins and Coordinators can update to any status
-        if (userRole == Role.ROLE_ADMIN || userRole == Role.ROLE_COORDINATOR) {
-            return;
-        }
-
-        // Students can only update to SUBMITTED status
-        if (userRole == Role.ROLE_STUDENT) {
-            if (newStatus != AssignmentStatus.SUBMITTED) {
-                throw new AccessDeniedException("Students can only update assignment status to SUBMITTED");
-            }
-            if (assignment.getStatus() != AssignmentStatus.PENDING) {
-                throw new AccessDeniedException("Can only submit PENDING assignments");
-            }
-            return;
-        }
-
-        // Teachers can only update their own assignments to GRADED status
-        if (userRole == Role.ROLE_TEACHER) {
-            if (!assignment.getAssignedBy().equals(currentUser)) {
-                throw new AccessDeniedException("Teachers can only update their own assignments");
-            }
-            if (newStatus != AssignmentStatus.GRADED) {
-                throw new AccessDeniedException("Teachers can only update assignment status to GRADED");
-            }
-            if (assignment.getStatus() != AssignmentStatus.SUBMITTED) {
-                throw new AccessDeniedException("Can only grade SUBMITTED assignments");
-            }
-        }
-
-        if (assignment.getGrade() != null && newStatus != AssignmentStatus.GRADED) {
-            throw new IllegalStateException("Cannot change status of graded assignments");
-        }
-    }
-
-    @Transactional
-    public List<AssignmentDTO> getAllAssignments() {
+    public List<AssignmentDTO> getAllAssignments(AppUser currentUser) throws AccessDeniedException {
+        if (currentUser.getRole() == Role.ROLE_STUDENT || currentUser.getRole() == Role.ROLE_TEACHER)
+            throw new AccessDeniedException("Only admin and coordinator can list all assignments");
         List<Assignment> assignments = assignmentRepository.findAll();
         return assignments.stream()
                 .map(assignment -> new AssignmentDTO(assignment, "Retrieved successfully"))
@@ -192,10 +142,10 @@ public class AssignmentService {
     }
 
     @Transactional
-    public List<AssignmentDTO> getAssignmentsByTeacher(Long teacherId)
+    public List<AssignmentDTO> getAssignmentsByTeacher(Long teacherId, AssignmentFilterDTO filter)
             throws AccessDeniedException, EntityNotFoundException {
         // Find teacher
-        AppUser teacher = appUserRepository.findById(teacherId)
+        AppUser  teacher = appUserRepository.findById(teacherId)
                 .orElseThrow(() -> new EntityNotFoundException("Teacher not found"));
 
         // Validate that user is actually a teacher
@@ -206,13 +156,32 @@ public class AssignmentService {
         // Get all assignments created by the teacher
         List<Assignment> assignments = assignmentRepository.findByAssignedByOrderByDueDateDesc(teacher);
 
+        // Apply filters based on AssignmentFilterDTO
+        if (filter != null) {
+            if (filter.getClassId() != null) {
+                assignments = assignments.stream()
+                        .filter(assignment -> assignment.getClassEntity().getId().equals(filter.getClassId()))
+                        .collect(Collectors.toList());
+            }
+            if (filter.getCourseId() != null) {
+                assignments = assignments.stream()
+                        .filter(assignment -> assignment.getCourse().getId().equals(filter.getCourseId()))
+                        .collect(Collectors.toList());
+            }
+            if (filter.getDueDate() != null) {
+                assignments = assignments.stream()
+                        .filter(assignment -> assignment.getDueDate().isEqual(filter.getDueDate()))
+                        .collect(Collectors.toList());
+            }
+        }
+
         return assignments.stream()
                 .map(assignment -> new AssignmentDTO(assignment, "Retrieved successfully"))
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public List<AssignmentDTO> getAssignmentsByStudent(Long studentId)
+    public List<StudentAssignmentViewDTO> getAssignmentsByStudent(Long studentId)
             throws AccessDeniedException, EntityNotFoundException {
         // Find student
         AppUser student = appUserRepository.findById(studentId)
@@ -224,16 +193,15 @@ public class AssignmentService {
         }
 
         // Get student's class
-        Optional<ClassEntity> classEntityOpt = classEntityRepository.findById(student.getStudentDetails().getClassEntity());
-        if (classEntityOpt.isEmpty())
-            throw new EntityNotFoundException("Class not found by id: " + student.getStudentDetails().getClassEntity());
-        ClassEntity classEntity = classEntityOpt.get();
+        ClassEntity classEntity = classEntityRepository.findById(student.getStudentDetails().getClassEntity())
+                .orElseThrow(() -> new EntityNotFoundException("Class not found by id: " + student.getStudentDetails().getClassEntity()));
 
         // Get all assignments for the student's class
         List<Assignment> assignments = assignmentRepository.findByClassEntityOrderByDueDateDesc(classEntity);
 
+        // Convert to StudentAssignmentViewDTO
         return assignments.stream()
-                .map(assignment -> new AssignmentDTO(assignment, "Retrieved successfully"))
+                .map(assignment -> new StudentAssignmentViewDTO(assignment, studentId))
                 .collect(Collectors.toList());
     }
 
@@ -306,68 +274,75 @@ public class AssignmentService {
     }
 
     @Transactional
-    public Assignment gradeAssignment(Long assignmentId, GradeDTO gradeDTO, AppUser currentUser)
+    public Assignment gradeAssignment(Long assignmentId, GradeDTO gradeDTO, AppUser currentUser, Long studentId)
             throws AccessDeniedException {
         Assignment assignment = findById(assignmentId);
 
+        if (currentUser.getRole() == Role.ROLE_STUDENT)
+            throw new AccessDeniedException("Student can't grade assignments");
+
         // Validate that only teachers can grade their own assignments
-        if (currentUser.getRole() != Role.ROLE_TEACHER ||
+        if (currentUser.getRole() == Role.ROLE_TEACHER &&
                 !assignment.getAssignedBy().getId().equals(currentUser.getId())) {
             throw new AccessDeniedException("Only the assigned teacher can grade this assignment");
         }
 
-        // Validate that assignment is in SUBMITTED status
-        if (assignment.getStatus() != AssignmentStatus.SUBMITTED) {
-            throw new IllegalStateException("Can only grade assignments that have been submitted");
-        }
+        // Check if the assignment is past due and if any submission is not submitted
+        boolean canGrade = assignment.getStudentSubmissions().stream()
+                .noneMatch(studentSubmission -> studentSubmission.getStatus() != AssignmentStatus.SUBMITTED)
+        /*  && assignment.getDueDate().isBefore(LocalDate.now()) */;
 
-        assignment.setGrade(gradeDTO.getGrade());
-        assignment.setFeedback(gradeDTO.getFeedback());
-        assignment.setStatus(AssignmentStatus.GRADED);
+        if (!canGrade)
+            throw new IllegalStateException("Can only grade assignments that have been submitted");
+
+        // Update the submission for the specific student
+        assignment.getStudentSubmissions().stream()
+                .filter(studentSubmission -> studentSubmission.getStudent().getId().equals(studentId))
+                .forEach(studentSubmission -> {
+                    studentSubmission.setGrade(gradeDTO.getGrade());
+                    studentSubmission.setFeedback(gradeDTO.getFeedback());
+                    studentSubmission.setStatus(AssignmentStatus.GRADED);
+                });
 
         return assignmentRepository.save(assignment);
     }
 
     @Transactional
-    public Assignment unsubmitAssignment(Long assignmentId, AppUser currentUser)
-            throws AccessDeniedException {
+    public Assignment unsubmitAssignment(Long assignmentId, AppUser  currentUser ) throws AccessDeniedException {
         Assignment assignment = findById(assignmentId);
 
-        if(assignment.getStatus() != AssignmentStatus.SUBMITTED) {
+        if (assignment.getDueDate().isBefore(LocalDate.now()))
+            throw new IllegalStateException("Can only unsubmit assignments that have been due.");
+
+        // Validate that only the student can unsubmit their assignment
+        if (currentUser .getRole() != Role.ROLE_STUDENT)
+            throw new AccessDeniedException("Only students can unsubmit assignments");
+
+        // Find the student's submission
+        StudentSubmission studentSubmission = assignment.getStudentSubmissions().stream()
+                .filter(submission -> submission.getStudent().getId().equals(currentUser .getId()))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("Student didn't submit assignment"));
+
+        // Validate submission status
+        if (studentSubmission.getStatus() != AssignmentStatus.SUBMITTED) {
             throw new IllegalStateException("Can only unsubmit assignments that have been submitted.");
         }
 
-        if(assignment.getDueDate().isBefore(LocalDate.now())) {
-            throw new IllegalStateException("Can only unsubmit assignments that have been due.");
-        }
-
-        // Validate that only the student can unsubmit their assignment
-        if (currentUser.getRole() != Role.ROLE_STUDENT) {
-            throw new AccessDeniedException("Only students can unsubmit assignments");
-        }
-
-        Optional<ClassEntity> classEntityOpt = classEntityRepository.findById(currentUser.getStudentDetails().getClassEntity());
-        if (classEntityOpt.isEmpty())
-            throw new EntityNotFoundException("Class not found");
-        ClassEntity classEntity = classEntityOpt.get();
+        // Check if the class entity exists
+        ClassEntity classEntity = classEntityRepository.findById(currentUser .getStudentDetails().getClassEntity())
+                .orElseThrow(() -> new EntityNotFoundException("Class not found"));
 
         // Verify the assignment belongs to the student
-        if (!classEntity.getCourses().contains(assignment.getCourse())) {
+        if (!classEntity.getCourses().contains(assignment.getCourse()))
             throw new AccessDeniedException("You can only unsubmit your own assignments");
-        }
 
         // Validate that assignment is in SUBMITTED status and not yet graded
-        if (assignment.getStatus() != AssignmentStatus.SUBMITTED) {
-            throw new IllegalStateException("Can only unsubmit assignments in SUBMITTED status");
-        }
-
-        if (assignment.getGrade() != null) {
+        if (studentSubmission.getGrade() != null)
             throw new IllegalStateException("Cannot unsubmit graded assignments");
-        }
 
         // Reset to pending status
-        assignment.setStatus(AssignmentStatus.PENDING);
-        assignment.setStudentSubmission(null);
+        studentSubmission.setStatus(AssignmentStatus.PENDING);
 
         return assignmentRepository.save(assignment);
     }
@@ -376,6 +351,31 @@ public class AssignmentService {
     public Assignment submitAssignment(Long assignmentId, SubmitAssignmentDTO submitDTO, AppUser currentUser)
             throws IllegalStateException, IOException {
         Assignment assignment = findById(assignmentId);
+
+        // Check deadline
+        if (LocalDate.now().isAfter(assignment.getDueDate()))
+            throw new IllegalStateException("Assignment deadline has passed");
+
+        Optional<StudentSubmission> optionalSubmission = assignment.getStudentSubmissions().stream()
+                .filter(studentSubmission -> studentSubmission.getStudent().getId().equals(currentUser .getId()))
+                .findFirst();
+
+        if (optionalSubmission.isPresent()) {
+            StudentSubmission theStudentSubmission = optionalSubmission.get();
+
+            if (theStudentSubmission.getStatus() == AssignmentStatus.SUBMITTED)
+                throw new IllegalStateException("You have already submitted the assignment");
+            else if (theStudentSubmission.getGrade() != null)
+                throw new IllegalStateException("The assignment has already been graded");
+            else if (theStudentSubmission.getStatus() == AssignmentStatus.GRADED)
+                throw new IllegalStateException("The assignment has already been graded");
+            else {
+                // Delete the old file
+                Files.deleteIfExists(Paths.get(theStudentSubmission.getDocument().getFilePath()));
+                theStudentSubmission.setDocument(null);
+                assignmentRepository.save(assignment);
+            }
+        }
 
         Optional<ClassEntity> classEntityOpt = classEntityRepository.findById(currentUser.getStudentDetails().getClassEntity());
         if (classEntityOpt.isEmpty())
@@ -387,38 +387,12 @@ public class AssignmentService {
             throw new AccessDeniedException("You can only submit your own assignments");
         }
 
-        // Check if assignment is already submitted
-        if (assignment.getStatus() == AssignmentStatus.SUBMITTED
-                || assignment.getStatus() == AssignmentStatus.GRADED) {
-            throw new IllegalStateException("Assignment is already submitted or graded");
-        }
-
-        // Check deadline
-        if (LocalDate.now().isAfter(assignment.getDueDate())) {
-            throw new IllegalStateException("Assignment deadline has passed");
-        }
-
-        if (assignment.getStudentSubmission() != null) {
-            // Delete the old file
-            Files.deleteIfExists(Paths.get(assignment.getStudentSubmission().getFilePath()));
-            // Remove the old document
-            assignment.setStudentSubmission(null);
-            assignmentRepository.save(assignment);
-        }
-
         // Upload document
-        AssignmentDocument document = assignmentDocumentService.uploadDocument(
-                submitDTO.getDocument(),
+        StudentSubmission studentSubmission = studentSubmissionService.submitAssignment(
                 assignmentId,
-                currentUser,
-                false
+                submitDTO,
+                currentUser
         );
-
-        // Update assignment
-        assignment.setStatus(AssignmentStatus.SUBMITTED);
-        assignment.setDescription(submitDTO.getSubmissionComment());
-        assignment.setSubmissionDate(LocalDate.now());
-        // assignment.setStudentSubmission(document);
 
         return assignmentRepository.save(assignment);
     }
@@ -497,7 +471,6 @@ public class AssignmentService {
         assignment.setClassEntity(classEntity);
         assignment.setCourse(course);
         assignment.setDate(LocalDate.now());
-        assignment.setStatus(AssignmentStatus.PENDING);
 
         return assignment;
     }

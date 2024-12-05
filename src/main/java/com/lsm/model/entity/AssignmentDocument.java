@@ -40,7 +40,4 @@ public class AssignmentDocument {
     @ManyToOne
     @JoinColumn(name = "uploaded_by", nullable = false)
     private AppUser uploadedBy;
-
-    @Column(name = "is_teacher_upload")
-    private boolean isTeacherUpload;
 }

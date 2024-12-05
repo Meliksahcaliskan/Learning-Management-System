@@ -4,14 +4,12 @@ import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.AssignmentDocument;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.Role;
-import com.lsm.repository.AppUserRepository;
 import com.lsm.repository.AssignmentDocumentRepository;
 import com.lsm.repository.AssignmentRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -27,28 +25,24 @@ import java.util.UUID;
 public class AssignmentDocumentService {
     private final AssignmentRepository assignmentRepository;
     private final AssignmentDocumentRepository documentRepository;
-    private final AppUserRepository appUserRepository;
-    private final Environment environment;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
 
     @Transactional
     public AssignmentDocument uploadDocument(MultipartFile file, Long assignmentId,
-                                             AppUser currentUser, boolean isTeacherUpload)
+                                             AppUser currentUser)
             throws IOException {
+        if (currentUser.getRole() == Role.ROLE_STUDENT)
+            throw new AccessDeniedException("You are not allowed to upload a student document");
+
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
 
         // First, delete existing document if any
-        if (isTeacherUpload && assignment.getTeacherDocument() != null) {
+        if (assignment.getTeacherDocument() != null) {
             AssignmentDocument oldDoc = assignment.getTeacherDocument();
             assignment.setTeacherDocument(null);
-            Files.deleteIfExists(Paths.get(oldDoc.getFilePath()));
-            documentRepository.delete(oldDoc);
-        } else if (!isTeacherUpload && assignment.getStudentSubmission() != null) {
-            AssignmentDocument oldDoc = assignment.getStudentSubmission();
-            assignment.setStudentSubmission(null);
             Files.deleteIfExists(Paths.get(oldDoc.getFilePath()));
             documentRepository.delete(oldDoc);
         }
@@ -77,7 +71,6 @@ public class AssignmentDocumentService {
                 .fileSize(file.getSize())
                 .uploadTime(LocalDateTime.now())
                 .uploadedBy(currentUser)
-                .isTeacherUpload(isTeacherUpload)
                 .assignment(assignment)
                 .build();
 
@@ -85,12 +78,8 @@ public class AssignmentDocumentService {
         document = documentRepository.save(document);
 
         // Update assignment with the new document
-        if (isTeacherUpload) {
-            assignment.setTeacherDocument(document);
-        } else {
-            assignment.setStudentSubmission(document);
-        }
-        assignmentRepository.save(assignment);
+        assignment.setTeacherDocument(document);
+        // assignmentRepository.save(assignment);
 
         return document;
     }
