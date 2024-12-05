@@ -38,8 +38,6 @@ public class AssignmentDocumentDTO {
     @NotNull(message = "Uploader username is required")
     private String uploadedByUsername;
 
-    private boolean isTeacherUpload;
-
     public AssignmentDocument DTOtoDocument(AssignmentRepository assignmentRepository,
                                             AppUserRepository appUserRepository) {
         Assignment assignment = assignmentRepository.findById(assignmentId)
@@ -55,7 +53,6 @@ public class AssignmentDocumentDTO {
                 .fileType(fileType)
                 .fileName(fileName)
                 .filePath(filePath)
-                .isTeacherUpload(isTeacherUpload)
                 .uploadedBy(uploader)
                 .build();
     }

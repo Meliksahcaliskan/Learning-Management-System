@@ -6,9 +6,6 @@ import java.util.stream.Collectors;
 
 import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.AssignmentDocument;
-import com.lsm.model.entity.enums.AssignmentStatus;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.*;
 
 @Getter
@@ -23,15 +20,11 @@ public class AssignmentDTO {
     private LocalDate dueDate;
     private String message;
     private AssignmentDocumentDTO teacherDocuments;
-    private AssignmentDocumentDTO studentSubmissions;
-    private Double grade;
-    private String feedback;
+    private List<StudentSubmissionDTO> studentSubmissions;
     private LocalDate createdDate;
     private String assignedByTeacherName;
     private String className;
     private String courseName;
-    @Enumerated(EnumType.STRING)
-    private AssignmentStatus status;
 
     public AssignmentDTO(Assignment assignment, String message) {
         this.id = assignment.getId();
@@ -39,28 +32,19 @@ public class AssignmentDTO {
         this.description = assignment.getDescription();
         this.dueDate = assignment.getDueDate();
         this.message = message;
-
-        // Only set teacherDocuments if the document is a teacher upload
-        if (assignment.getTeacherDocument() != null && assignment.getTeacherDocument().isTeacherUpload()) {
-            this.teacherDocuments = convertToDTO(assignment.getTeacherDocument());
-        }
-
-        // Only set studentSubmissions if the document is a student upload
-        if (assignment.getStudentSubmission() != null && !assignment.getStudentSubmission().isTeacherUpload()) {
-            this.studentSubmissions = convertToDTO(assignment.getStudentSubmission());
-        }
-
-        this.grade = assignment.getGrade();
-        this.feedback = assignment.getFeedback();
+        this.teacherDocuments = convertToDTO(assignment.getTeacherDocument());
+        this.studentSubmissions = assignment.getStudentSubmissions().stream()
+                .map(StudentSubmissionDTO::new)
+                .collect(Collectors.toList());
         this.createdDate = assignment.getDate();
         this.assignedByTeacherName = assignment.getAssignedBy().getUsername();
         this.className = assignment.getClassEntity().getName();
         this.courseName = assignment.getCourse().getName();
-        this.status = assignment.getStatus();
     }
 
-
     private AssignmentDocumentDTO convertToDTO(AssignmentDocument doc) {
+        if (doc == null)
+            return null;
         return AssignmentDocumentDTO.builder()
                 .assignmentId(doc.getAssignment().getId())
                 .fileName(doc.getFileName())
@@ -68,7 +52,6 @@ public class AssignmentDTO {
                 .fileSize(doc.getFileSize())
                 .uploadTime(doc.getUploadTime())
                 .uploadedByUsername(doc.getUploadedBy().getUsername())
-                .isTeacherUpload(doc.isTeacherUpload())
                 .build();
     }
 }
