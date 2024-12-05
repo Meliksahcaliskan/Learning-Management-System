@@ -7,8 +7,7 @@ import './SingleAssignment.css';
 import { submitAssignment, unsubmitStudentAssignment } from "../../../../../services/assignmentService";
 import { AuthContext } from "../../../../../contexts/AuthContext";
 
-const SingleAssigment = ({ assignment }) => {
-    console.log(assignment);
+const SingleAssigment = ({ assignment, refreshAssignments }) => {
     const { user } = useContext(AuthContext);
 
     const [isExpanded, setIsExpanded] = useState(false);
@@ -27,17 +26,27 @@ const SingleAssigment = ({ assignment }) => {
         fileData.append('document', uploadedFile);
         fileData.append('submissionComment', 'submit comment goes here');
 
-        submitAssignment(assignment.id, fileData)
+        submitAssignment(assignment.id, fileData, user.accessToken)
+            .then(response => {
+                console.log(response);
+                refreshAssignments();
+            })
+            .catch(error => {
+                console.log(error);
+            })
     }
     
     const handleAssignmentUnsubmit = async () => {
         console.log("handling assignment unsubmit");
-        try {
-            const response = await unsubmitStudentAssignment(assignment.id, user.accessToken);
-            console.log(response);
-        }catch(error) {
-            console.log(error);
-        }
+        unsubmitStudentAssignment(assignment.id, user.accessToken)
+            .then(response => {
+                console.log(response);
+                refreshAssignments();
+            })
+            .catch(error => {
+                console.log(error);
+            })
+
     }
 
     const handleDocumentRemoval = () => {

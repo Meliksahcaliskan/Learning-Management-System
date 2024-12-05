@@ -4,34 +4,42 @@ import deleteIcon from '/icons/delete.svg';
 import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../../../../../contexts/AuthContext';
 
-import { getAllClasses, getTeacherClasses } from '../../../../../services/classesService';
+import { getAllClasses, getClasses, getTeacherClasses } from '../../../../../services/classesService';
 import { getAllSubjectsOf } from '../../../../../services/coursesService';
 import { createAssignment, uploadDocument } from '../../../../../services/assignmentService';
 
 import { isDateInFuture } from '../../../../../utils/dateUtils';
 import { calculateFileSize } from '../../../../../utils/fileUtils';
 
-const NewAssignment = () => {
+const NewAssignment = ({
+    initialClass = '',
+    initialSubject = '',
+    initialDueDate = '',
+    initialTitle = '',
+    initialDescription = '',
+    initialDocument = null,
+    onSubmit
+}) => {
     const { user } = useContext(AuthContext);
 
     const [allClasses, setAllClasses] = useState([]);
     const [allSubjectsOfClass, setAllSubjectsOfClass] = useState([]);
 
-    const [assignmentClass, setAssignmentClass] = useState('');
+    const [assignmentClass, setAssignmentClass] = useState(initialClass);
     const [classError, setClassError] = useState('');
 
-    const [assignmentSubject, setAssignmentSubject] = useState('');
+    const [assignmentSubject, setAssignmentSubject] = useState(initialSubject);
     const [subjectError, setSubjectError] = useState('');
 
-    const [assignmentDueDate, setAssignmnentDueDate] = useState('');
+    const [assignmentDueDate, setAssignmnentDueDate] = useState(initialDueDate);
     const [dateError, setDateError] = useState('');
 
-    const [assignmentTitle, setAssignmentTitle] = useState('');
+    const [assignmentTitle, setAssignmentTitle] = useState(initialTitle);
     const [titleError, setTitleError] = useState('');
 
-    const [assignmentDescription, setAssignmentDescription] = useState('');
+    const [assignmentDescription, setAssignmentDescription] = useState(initialDescription);
 
-    const [assignmentDocument, setAssignmentDocument] = useState(null);
+    const [assignmentDocument, setAssignmentDocument] = useState(initialDocument);
     const [fileError, setFileError] = useState('');
 
     const [creationError, setCreationError] = useState(false);
@@ -41,23 +49,33 @@ const NewAssignment = () => {
     const [uploadError, setUploadError] = useState(false);
 
     useEffect(() => {
-        if(user.role === 'ROLE_TEACHER') {
-            getTeacherClasses(user.accessToken)
-                .then(data => {
-                    setAllClasses(data)})
-                .catch(error => {
-                    console.log(error);
-                    setFecthError(true)
-                })
-        }else {
-            getAllClasses(user.accessToken)
-                .then(data => setAllClasses(data))
-                .catch(error => {
-                    console.log(error);
-                    setFecthError(true);
-                })
+        // if(user.role === 'ROLE_TEACHER') {
+        //     getTeacherClasses(user.accessToken)
+        //         .then(data => {
+        //             setAllClasses(data)})
+        //         .catch(error => {
+        //             console.log(error);
+        //             setFecthError(true)
+        //         })
+        // }else {
+        //     getAllClasses(user.accessToken)
+        //         .then(data => setAllClasses(data))
+        //         .catch(error => {
+        //             console.log(error);
+        //             setFecthError(true);
+        //         })
+        // }
+        getClasses(user.role, user.accessToken)
+            .then(response => {
+                setAllClasses(response);
+            })
+            .catch(error => {
+                console.log(error);
+                setFecthError(true);
+            })
+        if(initialClass) {
+            loadCourses(initialClass);
         }
-        console.log();
     }, [user.accessToken]);
 
     const clearMessages = () => {
@@ -100,7 +118,7 @@ const NewAssignment = () => {
             clearMessages();
         } else {
             setDateError('Bitiş tarihi gelecekte olmalıdır.');
-            setAssignmnentDueDate('');
+            setAssignmnentDueDate(initialDueDate ? initialDueDate : '');
         }
     };
 
@@ -292,7 +310,7 @@ const NewAssignment = () => {
                 className="btn"
                 onClick={handleSubmit}
             >
-                Oluştur
+                {initialClass ? 'Güncelle' : 'Oluştur'}
             </button>
             {creationError && 
                 <p className='error-message' style={{ whiteSpace : 'pre-line'}}>

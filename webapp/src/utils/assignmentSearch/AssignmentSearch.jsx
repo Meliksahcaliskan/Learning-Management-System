@@ -1,5 +1,5 @@
 import { AuthContext } from '../../contexts/AuthContext';
-import { getAssignmentsForTeacher } from '../../services/assignmentService';
+import { getAssignments, getAssignmentsForTeacher } from '../../services/assignmentService';
 import { getAllClasses, getTeacherClasses } from '../../services/classesService';
 import { getAllSubjectsOf } from '../../services/coursesService';
 import { isDateInFuture } from '../dateUtils';
@@ -67,39 +67,37 @@ const AssignmentSearch = ({onSearchResults}) => {
         if(isDateInFuture(dateInput)) {
             setSearchDueDate(dateInput);
             setDateError('');
+            console.log(dateInput)
         } else {
             setDateError('Bitiş tarihi gelecekte olmalıdır.');
             setSearchDueDate('');
         }
     }
 
-
-    const handleSearch = () => {
-        console.log('searching');
-        
-        // if the user is a teacher get all assignments created by the teacher
-        //if the user is an admin or a coordinator get all assignments in the system
-        //based on the search inputs filter the retrieved assignments
-        //return the filtered list
-        if(user.role === 'ROLE_TEACHER') {
-            getAssignmentsForTeacher(user.id, user.accessToken)
-                .then(data => {
-                    console.log("retrieved successfully");
-                })
-                .catch(error => {
-                    console.log(error);
-                })
-        }
-
-        
-        // onSearchResults("ewfgewfeefewfw");
+    const handleSearch = async () => {
+        getAssignments(user.role, user.id, user.accessToken)
+            .then(response => {
+                onSearchResults(filterAssignments(response.data))
+            })
+            .catch(error => {
+                console.log(error);
+            })
     }
 
-    useEffect(() => {
-
-
-    }, []);
-
+    const filterAssignments = (assignments) => {
+        if(searchClass) {
+            assignments = assignments.filter(assignment => assignment.className === searchClass);
+        }
+        if(searchSubject) {
+            assignments = assignments.filter(assignment => assignment.courseName === searchSubject);
+        }
+        if(searchDueDate) {
+            const targetDate = new Date(searchDueDate);
+            assignments = assignments.filter(assignment => new Date(assignment.dueDate) <= targetDate);
+        }
+        assignments = assignments.filter(assignment => new Date(assignment.dueDate) > new Date());
+        return assignments;
+    }
 
     return(
         <div className="homework-search">

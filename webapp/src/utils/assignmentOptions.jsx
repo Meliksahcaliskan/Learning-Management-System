@@ -10,9 +10,9 @@ const assignmentOptions = {
         { title: 'Geçmiş Ödevler', component: PastHomeworksOfficer },
     ],
     ROLE_STUDENT: [
-        { title: 'Aktif Ödevler', status : 'PENDING'},
-        { title: 'Gönderilmiş', status : 'SUBMITTED'},
-        { title: 'Geçmiş Ödevler', status : 'GRADED'},
+        { title: 'Aktif Ödevler', status : 'PENDING', index : 0},
+        { title: 'Gönderilmiş', status : 'SUBMITTED', index : 1},
+        { title: 'Geçmiş Ödevler', status : 'GRADED', index : 2},
     ]
 }
 

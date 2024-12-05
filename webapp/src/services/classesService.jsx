@@ -10,7 +10,6 @@ export const getAllClasses = async (accessToken) => {
         }
       }
     );
-    console.log(response);
     return response.data;
   }catch(error) {
     console.error("error fetching classes");
@@ -27,6 +26,10 @@ export const getTeacherClasses = async (accessToken) => {
         },
       }
     );
-    console.log('fetched response :', response);
     return response.data;
+}
+
+export const getClasses = async (userRole, accessToken) => {
+  if(userRole === 'ROLE_TEACHER') return await getTeacherClasses(accessToken);
+  else if(userRole === 'ROLE_ADMIN' || userRole === 'ROLE_COORDINATOR') return await getAllClasses(accessToken);
 }

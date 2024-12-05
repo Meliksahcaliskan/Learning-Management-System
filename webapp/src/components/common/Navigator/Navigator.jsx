@@ -2,9 +2,9 @@ import { useState } from 'react';
 import NavigationOption from '../NavigationOption/NavigationOption';
 import './Navigator.css';
 
-const Navigator = ({ options, onSelect }) => {
+const Navigator = ({ options, onSelect, currentOption = 0}) => {
 
-    const [highlightedOption, setHighlightedOption] = useState(0);
+    const [highlightedOption, setHighlightedOption] = useState(currentOption);
 
     return(
         <div className="navigator">
