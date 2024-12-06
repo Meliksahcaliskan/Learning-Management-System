@@ -14,6 +14,36 @@ export const createAssignment = async (assignmentData, accessToken) => {
     return response.data;
 }
 
+export const deleteAssignment = async (assignmentID, accessToken) => {
+    const response = await axios.delete(
+        `/api/v1/assignments/${assignmentID}`,
+        {
+            headers : {
+                Authorization : `Bearer ${accessToken}`,
+                'Content-Type' : 'application/json',
+            },
+        }
+    );
+    console.log('deletion response : ', response);
+    return response.data;
+}
+
+export const updateAssignment = async (assignmentID, updatedRequest, accessToken) => {
+    const response = await axios.put(
+        `/api/v1/assignments/${assignmentID}`,
+        updatedRequest,
+        {
+            headers : {
+                Authorization : `Bearer ${accessToken}`
+            }
+        }
+    );
+
+    console.log('update response : ', response);
+    return response.data;
+}
+
+
 export const uploadDocument = async (assignmentID, file, isTeacherUpload, accessToken) => {
     const fileData = new FormData();
     fileData.append('file', file);
@@ -70,7 +100,7 @@ export const getAssignments = async (userRole, userID, filter, accessToken) => {
     } else if(userRole === 'ROLE_TEACHER') {
         return await getAssignmentsForTeacher(userID, filter, accessToken);
     } else if(userRole === 'ROLE_ADMIN' || userRole === 'ROLE_COORDINATOR') {
-        return await getAllAssignments(filter, accessToken);
+        return await getAllAssignments(accessToken);
     }
 }
 
@@ -86,15 +116,17 @@ export const getAssignmentsForStudent = async (studentID, accessToken) => {
     return response.data;
 }
 
-export const getAssignmentsForTeacher = async (teacherID, accessToken) => {
-    const response = await axios.get(
-        `/api/v1/assignments/teacher/${teacherID}`,
-        {
-            headers : {
-                Authorization : `Bearer ${accessToken}`
-            }
+export const getAssignmentsForTeacher = async (teacherID, filter, accessToken) => {
+    
+    const response = await axios({
+        method : 'get',
+        url : `/api/v1/assignments/teacher/${teacherID}`,
+        data : filter,
+        headers : {
+            Authorization : `Bearer ${accessToken}`,
+            'Content-Type' : 'application/json'
         }
-    );
+    })
     return response.data;
 }
 

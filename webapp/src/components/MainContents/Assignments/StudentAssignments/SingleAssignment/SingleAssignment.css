@@ -77,10 +77,18 @@
     cursor: pointer;
 }
 
-.delete-btn {
+.delete-icon {
     border: none;
     display: grid;
     place-items: center;
     background-color: transparent;
     cursor: pointer;
+}
+
+.delete-btn {
+    background-color: var(--delete-btn);
+}
+
+.delete-btn:hover {
+    background-color: var(--delete-btn-hover);
 }

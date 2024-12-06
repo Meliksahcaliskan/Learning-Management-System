@@ -8,9 +8,10 @@ const ActiveHomeworksOfficer = () => {
     const [assignments, setAssignments] = useState([]);
 
     const handleSearchResults = (response) => {
+        setAssignments([]);
+        response = response.filter(assignment => new Date(assignment.dueDate) >= new Date());
         setIsSearched(true);
         setAssignments(response);
-        console.log("search results : ", response);
     };
 
     return (
@@ -19,7 +20,7 @@ const ActiveHomeworksOfficer = () => {
             {isSearched && (
                 assignments.length > 0 ? (
                     assignments.map((assignment, index) => (
-                        <UpdateAssignment 
+                        <UpdateAssignment
                             key={index}
                             assignment={assignment}
                         />

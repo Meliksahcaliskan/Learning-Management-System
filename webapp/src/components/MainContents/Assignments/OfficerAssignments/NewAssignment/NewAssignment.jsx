@@ -11,35 +11,27 @@ import { createAssignment, uploadDocument } from '../../../../../services/assign
 import { isDateInFuture } from '../../../../../utils/dateUtils';
 import { calculateFileSize } from '../../../../../utils/fileUtils';
 
-const NewAssignment = ({
-    initialClass = '',
-    initialSubject = '',
-    initialDueDate = '',
-    initialTitle = '',
-    initialDescription = '',
-    initialDocument = null,
-    onSubmit
-}) => {
+const NewAssignment = () => {
     const { user } = useContext(AuthContext);
 
     const [allClasses, setAllClasses] = useState([]);
     const [allSubjectsOfClass, setAllSubjectsOfClass] = useState([]);
 
-    const [assignmentClass, setAssignmentClass] = useState(initialClass);
+    const [assignmentClass, setAssignmentClass] = useState('');
     const [classError, setClassError] = useState('');
 
-    const [assignmentSubject, setAssignmentSubject] = useState(initialSubject);
+    const [assignmentSubject, setAssignmentSubject] = useState('');
     const [subjectError, setSubjectError] = useState('');
 
-    const [assignmentDueDate, setAssignmnentDueDate] = useState(initialDueDate);
+    const [assignmentDueDate, setAssignmnentDueDate] = useState('');
     const [dateError, setDateError] = useState('');
 
-    const [assignmentTitle, setAssignmentTitle] = useState(initialTitle);
+    const [assignmentTitle, setAssignmentTitle] = useState('');
     const [titleError, setTitleError] = useState('');
 
-    const [assignmentDescription, setAssignmentDescription] = useState(initialDescription);
+    const [assignmentDescription, setAssignmentDescription] = useState('');
 
-    const [assignmentDocument, setAssignmentDocument] = useState(initialDocument);
+    const [assignmentDocument, setAssignmentDocument] = useState('');
     const [fileError, setFileError] = useState('');
 
     const [creationError, setCreationError] = useState(false);
@@ -49,22 +41,6 @@ const NewAssignment = ({
     const [uploadError, setUploadError] = useState(false);
 
     useEffect(() => {
-        // if(user.role === 'ROLE_TEACHER') {
-        //     getTeacherClasses(user.accessToken)
-        //         .then(data => {
-        //             setAllClasses(data)})
-        //         .catch(error => {
-        //             console.log(error);
-        //             setFecthError(true)
-        //         })
-        // }else {
-        //     getAllClasses(user.accessToken)
-        //         .then(data => setAllClasses(data))
-        //         .catch(error => {
-        //             console.log(error);
-        //             setFecthError(true);
-        //         })
-        // }
         getClasses(user.role, user.accessToken)
             .then(response => {
                 setAllClasses(response);
@@ -73,9 +49,6 @@ const NewAssignment = ({
                 console.log(error);
                 setFecthError(true);
             })
-        if(initialClass) {
-            loadCourses(initialClass);
-        }
     }, [user.accessToken]);
 
     const clearMessages = () => {
@@ -118,7 +91,7 @@ const NewAssignment = ({
             clearMessages();
         } else {
             setDateError('Bitiş tarihi gelecekte olmalıdır.');
-            setAssignmnentDueDate(initialDueDate ? initialDueDate : '');
+            setAssignmnentDueDate('');
         }
     };
 
@@ -185,7 +158,6 @@ const NewAssignment = ({
 
             createAssignment(payload, user.accessToken)
                 .then(response => {
-                    console.log('assignment creation response ',response);
                     if(response.success) {
                         if(assignmentDocument) {
                             const assignmentID = response.data.id;
@@ -290,7 +262,7 @@ const NewAssignment = ({
             {assignmentDocument ? (
                 <div style={{ display: 'flex' }}>
                     <span className="assignment-document">{assignmentDocument.name}</span>
-                    <button type="submit" className="delete-btn" onClick={handleFileRemove}><img src={deleteIcon} alt="remove file" /></button>
+                    <button type="submit" className="delete-icon" onClick={handleFileRemove}><img src={deleteIcon} alt="remove file" /></button>
                 </div>
             ) : (
                 <div className="input-container">
@@ -310,7 +282,7 @@ const NewAssignment = ({
                 className="btn"
                 onClick={handleSubmit}
             >
-                {initialClass ? 'Güncelle' : 'Oluştur'}
+                Oluştur
             </button>
             {creationError && 
                 <p className='error-message' style={{ whiteSpace : 'pre-line'}}>

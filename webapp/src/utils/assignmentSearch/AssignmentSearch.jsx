@@ -13,8 +13,8 @@ const AssignmentSearch = ({onSearchResults}) => {
     const [allClasses, setAllClasses] = useState([]);
     const [allSubjectsOfClass, setAllSubjectsOfClass] = useState([]);
 
-    const [searchClass, setSearchClass] = useState('');
-    const [searchSubject, setSearchSubject] = useState('');
+    const [searchClass, setSearchClass] = useState({name : '', id : null});
+    const [searchSubject, setSearchSubject] = useState({name : '', id : null});
 
     const [searchDueDate, setSearchDueDate] = useState('');
     const [dateError, setDateError] = useState('');
@@ -37,15 +37,19 @@ const AssignmentSearch = ({onSearchResults}) => {
     }, [user.accessToken]);
 
     const handleClassChange = (event) => {
-        const newClassName = event.target.value;
-        if(newClassName === '') {
+        const selectedOption = event.target.options[event.target.selectedIndex];
+        const newClassName = selectedOption.value;
+        const newClassId = selectedOption.getAttribute('data-key');
+    
+        if (newClassName === '') {
             setAllSubjectsOfClass([]);
-            setSearchSubject('');
-        }else {
-            loadCourses(newClassName);  
+        } else {
+            loadCourses(newClassName);
         }
-        setSearchClass(newClassName);
-    }
+        
+        setSearchSubject({ name: '', id: null });
+        setSearchClass({ name: newClassName, id: newClassId });
+    };
 
     const loadCourses = async (className) => {
         const classID = allClasses.find(singleClass => singleClass.name === className)?.id;
@@ -57,17 +61,21 @@ const AssignmentSearch = ({onSearchResults}) => {
                 console.error(error);
             });
     };
-
+    
     const handleSubjectChange = (event) => {
-        setSearchSubject(event.target.value);
-    }
+        const selectedOption = event.target.options[event.target.selectedIndex];
+        const newSubjectName = selectedOption.value;
+        const newSubjectId = selectedOption.getAttribute('data-key'); // Get the id from the custom attribute
+    
+        setSearchSubject({ name: newSubjectName, id: newSubjectId });
+    };
+    
 
     const handleDueDateChange = (event) => {
         const dateInput = event.target.value;
         if(isDateInFuture(dateInput)) {
             setSearchDueDate(dateInput);
             setDateError('');
-            console.log(dateInput)
         } else {
             setDateError('Bitiş tarihi gelecekte olmalıdır.');
             setSearchDueDate('');
@@ -75,7 +83,12 @@ const AssignmentSearch = ({onSearchResults}) => {
     }
 
     const handleSearch = async () => {
-        getAssignments(user.role, user.id, user.accessToken)
+        const filter = {
+            classId : searchClass.name ? Number(searchClass.id) : null,
+            courseId : searchSubject.name ? Number(searchSubject.id) : null,
+            dueDate : searchDueDate
+        }
+        getAssignments(user.role, user.id, filter, user.accessToken)
             .then(response => {
                 onSearchResults(filterAssignments(response.data))
             })
@@ -85,17 +98,16 @@ const AssignmentSearch = ({onSearchResults}) => {
     }
 
     const filterAssignments = (assignments) => {
-        if(searchClass) {
-            assignments = assignments.filter(assignment => assignment.className === searchClass);
+        if(searchClass.name) {
+            assignments = assignments.filter(assignment => assignment.className === searchClass.name);
         }
-        if(searchSubject) {
-            assignments = assignments.filter(assignment => assignment.courseName === searchSubject);
+        if(searchSubject.name) {
+            assignments = assignments.filter(assignment => assignment.courseName === searchSubject.name);
         }
         if(searchDueDate) {
             const targetDate = new Date(searchDueDate);
             assignments = assignments.filter(assignment => new Date(assignment.dueDate) <= targetDate);
         }
-        assignments = assignments.filter(assignment => new Date(assignment.dueDate) > new Date());
         return assignments;
     }
 
@@ -108,11 +120,11 @@ const AssignmentSearch = ({onSearchResults}) => {
                         className='input'
                         name='className'
                         onChange={handleClassChange}
-                        value={searchClass}
+                        value={searchClass.name}
                     >
                         <option value="">Sınıf seçiniz</option>
                         {allClasses.map((singleClass) => (
-                            <option value={singleClass.name} key={singleClass.id}>
+                            <option value={singleClass.name} key={singleClass.id} data-key={singleClass.id}>
                                 {singleClass.name}
                             </option>
                         ))}
@@ -125,13 +137,13 @@ const AssignmentSearch = ({onSearchResults}) => {
                         className="input"
                         name='subjectName'
                         onChange={handleSubjectChange}
-                        value={searchSubject}
-                        disabled={searchClass === ''}
+                        value={searchSubject.name}
+                        disabled={searchClass.name === ''}
                     >
                         <option value="">Ders seçiniz</option>
                         {allSubjectsOfClass &&
                             allSubjectsOfClass.map((singleSubject) => (
-                                <option value={singleSubject.name} key={singleSubject.id}>
+                                <option value={singleSubject.name} key={singleSubject.id} data-key={singleSubject.id}>
                                     {singleSubject.name}
                                 </option>
                         ))}
