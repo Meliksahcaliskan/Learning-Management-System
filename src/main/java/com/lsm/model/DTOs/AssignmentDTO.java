@@ -46,12 +46,12 @@ public class AssignmentDTO {
         if (doc == null)
             return null;
         return AssignmentDocumentDTO.builder()
-                .assignmentId(doc.getAssignment().getId())
+                .assignmentId(doc.getAssignment() != null ? doc.getAssignment().getId() : null)
                 .fileName(doc.getFileName())
                 .fileType(doc.getFileType())
                 .fileSize(doc.getFileSize())
                 .uploadTime(doc.getUploadTime())
-                .uploadedByUsername(doc.getUploadedBy().getUsername())
+                .uploadedByUsername(doc.getUploadedBy() != null ? doc.getUploadedBy().getUsername() : null)
                 .build();
     }
 }

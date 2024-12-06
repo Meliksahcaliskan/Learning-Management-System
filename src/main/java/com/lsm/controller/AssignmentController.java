@@ -191,7 +191,52 @@ public class AssignmentController {
         }
     }
 
-    // TODO: submitAssignment can't found the assignment ???
+    @Operation(
+            summary = "Delete assignment document",
+            description = "Delete a document associated with an assignment"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Document deleted successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Document not found")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    @DeleteMapping("/documents/{documentId}")
+    public ResponseEntity<ApiResponse_<Void>> deleteDocument(
+            @Parameter(description = "ID of the document to delete", required = true)
+            @PathVariable @Positive Long documentId,
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            log.info("Deleting document: {}, user: {}", documentId, currentUser.getUsername());
+
+            // Check if the user is a teacher and owns the assignment
+            if (currentUser.getRole() == Role.ROLE_TEACHER) {
+                AssignmentDocument document = documentService.findById(documentId);
+                if (!currentUser.equals(document.getAssignment().getAssignedBy())) {
+                    throw new AccessDeniedException("Teachers can only delete documents from their own assignments");
+                }
+            }
+
+            documentService.deleteDocument(documentId, currentUser);
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Document deleted successfully",
+                    null
+            ));
+        } catch (AccessDeniedException e) {
+            log.error("Access denied while deleting document: {}", e.getMessage());
+            throw new SecurityException(e.getMessage());
+        } catch (EntityNotFoundException e) {
+            log.error("Document not found: {}", e.getMessage());
+            throw new EntityNotFoundException(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error deleting document: {}", e.getMessage());
+            throw new RuntimeException("Error deleting document");
+        }
+    }
 
     @Operation(
             summary = "Get assignments by student",

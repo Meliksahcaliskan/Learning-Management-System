@@ -216,7 +216,7 @@ public class AssignmentService {
         try {
             log.info("Updating assignment ID: {} with title: {}", assignmentId, dto.getTitle());
 
-            Assignment existingAssignment = assignmentRepository.findById(assignmentId)
+            Assignment existingAssignment = assignmentRepository.findByIdWithSubmissions(assignmentId)
                     .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
 
             ClassEntity classEntity = classEntityRepository.findClassEntityByName(dto.getClassName())
@@ -225,9 +225,8 @@ public class AssignmentService {
             Course course = courseRepository.findCourseByName(dto.getCourseName())
                     .orElseThrow(() -> new EntityNotFoundException("Course not found"));
 
-            // Validate teacher access and title uniqueness
+            // Validate teacher access
             validateTeacherAccess(existingAssignment.getAssignedBy(), classEntity);
-            // validateUniqueTitle(dto.getTitle(), classEntity, assignmentId);
 
             // Update assignment fields
             updateAssignmentFields(existingAssignment, dto, classEntity, course);
@@ -308,7 +307,7 @@ public class AssignmentService {
     }
 
     @Transactional
-    public Assignment unsubmitAssignment(Long assignmentId, AppUser  currentUser ) throws AccessDeniedException {
+    public Assignment unsubmitAssignment(Long assignmentId, AppUser  currentUser) throws AccessDeniedException {
         Assignment assignment = findById(assignmentId);
 
         if (assignment.getDueDate().isBefore(LocalDate.now()))
@@ -318,17 +317,6 @@ public class AssignmentService {
         if (currentUser .getRole() != Role.ROLE_STUDENT)
             throw new AccessDeniedException("Only students can unsubmit assignments");
 
-        // Find the student's submission
-        StudentSubmission studentSubmission = assignment.getStudentSubmissions().stream()
-                .filter(submission -> submission.getStudent().getId().equals(currentUser .getId()))
-                .findFirst()
-                .orElseThrow(() -> new EntityNotFoundException("Student didn't submit assignment"));
-
-        // Validate submission status
-        if (studentSubmission.getStatus() != AssignmentStatus.SUBMITTED) {
-            throw new IllegalStateException("Can only unsubmit assignments that have been submitted.");
-        }
-
         // Check if the class entity exists
         ClassEntity classEntity = classEntityRepository.findById(currentUser .getStudentDetails().getClassEntity())
                 .orElseThrow(() -> new EntityNotFoundException("Class not found"));
@@ -337,12 +325,24 @@ public class AssignmentService {
         if (!classEntity.getCourses().contains(assignment.getCourse()))
             throw new AccessDeniedException("You can only unsubmit your own assignments");
 
+        // Find the student's submission
+        StudentSubmission studentSubmission = assignment.getStudentSubmissions().stream()
+                .filter(submission -> submission.getStudent().getId().equals(currentUser.getId()))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("Student didn't submit assignment"));
+
+        // Validate submission status
+        if (studentSubmission.getStatus() != AssignmentStatus.SUBMITTED) {
+            throw new IllegalStateException("Can only unsubmit assignments that have been submitted.");
+        }
+
         // Validate that assignment is in SUBMITTED status and not yet graded
         if (studentSubmission.getGrade() != null)
             throw new IllegalStateException("Cannot unsubmit graded assignments");
 
         // Reset to pending status
         studentSubmission.setStatus(AssignmentStatus.PENDING);
+        studentSubmission.setDocument(null);
 
         return assignmentRepository.save(assignment);
     }

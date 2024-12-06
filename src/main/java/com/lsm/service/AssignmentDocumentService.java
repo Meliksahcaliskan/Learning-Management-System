@@ -102,6 +102,42 @@ public class AssignmentDocumentService {
         }
     }
 
+    @Transactional
+    public void deleteDocument(Long documentId, AppUser currentUser) throws IOException {
+        AssignmentDocument document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new EntityNotFoundException("Document not found"));
+
+        Assignment assignment = document.getAssignment();
+
+        // Delete file from filesystem
+        Path filePath = Paths.get(document.getFilePath());
+        Files.deleteIfExists(filePath);
+
+        // Remove document reference from assignment
+        if (document.equals(assignment.getTeacherDocument())) {
+            assignment.setTeacherDocument(null);
+        }
+
+        // Delete document from database
+        documentRepository.delete(document);
+
+        // Delete directory if empty
+        Path dirPath = filePath.getParent();
+        if (Files.exists(dirPath) && isDirectoryEmpty(dirPath)) {
+            Files.delete(dirPath);
+        }
+    }
+
+    private boolean isDirectoryEmpty(Path path) throws IOException {
+        try (DirectoryStream<Path> directory = Files.newDirectoryStream(path)) {
+            return !directory.iterator().hasNext();
+        }
+    }
+
+    public AssignmentDocument findById(Long id) {
+        return documentRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
+    }
+
     private void validateDownloadAccess(AssignmentDocument document, AppUser currentUser) throws AccessDeniedException {
         if (currentUser.getRole() == Role.ROLE_ADMIN ||
                 currentUser.getRole() == Role.ROLE_COORDINATOR) {

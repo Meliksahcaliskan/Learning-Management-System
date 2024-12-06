@@ -4,7 +4,10 @@ import java.util.List;
 import java.util.Optional;
 
 import com.lsm.model.entity.ClassEntity;
+import com.lsm.model.entity.StudentSubmission;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.lsm.model.entity.Assignment;
@@ -19,6 +22,9 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 
     // Find assignments by course
     List<Assignment> findByCourseId(Long courseId);
+
+    @Query("SELECT a FROM Assignment a LEFT JOIN FETCH a.studentSubmissions WHERE a.id = :id")
+    Optional<Assignment> findByIdWithSubmissions(@Param("id") Long id);
 
     // Find assignments by class and teacher
     List<Assignment> findByClassEntityAndAssignedBy(ClassEntity classEntity, AppUser teacher);
