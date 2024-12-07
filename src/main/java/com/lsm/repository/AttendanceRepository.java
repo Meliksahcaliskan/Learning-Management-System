@@ -11,6 +11,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     List<Attendance> findByStudentId(Long studentId);
-    List<Attendance> findByDate(LocalDate date);
-    List<Attendance> findByDateBetween(LocalDate startDate, LocalDate endDate);
+    List<Attendance> findByStudentIdAndClassId(Long studentId, Long classId);
+    List<Attendance> findByCourseId(Long courseId);
+    List<Attendance> findByCourseIdAndClassId(Long courseId, Long classId);
+
+    Object findAllByCourseId(Long courseId);
 }

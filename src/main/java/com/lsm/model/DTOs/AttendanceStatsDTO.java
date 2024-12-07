@@ -2,18 +2,24 @@ package com.lsm.model.DTOs;
 
 import java.util.List;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class AttendanceStatsDTO {
     private Long studentId;
+    private String studentName;
     private Long classId;
+    private String className;
+    private Long courseId;
+    private String courseName;
     private double attendancePercentage;
-    private int totalClasses;
-    private int presentCount;
-    private int absentCount;
-    private int lateCount;
+    private Long totalClasses;
+    private Long presentCount;
+    private Long absentCount;
+    private Long lateCount;
     private List<AttendanceDTO> recentAttendance;
 }
