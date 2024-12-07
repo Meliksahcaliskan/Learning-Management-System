@@ -139,7 +139,7 @@ public class AssignmentService {
         }
         if (dueDate != null) {
             assignments = assignments.stream()
-                    .filter(assignment -> assignment.getDueDate().isEqual(dueDate))
+                    .filter(assignment -> assignment.getDueDate().isBefore(dueDate))
                     .collect(Collectors.toList());
         }
 
