@@ -296,14 +296,11 @@ public class AssignmentController {
     public ResponseEntity<ApiResponse_<Void>> deleteAssignment(
             @Parameter(description = "ID of the assignment to delete", required = true)
             @PathVariable @Positive Long assignmentId,
-            Principal principal
+            Authentication authentication
     ) {
         try {
-            AppUser currentUser = appUserService.findByUsername(principal.getName());
-            if (currentUser.getRole() == Role.ROLE_TEACHER && currentUser.equals(assignmentService.findById(assignmentId).getAssignedBy())) {
-                throw new AccessDeniedException("Teacher can only delete his/her own assignments");
-            }
-            assignmentService.deleteAssignment(assignmentId, currentUser.getId());
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            assignmentService.deleteAssignment(assignmentId, currentUser);
             
             return ResponseEntity.ok(new ApiResponse_<>(
                 true,

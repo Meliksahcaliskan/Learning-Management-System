@@ -6,7 +6,9 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Embeddable
 @Getter
@@ -20,14 +22,19 @@ public class TeacherDetails {
     private String tc;
     private LocalDate birthDate;
 
-    @ElementCollection
-    @CollectionTable(name = "teacher_classes", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "class_id")
-    private List<Long> classes = new ArrayList<>();
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "teacher_classes",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "class_id")
+    )
+    private Set<ClassEntity> classes = new HashSet<>();
 
-    @ElementCollection
-    @CollectionTable(name = "teacher_courses", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "course_id")
-    private List<Long> courses = new ArrayList<>();
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "teacher_courses",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "course_id")
+    )
+    private Set<Course> courses = new HashSet<>();
 }
-

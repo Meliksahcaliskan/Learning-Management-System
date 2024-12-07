@@ -4,11 +4,11 @@ import com.lsm.events.*;
 import com.lsm.exception.*;
 import com.lsm.model.DTOs.auth.*;
 import com.lsm.model.DTOs.TokenRefreshResult;
-import com.lsm.model.entity.RefreshToken;
-import com.lsm.model.entity.StudentDetails;
-import com.lsm.model.entity.TeacherDetails;
+import com.lsm.model.entity.*;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.repository.AppUserRepository;
+import com.lsm.repository.ClassEntityRepository;
+import com.lsm.repository.CourseRepository;
 import com.lsm.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,10 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.security.auth.login.AccountLockedException;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +37,8 @@ public class AuthService {
     public static final long LOCK_DURATION = 15; // minutes
 
     private final AppUserRepository appUserRepository;
+    private final ClassEntityRepository classEntityRepository;
+    private final CourseRepository courseRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -202,14 +201,22 @@ public class AuthService {
         return studentDetails;
     }
 
-    private static TeacherDetails getTeacherDetails(TeacherRegisterRequestDTO registerRequest) {
+    private TeacherDetails getTeacherDetails(TeacherRegisterRequestDTO registerRequest) {
         TeacherDetails teacherDetails = new TeacherDetails();
         teacherDetails.setTc(registerRequest.getTc());
-        teacherDetails.setClasses(registerRequest.getClasses());
-        teacherDetails.setCourses(registerRequest.getCourses());
+        teacherDetails.setClasses(getClasses(registerRequest.getClasses()));
+        teacherDetails.setCourses(getCourses(registerRequest.getCourses()));
         teacherDetails.setPhone(registerRequest.getPhone());
         teacherDetails.setBirthDate(registerRequest.getBirthDate());
         return teacherDetails;
+    }
+
+    private Set<ClassEntity> getClasses(List<Long> classIds) {
+        return classEntityRepository.findAllByIdIn(classIds);
+    }
+
+    private Set<Course> getCourses(List<Long> courseIds) {
+        return courseRepository.findAllByIdIn(courseIds);
     }
 
     private void validateRegistrationRequest(RegisterRequestDTO request) {
