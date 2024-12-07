@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.lsm.model.DTOs.*;
@@ -15,8 +16,7 @@ import com.lsm.model.entity.AssignmentDocument;
 import com.lsm.model.entity.ClassEntity;
 import com.lsm.model.entity.Course;
 import com.lsm.model.entity.enums.AssignmentStatus;
-import com.lsm.repository.ClassEntityRepository;
-import com.lsm.repository.CourseRepository;
+import com.lsm.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,8 +26,6 @@ import org.springframework.cache.annotation.Cacheable;
 import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.Role;
-import com.lsm.repository.AppUserRepository;
-import com.lsm.repository.AssignmentRepository;
 
 import jakarta.transaction.Transactional;
 import jakarta.persistence.EntityNotFoundException;
@@ -41,7 +39,10 @@ public class AssignmentService {
     private final AssignmentRepository assignmentRepository;
     private final AppUserRepository appUserRepository;
     private final ClassEntityRepository classEntityRepository;
+    private final AssignmentDocumentRepository assignmentDocumentRepository;
+    private final StudentSubmissionRepository studentSubmissionRepository;
     private final CourseRepository courseRepository;
+    private final AppUserService appUserService;
     private final AssignmentDocumentService assignmentDocumentService;
     private final StudentSubmissionService studentSubmissionService;
 
@@ -52,11 +53,14 @@ public class AssignmentService {
     private int minDueDateDays;
 
     @Autowired
-    public AssignmentService(AssignmentRepository assignmentRepository, AppUserRepository appUserRepository, ClassEntityRepository classEntityRepository, CourseRepository courseRepository, AssignmentDocumentService assignmentDocumentService, StudentSubmissionService studentSubmissionService) {
+    public AssignmentService(AssignmentRepository assignmentRepository, AppUserRepository appUserRepository, ClassEntityRepository classEntityRepository, AssignmentDocumentRepository assignmentDocumentRepository, StudentSubmissionRepository studentSubmissionRepository, CourseRepository courseRepository, AppUserService appUserService, AssignmentDocumentService assignmentDocumentService, StudentSubmissionService studentSubmissionService) {
         this.assignmentRepository = assignmentRepository;
         this.appUserRepository = appUserRepository;
         this.classEntityRepository = classEntityRepository;
+        this.assignmentDocumentRepository = assignmentDocumentRepository;
+        this.studentSubmissionRepository = studentSubmissionRepository;
         this.courseRepository = courseRepository;
+        this.appUserService = appUserService;
         this.assignmentDocumentService = assignmentDocumentService;
         this.studentSubmissionService = studentSubmissionService;
     }
@@ -82,10 +86,10 @@ public class AssignmentService {
             AppUser teacher = appUserRepository.findById(loggedInUserId)
                     .orElseThrow(() -> new EntityNotFoundException("Teacher not found"));
 
-            ClassEntity classEntity = classEntityRepository.findClassEntityByName(dto.getClassName())
+            ClassEntity classEntity = classEntityRepository.findById(dto.getClassId())
                     .orElseThrow(() -> new EntityNotFoundException("Class not found"));
 
-            Course course = courseRepository.findCourseByName(dto.getCourseName())
+            Course course = courseRepository.findById(dto.getCourseId())
                     .orElseThrow(() -> new EntityNotFoundException("Course not found"));
 
             validateTeacherAccess(teacher, classEntity);
@@ -103,46 +107,9 @@ public class AssignmentService {
     }
 
     @Transactional
-    public List<AssignmentDTO> getAssignmentsByClass(Long studentId, AppUser loggedInUser)
-            throws AccessDeniedException, EntityNotFoundException {
-        AppUser user = appUserRepository.findById(studentId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
-        if (loggedInUser .getRole() == Role.ROLE_TEACHER) {
-            boolean hasAccess = loggedInUser.getTeacherDetails().getClasses().stream()
-                    .map(classEntityRepository::findById)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .anyMatch(classEntity -> classEntity.getStudents().contains(user));
-
-            if (!hasAccess) {
-                throw new AccessDeniedException("Teachers can only find assignments by their own students");
-            }
-        }
-        else if (loggedInUser.getRole() == Role.ROLE_STUDENT) {
-            if(!studentId.equals(loggedInUser.getId()))
-                throw new AccessDeniedException("Student can only display their own assignments");
-        }
-
-        ClassEntity classEntity = classEntityRepository.findById(user.getStudentDetails().getClassEntity()).orElseThrow(
-                    () -> new EntityNotFoundException("Class not found")
-        );
-
-        // For teachers, only show their own assignments
-        List<Assignment> assignments;
-        if (loggedInUser.getRole() == Role.ROLE_TEACHER) {
-            assignments = assignmentRepository.findByClassEntityAndAssignedBy(classEntity, loggedInUser);
-        } else {
-            assignments = assignmentRepository.findByClassEntityOrderByDueDateDesc(classEntity);
-        }
-
-        return assignments.stream()
-                .map(assignment -> new AssignmentDTO(assignment, ""))
-                .collect(Collectors.toList());
-    }
-
-    @Transactional
-    public List<AssignmentDTO> getAssignmentsByTeacher(Long teacherId, AssignmentFilterDTO filter)
+    public List<AssignmentDTO> getAssignmentsByTeacher(Long teacherId,
+                                                       Long classId, Long courseId, LocalDate dueDate,
+                                                       AppUser loggedInUser)
             throws AccessDeniedException, EntityNotFoundException {
         // Find teacher
         AppUser  teacher = appUserRepository.findById(teacherId)
@@ -153,26 +120,27 @@ public class AssignmentService {
             throw new IllegalArgumentException("Specified user is not a teacher");
         }
 
+        if (!loggedInUser.getId().equals(teacher.getId()))
+            throw new AccessDeniedException("Mismatch between logged in user id and the teacher id.");
+
         // Get all assignments created by the teacher
         List<Assignment> assignments = assignmentRepository.findByAssignedByOrderByDueDateDesc(teacher);
 
         // Apply filters based on AssignmentFilterDTO
-        if (filter != null) {
-            if (filter.getClassId() != null) {
-                assignments = assignments.stream()
-                        .filter(assignment -> assignment.getClassEntity().getId().equals(filter.getClassId()))
-                        .collect(Collectors.toList());
-            }
-            if (filter.getCourseId() != null) {
-                assignments = assignments.stream()
-                        .filter(assignment -> assignment.getCourse().getId().equals(filter.getCourseId()))
-                        .collect(Collectors.toList());
-            }
-            if (filter.getDueDate() != null) {
-                assignments = assignments.stream()
-                        .filter(assignment -> assignment.getDueDate().isEqual(filter.getDueDate()))
-                        .collect(Collectors.toList());
-            }
+        if (classId != null) {
+            assignments = assignments.stream()
+                    .filter(assignment -> assignment.getClassEntity().getId().equals(classId))
+                    .collect(Collectors.toList());
+        }
+        if (courseId != null) {
+            assignments = assignments.stream()
+                    .filter(assignment -> assignment.getCourse().getId().equals(courseId))
+                    .collect(Collectors.toList());
+        }
+        if (dueDate != null) {
+            assignments = assignments.stream()
+                    .filter(assignment -> assignment.getDueDate().isEqual(dueDate))
+                    .collect(Collectors.toList());
         }
 
         return assignments.stream()
@@ -219,10 +187,10 @@ public class AssignmentService {
             Assignment existingAssignment = assignmentRepository.findByIdWithSubmissions(assignmentId)
                     .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
 
-            ClassEntity classEntity = classEntityRepository.findClassEntityByName(dto.getClassName())
+            ClassEntity classEntity = classEntityRepository.findById(dto.getClassId())
                     .orElseThrow(() -> new EntityNotFoundException("Class not found"));
 
-            Course course = courseRepository.findCourseByName(dto.getCourseName())
+            Course course = courseRepository.findById(dto.getCourseId())
                     .orElseThrow(() -> new EntityNotFoundException("Course not found"));
 
             // Validate teacher access
@@ -250,25 +218,49 @@ public class AssignmentService {
     }
 
     @Transactional
-    public void deleteAssignment(Long assignmentId, Long loggedInUserId)
+    public void deleteAssignment(Long assignmentId, AppUser loggedInUser)
             throws AccessDeniedException {
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
 
-        AppUser user = appUserRepository.findById(loggedInUserId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        AppUser user = appUserService.getCurrentUserWithDetails(loggedInUser.getId());
 
-        user.getTeacherDetails().getClasses().stream()
-                .map(classEntityRepository::findById)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(classEntity -> classEntity.getAssignments().remove(assignment));
-
-        // Only teacher who created the assignment or admin can delete it
-        if ((user.getRole() != Role.ROLE_ADMIN || user.getRole() != Role.ROLE_COORDINATOR) && !assignment.getAssignedBy().getId().equals(loggedInUserId)) {
+        // Authorization check
+        if (user.getRole() != Role.ROLE_ADMIN &&
+                loggedInUser.getRole() != Role.ROLE_COORDINATOR &&
+                !assignment.getAssignedBy().getId().equals(loggedInUser.getId())) {
             throw new AccessDeniedException("You can only delete your own assignments");
         }
 
+        // Clear teacher document
+        if (assignment.getTeacherDocument() != null) {
+            AssignmentDocument teacherDoc = assignment.getTeacherDocument();
+            assignment.setTeacherDocument(null);
+            assignmentDocumentRepository.delete(teacherDoc);
+        }
+
+        // Clear student submissions
+        if (!assignment.getStudentSubmissions().isEmpty()) {
+            assignment.getStudentSubmissions().forEach(submission -> {
+                submission.setAssignment(null);
+                studentSubmissionRepository.delete(submission);
+            });
+            assignment.getStudentSubmissions().clear();
+        }
+
+        // Remove assignment from class entities
+        List<Long> classIds = user.getTeacherDetails().getClasses().stream()
+                .map(ClassEntity::getId)
+                .collect(Collectors.toList());
+
+        Set<ClassEntity> classEntities = classEntityRepository.findAllByIdIn(classIds);
+
+        classEntities.forEach(classEntity -> {
+            classEntity.getAssignments().remove(assignment);
+            classEntityRepository.save(classEntity);
+        });
+
+        // Finally delete the assignment
         assignmentRepository.delete(assignment);
     }
 
@@ -451,7 +443,7 @@ public class AssignmentService {
         }
 
         if (teacher.getRole() == Role.ROLE_TEACHER &&
-                !teacher.getTeacherDetails().getClasses().contains(classEntity.getId())) {
+                !teacher.getTeacherDetails().getClasses().contains(classEntity)) {
             throw new AccessDeniedException("Teachers can create assignments only for their assigned classes");
         }
     }

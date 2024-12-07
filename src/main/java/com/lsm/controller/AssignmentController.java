@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,6 +38,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.security.Principal;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
@@ -167,7 +169,12 @@ public class AssignmentController {
     public ResponseEntity<ApiResponse_<List<AssignmentDTO>>> getTeacherAssignments(
             @Parameter(description = "ID of the teacher", required = true)
             @PathVariable @Positive Long teacherId,
-            @Valid @RequestBody AssignmentFilterDTO assignmentFilter,
+            @Parameter(description = "Class ID filter")
+            @RequestParam(required = false) Long classId,
+            @Parameter(description = "Course ID filter")
+            @RequestParam(required = false) Long courseId,
+            @Parameter(description = "Due date filter")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueDate,
             Authentication authentication
     ) {
         try {
@@ -177,7 +184,8 @@ public class AssignmentController {
                 throw new AccessDeniedException("Teachers can only view their own assignments");
             }
 
-            List<AssignmentDTO> assignments = assignmentService.getAssignmentsByTeacher(teacherId, assignmentFilter);
+            List<AssignmentDTO> assignments = assignmentService.getAssignmentsByTeacher
+                    (teacherId, classId, courseId, dueDate, currentUser);
 
             return ResponseEntity.ok(new ApiResponse_<>(
                     true,
@@ -288,14 +296,11 @@ public class AssignmentController {
     public ResponseEntity<ApiResponse_<Void>> deleteAssignment(
             @Parameter(description = "ID of the assignment to delete", required = true)
             @PathVariable @Positive Long assignmentId,
-            Principal principal
+            Authentication authentication
     ) {
         try {
-            AppUser currentUser = appUserService.findByUsername(principal.getName());
-            if (currentUser.getRole() == Role.ROLE_TEACHER && currentUser.equals(assignmentService.findById(assignmentId).getAssignedBy())) {
-                throw new AccessDeniedException("Teacher can only delete his/her own assignments");
-            }
-            assignmentService.deleteAssignment(assignmentId, currentUser.getId());
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            assignmentService.deleteAssignment(assignmentId, currentUser);
             
             return ResponseEntity.ok(new ApiResponse_<>(
                 true,
@@ -335,10 +340,10 @@ public class AssignmentController {
     }
 
     private void validateFile(MultipartFile file) {
-        if (file.isEmpty()) {
+        /* if (file.isEmpty()) {
             throw new IllegalArgumentException("File cannot be empty");
-        }
-        if (file.getSize() > 10_000_000) { // 10MB limit
+        } */
+        if (file.getSize() > 5_000_000) { // 5MB limit
             throw new IllegalArgumentException("File size exceeds maximum limit");
         }
         String contentType = file.getContentType();

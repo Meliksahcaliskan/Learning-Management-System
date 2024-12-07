@@ -30,15 +30,11 @@ public class AssignmentRequestDTO {
     @Future(message = "Due date must be in the future")
     private LocalDate dueDate;
 
-    @NotNull(message = "Class name is required")
-    @Size(min = 2, max = 50, message = "Class name must be between 2 and 50 characters")
-    @Pattern(regexp = "^[A-Za-z0-9-_ ]+$", message = "Class name can only contain letters, numbers, spaces, hyphens and underscores")
-    private String className; // TODO: should be classId instead of className.
+    @NotNull(message = "Class id is required")
+    private Long classId;
 
-    @NotNull(message = "Course name is required")
-    @Size(min = 2, max = 100, message = "Course name must be between 2 and 100 characters")
-    @Pattern(regexp = "^[A-Za-z0-9-_ ]+$", message = "Course name can only contain letters, numbers, spaces, hyphens and underscores")
-    private String courseName; // TODO: should be courseId instead of courseName.
+    @NotNull(message = "Course id is required")
+    private Long courseId;
 
     private AssignmentDocumentDTO document;
 }
