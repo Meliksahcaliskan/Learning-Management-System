@@ -142,7 +142,9 @@ public class AssignmentService {
     }
 
     @Transactional
-    public List<AssignmentDTO> getAssignmentsByTeacher(Long teacherId, AssignmentFilterDTO filter)
+    public List<AssignmentDTO> getAssignmentsByTeacher(Long teacherId,
+                                                       Long classId, Long courseId, LocalDate dueDate,
+                                                       AppUser loggedInUser)
             throws AccessDeniedException, EntityNotFoundException {
         // Find teacher
         AppUser  teacher = appUserRepository.findById(teacherId)
@@ -153,26 +155,27 @@ public class AssignmentService {
             throw new IllegalArgumentException("Specified user is not a teacher");
         }
 
+        if (!loggedInUser.getId().equals(teacher.getId()))
+            throw new AccessDeniedException("Mismatch between logged in user id and the teacher id.");
+
         // Get all assignments created by the teacher
         List<Assignment> assignments = assignmentRepository.findByAssignedByOrderByDueDateDesc(teacher);
 
         // Apply filters based on AssignmentFilterDTO
-        if (filter != null) {
-            if (filter.getClassId() != null) {
-                assignments = assignments.stream()
-                        .filter(assignment -> assignment.getClassEntity().getId().equals(filter.getClassId()))
-                        .collect(Collectors.toList());
-            }
-            if (filter.getCourseId() != null) {
-                assignments = assignments.stream()
-                        .filter(assignment -> assignment.getCourse().getId().equals(filter.getCourseId()))
-                        .collect(Collectors.toList());
-            }
-            if (filter.getDueDate() != null) {
-                assignments = assignments.stream()
-                        .filter(assignment -> assignment.getDueDate().isEqual(filter.getDueDate()))
-                        .collect(Collectors.toList());
-            }
+        if (classId != null) {
+            assignments = assignments.stream()
+                    .filter(assignment -> assignment.getClassEntity().getId().equals(classId))
+                    .collect(Collectors.toList());
+        }
+        if (courseId != null) {
+            assignments = assignments.stream()
+                    .filter(assignment -> assignment.getCourse().getId().equals(courseId))
+                    .collect(Collectors.toList());
+        }
+        if (dueDate != null) {
+            assignments = assignments.stream()
+                    .filter(assignment -> assignment.getDueDate().isEqual(dueDate))
+                    .collect(Collectors.toList());
         }
 
         return assignments.stream()

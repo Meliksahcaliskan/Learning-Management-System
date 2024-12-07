@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,6 +38,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.security.Principal;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
@@ -167,7 +169,12 @@ public class AssignmentController {
     public ResponseEntity<ApiResponse_<List<AssignmentDTO>>> getTeacherAssignments(
             @Parameter(description = "ID of the teacher", required = true)
             @PathVariable @Positive Long teacherId,
-            @Valid @RequestBody AssignmentFilterDTO assignmentFilter,
+            @Parameter(description = "Class ID filter")
+            @RequestParam(required = false) Long classId,
+            @Parameter(description = "Course ID filter")
+            @RequestParam(required = false) Long courseId,
+            @Parameter(description = "Due date filter")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueDate,
             Authentication authentication
     ) {
         try {
@@ -177,7 +184,8 @@ public class AssignmentController {
                 throw new AccessDeniedException("Teachers can only view their own assignments");
             }
 
-            List<AssignmentDTO> assignments = assignmentService.getAssignmentsByTeacher(teacherId, assignmentFilter);
+            List<AssignmentDTO> assignments = assignmentService.getAssignmentsByTeacher
+                    (teacherId, classId, courseId, dueDate, currentUser);
 
             return ResponseEntity.ok(new ApiResponse_<>(
                     true,
