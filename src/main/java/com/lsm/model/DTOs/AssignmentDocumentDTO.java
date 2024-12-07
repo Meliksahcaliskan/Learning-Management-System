@@ -18,6 +18,9 @@ public class AssignmentDocumentDTO {
     @NotNull(message = "Id of which assignment this document belongs to")
     private Long assignmentId;
 
+    @NotNull(message = "Id of the document belongs to")
+    private Long documentId;
+
     @NotNull(message = "File name is required")
     @Size(max = 255, message = "File name must not exceed 255 characters")
     private String fileName;
