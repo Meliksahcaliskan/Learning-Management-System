@@ -1,6 +1,6 @@
 import { AuthContext } from '../../contexts/AuthContext';
 import { getAssignments, getAssignmentsForTeacher } from '../../services/assignmentService';
-import { getAllClasses, getTeacherClasses } from '../../services/classesService';
+import { getAllClasses, getClasses, getTeacherClasses } from '../../services/classesService';
 import { getAllSubjectsOf } from '../../services/coursesService';
 import { isDateInFuture } from '../dateUtils';
 import './AssignmentSearch.css';
@@ -17,23 +17,17 @@ const AssignmentSearch = ({onSearchResults}) => {
     const [searchSubject, setSearchSubject] = useState({name : '', id : null});
 
     const [searchDueDate, setSearchDueDate] = useState('');
-    const [dateError, setDateError] = useState('');
 
     useEffect(() => {
-        if(user.role === 'ROLE_TEACHER') {
-            getTeacherClasses(user.accessToken)
-                .then(data => {
-                    setAllClasses(data)})
-                .catch(error => {
-                    console.log(error);
-                })
-        }else {
-            getAllClasses(user.accessToken)
-                .then(data => setAllClasses(data))
-                .catch(error => {
-                    console.log(error);
-                })
+        const fetchClasses = async () => {
+            try {
+                const response = await getClasses(user.role, user.accessToken);
+                setAllClasses(response);
+            }catch(error) {
+                console.log(error);
+            }
         }
+        fetchClasses();
     }, [user.accessToken]);
 
     const handleClassChange = (event) => {
@@ -65,21 +59,13 @@ const AssignmentSearch = ({onSearchResults}) => {
     const handleSubjectChange = (event) => {
         const selectedOption = event.target.options[event.target.selectedIndex];
         const newSubjectName = selectedOption.value;
-        const newSubjectId = selectedOption.getAttribute('data-key'); // Get the id from the custom attribute
-    
+        const newSubjectId = selectedOption.getAttribute('data-key');
         setSearchSubject({ name: newSubjectName, id: newSubjectId });
     };
     
-
     const handleDueDateChange = (event) => {
         const dateInput = event.target.value;
-        if(isDateInFuture(dateInput)) {
-            setSearchDueDate(dateInput);
-            setDateError('');
-        } else {
-            setDateError('Bitiş tarihi gelecekte olmalıdır.');
-            setSearchDueDate('');
-        }
+        setSearchDueDate(dateInput);
     }
 
     const handleSearch = async () => {
@@ -108,7 +94,6 @@ const AssignmentSearch = ({onSearchResults}) => {
             const targetDate = new Date(searchDueDate);
             assignments = assignments.filter(assignment => new Date(assignment.dueDate) <= targetDate);
         }
-        console.log(assignments);
         return assignments;
     }
 
@@ -159,7 +144,6 @@ const AssignmentSearch = ({onSearchResults}) => {
                         onChange={handleDueDateChange}    
                         value={searchDueDate}
                     />
-                    {dateError && <p className='error-message'>{dateError}</p>}
                 </div>
             </div>
             <button className="save-btn btn" onClick={handleSearch}>Ara</button>

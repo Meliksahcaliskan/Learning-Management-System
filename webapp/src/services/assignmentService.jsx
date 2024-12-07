@@ -60,6 +60,18 @@ export const uploadDocument = async (assignmentID, file, accessToken) => {
     return response;
 }
 
+export const deleteDocument = async (documentID, accessToken) => {
+    const response = await axios.delete(
+        `/api/v1/assignments/documents/${documentID}`,
+        {
+            headers : {
+                Authorization : `Bearer ${accessToken}`,
+            },
+        }
+    );
+    return response;
+}
+
 export const submitAssignment = async (assignmentID, fileData, accessToken) => {
     const response = await axios.patch(
         `/api/v1/assignments/${assignmentID}/submit`,
@@ -115,16 +127,21 @@ export const getAssignmentsForStudent = async (studentID, accessToken) => {
 }
 
 export const getAssignmentsForTeacher = async (teacherID, filter, accessToken) => {
-    
-    const response = await axios({
-        method : 'get',
-        url : `/api/v1/assignments/teacher/${teacherID}`,
-        data : filter,
-        headers : {
-            Authorization : `Bearer ${accessToken}`,
-            'Content-Type' : 'application/json'
+    const {classId, courseId, dueDate} = filter;
+    console.log(classId, courseId, dueDate);
+    const response = await axios.get(
+        `/api/v1/assignments/teacher/${teacherID}`,
+        {
+            headers : {
+                Authorization : `Bearer ${accessToken}`,
+            },
+            params : {
+                classId,
+                courseId,
+                dueDate,
+            }
         }
-    })
+    );
     return response.data;
 }
 
