@@ -38,4 +38,7 @@ public class Attendance {
 
     @Column(name = "class_id")
     private Long classId;
+
+    @Column(name = "course_id")
+    private Long courseId;
 }

@@ -23,8 +23,11 @@ public class AssignmentDTO {
     private List<StudentSubmissionDTO> studentSubmissions;
     private LocalDate createdDate;
     private String assignedByTeacherName;
+    private Long classId;
     private String className;
+    private Long courseId;
     private String courseName;
+
 
     public AssignmentDTO(Assignment assignment, String message) {
         this.id = assignment.getId();
@@ -38,7 +41,9 @@ public class AssignmentDTO {
                 .collect(Collectors.toList());
         this.createdDate = assignment.getDate();
         this.assignedByTeacherName = assignment.getAssignedBy().getUsername();
+        this.classId = assignment.getClassEntity().getId();
         this.className = assignment.getClassEntity().getName();
+        this.courseId = assignment.getCourse().getId();
         this.courseName = assignment.getCourse().getName();
     }
 

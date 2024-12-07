@@ -3,6 +3,7 @@ package com.lsm.controller;
 import com.lsm.model.DTOs.AttendanceDTO;
 import com.lsm.model.DTOs.AttendanceStatsDTO;
 import com.lsm.model.DTOs.AttendanceRequestDTO;
+import com.lsm.model.entity.base.AppUser;
 import com.lsm.service.AttendanceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,11 +14,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -63,17 +67,19 @@ public class AttendanceController {
         @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
         @ApiResponse(responseCode = "404", description = "Student not found")
     })
-    @PreAuthorize("hasAnyRole('ROLE_STUDENT', 'ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_STUDENT', 'ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @GetMapping("/{studentId}")
     public ResponseEntity<List<AttendanceDTO>> getAttendanceByStudentId(
             @Parameter(description = "ID of the student", required = true)
             @PathVariable @Positive Long studentId,
             @Parameter(description = "Start date (YYYY-MM-DD)")
-            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) LocalDate startDate,
             @Parameter(description = "End date (YYYY-MM-DD)")
-            @RequestParam(required = false) String endDate
+            @RequestParam(required = false) LocalDate endDate,
+            Authentication authentication
     ) {
-        List<AttendanceDTO> attendanceRecords = attendanceService.getAttendanceByStudentId(studentId);
+        AppUser loggedInUser = (AppUser) authentication.getPrincipal();
+        List<AttendanceDTO> attendanceRecords = attendanceService.getAttendanceByStudentId(loggedInUser, studentId, startDate, endDate);
         return ResponseEntity.ok(attendanceRecords);
     }
 
