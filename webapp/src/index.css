@@ -17,7 +17,8 @@
     --success-message-color : #28A745;
     --delete-btn : #E74C3C;
     --delete-btn-hover : #C0392B;
-
+    --succes-message-background : #429164;
+    --fail-message-background : #642424;
     /* Fonts */
 
     --title-size : 36px;

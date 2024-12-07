@@ -9,7 +9,12 @@ import { getAllSubjectsOf } from '../../../../../services/coursesService';
 import { createAssignment, uploadDocument } from '../../../../../services/assignmentService';
 
 import { isDateInFuture } from '../../../../../utils/dateUtils';
-import { calculateFileSize } from '../../../../../utils/fileUtils';
+import { calculateFileSize, isAllowedFileType } from '../../../../../utils/fileUtils';
+
+
+
+
+// TODOs : if file upload failed after the assignment is created, delete the assignment and display proper error message
 
 const NewAssignment = () => {
     const { user } = useContext(AuthContext);
@@ -17,10 +22,10 @@ const NewAssignment = () => {
     const [allClasses, setAllClasses] = useState([]);
     const [allSubjectsOfClass, setAllSubjectsOfClass] = useState([]);
 
-    const [assignmentClass, setAssignmentClass] = useState('');
+    const [assignmentClass, setAssignmentClass] = useState({name : '', id : null});
     const [classError, setClassError] = useState('');
 
-    const [assignmentSubject, setAssignmentSubject] = useState('');
+    const [assignmentSubject, setAssignmentSubject] = useState({name : '', id : null});
     const [subjectError, setSubjectError] = useState('');
 
     const [assignmentDueDate, setAssignmnentDueDate] = useState('');
@@ -56,12 +61,11 @@ const NewAssignment = () => {
         setCreationSuccess(false);
     }
 
-    const loadCourses = async (className) => {
-        const classID = allClasses.find(singleClass => singleClass.name === className)?.id;
+    const loadCourses = async (classID) => {
         getAllSubjectsOf(classID, user.accessToken)
             .then(data => {
                 setAllSubjectsOfClass(data);
-                setAssignmentSubject('');
+                setAssignmentSubject({name : '', id : null});
             })
             .catch(error => {
                 console.error(error);
@@ -70,29 +74,28 @@ const NewAssignment = () => {
     };
 
     const handleClassChange = (event) => {
-        const newClassName = event.target.value;
-        setAssignmentClass(newClassName);
-        loadCourses(newClassName);
+        const selectedOption = event.target.options[event.target.selectedIndex];
+        const newClassName = selectedOption.value;
+        const newClassID = selectedOption.getAttribute('data-key');
+        setAssignmentClass({name : newClassName, id : newClassID});
+        loadCourses(newClassID);
         setClassError('');
         clearMessages();
     };
 
     const handleSubjectChange = (event) => {
-        setAssignmentSubject(event.target.value);
+        const selectedOption = event.target.options[event.target.selectedIndex]
+        const newSubjectName = selectedOption.value;
+        const newSubjectID = selectedOption.getAttribute('data-key');
+        setAssignmentSubject({name : newSubjectName, id : newSubjectID});
         setSubjectError('');
         clearMessages();
     };
 
     const handleDueDateChange = (event) => {
         const dateInput = event.target.value;
-        if (isDateInFuture(dateInput)) {
-            setAssignmnentDueDate(dateInput);
-            setDateError('');
-            clearMessages();
-        } else {
-            setDateError('Bitiş tarihi gelecekte olmalıdır.');
-            setAssignmnentDueDate('');
-        }
+        setDateError('');
+        setAssignmnentDueDate(dateInput);
     };
 
     const handleTitleChange = (event) => {
@@ -109,12 +112,22 @@ const NewAssignment = () => {
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
-        if (file && calculateFileSize(file) < 10) {
+
+        if(file) {
+
+            if(!isAllowedFileType(file.type)) {
+                setFileError("Dosya tipi desteklenmiyor. Yalnızca PDF, Word veya metin dosyaları yükleyebilirsiniz.");
+                setAssignmentDocument(null);
+                return;
+            }
+
+            if(calculateFileSize(file) >= 5) {
+                setFileError("Dosya boyutu 5 MB'den büyük olamaz.");
+                setAssignmentDocument(null);
+                return;
+            }
             setAssignmentDocument(file);
             setFileError('');
-        } else {
-            setFileError("Dosya boyutu 10 MB'den büyük olamaz.");
-            setAssignmentDocument(null);
         }
     };
 
@@ -125,11 +138,11 @@ const NewAssignment = () => {
     const handleSubmit = async () => {
         let hasError = false;
 
-        if (!assignmentClass) {
+        if (!assignmentClass.name) {
             setClassError('Sınıf seçimi yapınız.');
             hasError = true;
         }
-        if (!assignmentSubject) {
+        if (!assignmentSubject.name) {
             setSubjectError('Ders seçimi yapınız');
             hasError = true;
         }
@@ -145,14 +158,19 @@ const NewAssignment = () => {
             setTitleError('Ödev başlığı 3 karakterden fazla olmalıdır.');
             hasError = true;
         }
+
+        if(!assignmentDueDate || !isDateInFuture(assignmentDueDate)) {
+            setDateError('Bitiş tarihi gelecekte olmalıdır.');
+            hasError = true;
+        }
         if (!hasError) {
             const payload = {
                 teacherId: user.id,
                 title: assignmentTitle,
                 description: assignmentDescription,
                 dueDate: assignmentDueDate,
-                className: assignmentClass, // TODO: it will change to classID later on
-                courseName: assignmentSubject,
+                classId: assignmentClass.id,
+                courseId: assignmentSubject.id,
                 document: null,
             };
 
@@ -161,7 +179,7 @@ const NewAssignment = () => {
                     if(response.success) {
                         if(assignmentDocument) {
                             const assignmentID = response.data.id;
-                            uploadDocument(assignmentID, assignmentDocument, true, user.accessToken)
+                            uploadDocument(assignmentID, assignmentDocument, user.accessToken)
                                 .then(response => {
                                     console.log('upload document to assignment response', response);
                                 })
@@ -180,8 +198,8 @@ const NewAssignment = () => {
     };
 
     const resetForm = () => {
-        setAssignmentClass('');
-        setAssignmentSubject('');
+        setAssignmentClass({name : '', id : null});
+        setAssignmentSubject({name : '', id : null});
         setAssignmnentDueDate('');
         setAssignmentTitle('');
         setAssignmentDescription('');
@@ -195,12 +213,12 @@ const NewAssignment = () => {
                 <label className="label">Sınıf Adı</label>
                 <select
                     className="input"
-                    value={assignmentClass}
+                    value={assignmentClass.name}
                     onChange={handleClassChange}
                 >
-                    <option value="" disabled>Sınıf Seçiniz</option>
+                    <option value="" data-key={null} disabled>Sınıf Seçiniz</option>
                     {allClasses.map((singleClass) => (
-                        <option value={singleClass.name} key={singleClass.id}>
+                        <option value={singleClass.name} key={singleClass.id} data-key={singleClass.id}>
                             {singleClass.name}
                         </option>
                     ))}
@@ -212,14 +230,14 @@ const NewAssignment = () => {
                 <label className="label">Ders Adı</label>
                 <select
                     className='input'
-                    value={assignmentSubject}
+                    value={assignmentSubject.name}
                     onChange={handleSubjectChange}
-                    disabled={assignmentClass === ''}
+                    disabled={assignmentClass.name === ''}
                 >
                     <option value="" disabled>Ders Seçiniz</option>
                     {allSubjectsOfClass &&
                         allSubjectsOfClass.map((singleSubject) => (
-                            <option value={singleSubject.name} key={singleSubject.id}>
+                            <option value={singleSubject.name} key={singleSubject.id} data-key={singleSubject.id}>
                                 {singleSubject.name}
                             </option>
                     ))}
@@ -270,6 +288,7 @@ const NewAssignment = () => {
                     <input
                         className='input'
                         type='file'
+                        accept=".pdf, .doc, .docx, .txt"
                         onChange={handleFileChange}
                         value=''
                     />

@@ -20,7 +20,6 @@ export const deleteAssignment = async (assignmentID, accessToken) => {
         {
             headers : {
                 Authorization : `Bearer ${accessToken}`,
-                'Content-Type' : 'application/json',
             },
         }
     );
@@ -44,10 +43,9 @@ export const updateAssignment = async (assignmentID, updatedRequest, accessToken
 }
 
 
-export const uploadDocument = async (assignmentID, file, isTeacherUpload, accessToken) => {
+export const uploadDocument = async (assignmentID, file, accessToken) => {
     const fileData = new FormData();
     fileData.append('file', file);
-    fileData.append('isTeacherUpload', isTeacherUpload);
 
     const response = await axios.post(
         `/api/v1/assignments/${assignmentID}/documents`,

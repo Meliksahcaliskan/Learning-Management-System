@@ -108,6 +108,7 @@ const AssignmentSearch = ({onSearchResults}) => {
             const targetDate = new Date(searchDueDate);
             assignments = assignments.filter(assignment => new Date(assignment.dueDate) <= targetDate);
         }
+        console.log(assignments);
         return assignments;
     }
 
