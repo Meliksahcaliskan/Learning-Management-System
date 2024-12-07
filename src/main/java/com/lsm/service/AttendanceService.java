@@ -38,14 +38,14 @@ public class AttendanceService {
      * @throws IllegalArgumentException if the student is not found.
      */
     @Transactional
-    public void markAttendance(AttendanceRequestDTO attendanceRequest) {
+    public Attendance markAttendance(AttendanceRequestDTO attendanceRequest) {
         AppUser student = appUserRepository.findById(attendanceRequest.getStudentId())
                 .orElseThrow(() -> new IllegalArgumentException(
                         String.format("Student with ID %d not found.", attendanceRequest.getStudentId())
                 ));
 
         Attendance attendance = mapToAttendanceEntity(attendanceRequest, student);
-        attendanceRepository.save(attendance);
+        return attendanceRepository.save(attendance);
     }
 
     @Transactional
@@ -129,7 +129,7 @@ public class AttendanceService {
      */
     private AttendanceDTO convertToDTO(Attendance attendance) {
         return AttendanceDTO.builder()
-                .id(attendance.getId())
+                .attendanceId(attendance.getId())
                 .studentId(attendance.getStudent().getId())
                 .studentName(attendance.getStudent().getName())
                 .studentSurname(attendance.getStudent().getSurname())
