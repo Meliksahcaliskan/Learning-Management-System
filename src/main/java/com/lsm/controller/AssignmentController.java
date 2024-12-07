@@ -222,7 +222,7 @@ public class AssignmentController {
             // Check if the user is a teacher and owns the assignment
             if (currentUser.getRole() == Role.ROLE_TEACHER) {
                 AssignmentDocument document = documentService.findById(documentId);
-                if (!currentUser.equals(document.getAssignment().getAssignedBy())) {
+                if (!currentUser.getId().equals(document.getAssignment().getAssignedBy().getId())) {
                     throw new AccessDeniedException("Teachers can only delete documents from their own assignments");
                 }
             }
@@ -364,6 +364,7 @@ public class AssignmentController {
     private AssignmentDocumentDTO convertToDTO(AssignmentDocument document) {
         return AssignmentDocumentDTO.builder()
                 .assignmentId(document.getAssignment().getId())
+                .documentId(document.getId())
                 .fileName(document.getFileName())
                 .fileType(document.getFileType())
                 .fileSize(document.getFileSize())
