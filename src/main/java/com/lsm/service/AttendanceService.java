@@ -7,17 +7,17 @@ import com.lsm.model.entity.Attendance;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.repository.AttendanceRepository;
 import com.lsm.repository.AppUserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional(readOnly = true)
 public class AttendanceService {
 
     private static final String STUDENT_ROLE = "ROLE_STUDENT";
@@ -61,25 +61,19 @@ public class AttendanceService {
         }
     }
 
-    /**
-     * Retrieves attendance records for a specific student.
-     * Students can only access their own records, while teachers and admins can access any student's records.
-     *
-     * @param studentId the ID of the student whose attendance records are requested.
-     * @return List of attendance records as DTOs.
-     * @throws SecurityException if a student tries to access another student's records.
-     */
-    public List<AttendanceDTO> getAttendanceByStudentId(Long studentId) {
-        AppUser currentUser = getAuthenticatedUser();
-        validateAccessPermissions(currentUser, studentId);
+    @Transactional
+    public List<AttendanceDTO> getAttendanceByStudentId(AppUser  loggedInUser , Long studentId, LocalDate startDate, LocalDate endDate) {
+        validateAccessPermissions(loggedInUser , studentId);
 
         return attendanceRepository.findByStudentId(studentId)
                 .stream()
+                .filter(attendance -> startDate == null || endDate == null || !attendance.getDate().isBefore(startDate) && !attendance.getDate().isAfter(endDate))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
     // TODO: this is a placeholder
+    @Transactional
     public AttendanceStatsDTO getAttendanceStats(Long studentId, Long classId) {
         AppUser currentUser = getAuthenticatedUser();
         validateAccessPermissions(currentUser, studentId);
@@ -90,20 +84,14 @@ public class AttendanceService {
                 .build();
     }
 
-    /**
-     * Creates an Attendance entity from the request DTO and student entity.
-     *
-     * @param request the attendance request details.
-     * @param student the student associated with the attendance record.
-     * @return the constructed Attendance entity.
-     */
     private Attendance mapToAttendanceEntity(AttendanceRequestDTO request, AppUser student) {
         return Attendance.builder()
                 .student(student)
                 .date(request.getDate())
                 .status(request.getStatus())
                 .comment(request.getComment())
-                .classId(student.getStudentDetails().getClassEntity())
+                .classId(request.getClassId())
+                .courseId(request.getCourseId())
                 .build();
     }
 
