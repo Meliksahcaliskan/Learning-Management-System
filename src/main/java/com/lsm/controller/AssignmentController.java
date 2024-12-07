@@ -343,10 +343,10 @@ public class AssignmentController {
     }
 
     private void validateFile(MultipartFile file) {
-        if (file.isEmpty()) {
+        /* if (file.isEmpty()) {
             throw new IllegalArgumentException("File cannot be empty");
-        }
-        if (file.getSize() > 10_000_000) { // 10MB limit
+        } */
+        if (file.getSize() > 5_000_000) { // 5MB limit
             throw new IllegalArgumentException("File size exceeds maximum limit");
         }
         String contentType = file.getContentType();
