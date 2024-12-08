@@ -65,8 +65,8 @@ public class AttendanceController {
                             new AttendanceDTO(attendance, "")
                     ));
         } catch (AccessDeniedException e) {
-            log.error("Access denied: {}", e.getMessage());
-            throw new RuntimeException(e.getMessage());
+            log.error("Access denied while marking attendance: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -90,13 +90,18 @@ public class AttendanceController {
             @RequestParam(required = false) LocalDate endDate,
             Authentication authentication
     ) {
-        AppUser loggedInUser = (AppUser) authentication.getPrincipal();
-        List<AttendanceDTO> attendanceRecords = attendanceService.getAttendanceByStudentId(loggedInUser, studentId, startDate, endDate);
-        return ResponseEntity.ok(new ApiResponse_<>(
-                true,
-                "Attendance records retrieved successfully",
-                attendanceRecords
-        ));
+        try {
+            AppUser loggedInUser = (AppUser) authentication.getPrincipal();
+            List<AttendanceDTO> attendanceRecords = attendanceService.getAttendanceByStudentId(loggedInUser, studentId, startDate, endDate);
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Attendance records retrieved successfully",
+                    attendanceRecords
+            ));
+        } catch (AccessDeniedException e) {
+            log.error("Access denied while getting attendance of the student: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        }
     }
 
     @Operation(
@@ -129,7 +134,7 @@ public class AttendanceController {
             ));
         } catch (AccessDeniedException e) {
             log.error("To display stats of the student as a student, you must be that student: {}", e.getMessage());
-            throw new SecurityException("Access denied: " + e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -161,13 +166,7 @@ public class AttendanceController {
             ));
         } catch (AccessDeniedException e) {
             log.error("Error in getAttendanceStatsOfTheCourse: {}", e.getMessage());
-            return ResponseEntity.
-                    status(HttpStatus.FORBIDDEN).
-                    body((new ApiResponse_<>(
-                            false,
-                            "Access denied: " + e.getMessage(),
-                            null
-                    )));
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -198,13 +197,7 @@ public class AttendanceController {
                     ));
         } catch (AccessDeniedException e) {
             log.error("Error in mark attendance: {}", e.getMessage());
-            return ResponseEntity
-                    .status(HttpStatus.FORBIDDEN)
-                    .body(new ApiResponse_<>(
-                            false,
-                            "Access denied: " + e.getMessage(),
-                            null
-                    ));
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
