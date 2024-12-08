@@ -52,6 +52,7 @@ public class AssignmentDTO {
             return null;
         return AssignmentDocumentDTO.builder()
                 .assignmentId(doc.getAssignment() != null ? doc.getAssignment().getId() : null)
+                .documentId(doc.getId())
                 .fileName(doc.getFileName())
                 .fileType(doc.getFileType())
                 .fileSize(doc.getFileSize())

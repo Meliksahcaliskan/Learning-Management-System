@@ -26,10 +26,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class AttendanceService {
-
-    private static final String STUDENT_ROLE = "ROLE_STUDENT";
-    private static final String ACCESS_DENIED_ERROR = "Students can only access their own attendance records.";
-
     private final AttendanceRepository attendanceRepository;
     private final AppUserRepository appUserRepository;
     private final CourseRepository courseRepository;
@@ -69,7 +65,10 @@ public class AttendanceService {
 
     // TODO: fix it like the markAttendance
     @Transactional
-    public void markBulkAttendance(List<AttendanceRequestDTO> attendanceRequests) {
+    public void markBulkAttendance(AppUser loggedInUser, List<AttendanceRequestDTO> attendanceRequests)
+            throws AccessDeniedException {
+        if (loggedInUser.getRole().equals(Role.ROLE_STUDENT))
+            throw new AccessDeniedException("Students can't mark attendance");
         for(AttendanceRequestDTO attendanceRequest : attendanceRequests) {
             AppUser student = appUserRepository.findById(attendanceRequest.getStudentId())
                     .orElseThrow(() -> new IllegalArgumentException(
@@ -155,7 +154,13 @@ public class AttendanceService {
     }
 
     @Transactional
-    public List<AttendanceStatsDTO> getAttendanceStatsByCourse(AppUser loggedInUser, Long courseId, Long classId) {
+    public List<AttendanceStatsDTO> getAttendanceStatsByCourse(AppUser loggedInUser, Long courseId, Long classId)
+            throws AccessDeniedException {
+        if (loggedInUser.getRole().equals(Role.ROLE_STUDENT))
+            throw new AccessDeniedException("Students can't view attendance stats of the course.");
+        if (loggedInUser.getRole().equals(Role.ROLE_TEACHER)) {
+
+        }
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found"));
         ClassEntity classEntity = classEntityRepository.getClassEntityById(classId)
@@ -231,8 +236,8 @@ public class AttendanceService {
      * @param requestedStudentId the ID of the student whose records are requested.
      */
     private void validateAccessPermissions(AppUser currentUser, Long requestedStudentId) {
-        if (STUDENT_ROLE.equals(currentUser.getRole().name()) && !currentUser.getId().equals(requestedStudentId)) {
-            throw new SecurityException(ACCESS_DENIED_ERROR);
+        if (Role.ROLE_STUDENT.equals(currentUser.getRole()) && !currentUser.getId().equals(requestedStudentId)) {
+            throw new SecurityException("Students can only access their own attendance records.");
         }
     }
 

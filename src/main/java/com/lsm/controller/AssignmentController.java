@@ -5,7 +5,6 @@ import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.AssignmentDocument;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.Role;
-import com.lsm.service.AppUserService;
 import com.lsm.service.AssignmentDocumentService;
 import com.lsm.service.AssignmentService;
 
@@ -37,7 +36,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
-import java.security.Principal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -52,7 +50,6 @@ import java.util.List;
 public class AssignmentController {
 
     private final AssignmentService assignmentService;
-    private final AppUserService appUserService;
     private final AssignmentDocumentService documentService;
 
     @Operation(
@@ -85,10 +82,10 @@ public class AssignmentController {
                     ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while creating assignment: {}", e.getMessage());
-            throw new SecurityException("Access denied: " + e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error creating assignment: {}", e.getMessage());
-            throw new RuntimeException("Error creating assignment");
+            return httpError(HttpStatus.BAD_REQUEST, "Error creating assignment" + e.getMessage());
         }
     }
 
@@ -123,7 +120,8 @@ public class AssignmentController {
                 new AssignmentDTO(updated, "Updated successfully")
             ));
         } catch (AccessDeniedException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while updating assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -150,8 +148,9 @@ public class AssignmentController {
                     assignments
             ));
 
-        } catch (Exception e) {
-            throw new SecurityException(e.getMessage());
+        } catch (AccessDeniedException e) {
+            log.error("Access denied while getting all assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -193,9 +192,11 @@ public class AssignmentController {
                     assignments
             ));
         } catch (AccessDeniedException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while getting teacher assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (EntityNotFoundException e) {
-            throw new EntityNotFoundException(e.getMessage());
+            log.error("Entity not found while getting teacher assignment: {}", e.getMessage());
+            return httpError(HttpStatus.BAD_REQUEST, "Entity not found: " + e.getMessage());
         }
     }
 
@@ -236,13 +237,13 @@ public class AssignmentController {
             ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while deleting document: {}", e.getMessage());
-            throw new SecurityException(e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (EntityNotFoundException e) {
             log.error("Document not found: {}", e.getMessage());
-            throw new EntityNotFoundException(e.getMessage());
+            return httpError(HttpStatus.BAD_REQUEST, "Entity not found: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error deleting document: {}", e.getMessage());
-            throw new RuntimeException("Error deleting document");
+            return httpError(HttpStatus.BAD_REQUEST, "An error occurred: " + e.getMessage());
         }
     }
 
@@ -276,9 +277,11 @@ public class AssignmentController {
                     assignments
             ));
         } catch (AccessDeniedException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while getting assignments of the student: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (EntityNotFoundException e) {
-            throw new EntityNotFoundException(e.getMessage());
+            log.error("Student not found: {}", e.getMessage());
+            return httpError(HttpStatus.BAD_REQUEST, "Student not found: " + e.getMessage());
         }
     }
 
@@ -308,7 +311,8 @@ public class AssignmentController {
                 null
             ));
         } catch (AccessDeniedException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while deleting an assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -335,42 +339,8 @@ public class AssignmentController {
             ));
         } catch (IOException e) {
             log.error("Error uploading document: {}", e.getMessage());
-            throw new RuntimeException("Error uploading document");
+            return httpError(HttpStatus.BAD_REQUEST, "Error uploading document: " + e.getMessage());
         }
-    }
-
-    private void validateFile(MultipartFile file) {
-        /* if (file.isEmpty()) {
-            throw new IllegalArgumentException("File cannot be empty");
-        } */
-        if (file.getSize() > 5_000_000) { // 5MB limit
-            throw new IllegalArgumentException("File size exceeds maximum limit");
-        }
-        String contentType = file.getContentType();
-        if (contentType == null || !isAllowedContentType(contentType)) {
-            throw new IllegalArgumentException("Invalid file type");
-        }
-    }
-
-    private boolean isAllowedContentType(String contentType) {
-        return Arrays.asList(
-                "application/pdf",
-                "application/msword",
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                "text/plain"
-        ).contains(contentType);
-    }
-
-    private AssignmentDocumentDTO convertToDTO(AssignmentDocument document) {
-        return AssignmentDocumentDTO.builder()
-                .assignmentId(document.getAssignment().getId())
-                .documentId(document.getId())
-                .fileName(document.getFileName())
-                .fileType(document.getFileType())
-                .fileSize(document.getFileSize())
-                .uploadTime(document.getUploadTime())
-                .uploadedByUsername(document.getUploadedBy().getUsername())
-                .build();
     }
 
     @Operation(
@@ -378,20 +348,25 @@ public class AssignmentController {
             description = "Download a document associated with an assignment"
     )
     @GetMapping("/documents/{documentId}")
-    public ResponseEntity<Resource> downloadDocument(
+    public ResponseEntity<ApiResponse_<Resource>> downloadDocument(
             @PathVariable Long documentId,
             Authentication authentication) {
-        AppUser currentUser = (AppUser) authentication.getPrincipal();
-        Resource resource;
         try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            Resource resource;
             resource = documentService.downloadDocument(documentId, currentUser);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + resource.getFilename() + "\"")
+                    .body(new ApiResponse_<>(
+                            true,
+                            "Successfully downloaded document",
+                            resource
+                    ));
         } catch (IOException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while downloading the assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + resource.getFilename() + "\"")
-                .body(resource);
     }
 
     @Operation(
@@ -422,7 +397,8 @@ public class AssignmentController {
                     new AssignmentDTO(graded, "Graded successfully")
             ));
         } catch (AccessDeniedException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while grading the assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -458,17 +434,18 @@ public class AssignmentController {
                     new AssignmentDTO(submitted, "Submitted successfully")
             ));
         } catch (IOException e) {
-            throw new RuntimeException("Error uploading document");
+            log.error("An exception occurred when submitting an assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "IOException occurred: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error submitting assignment: {}", e.getMessage());
-            throw new RuntimeException("Error submitting assignment: " + e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Error submitting assignment: " + e.getMessage());
         }
     }
 
 
     @Operation(
-            summary = "Unsubmit an assignment",
-            description = "Allows students to unsubmit their assignments if they haven't been graded yet"
+            summary = "Un-submit an assignment",
+            description = "Allows students to un-submit their assignments if they haven't been graded yet"
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Assignment unsubmitted successfully"),
@@ -490,7 +467,49 @@ public class AssignmentController {
                     new AssignmentDTO(unsubmitted, "Unsubmitted successfully")
             ));
         } catch (AccessDeniedException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while un-submitting the assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
+    }
+
+    private void validateFile(MultipartFile file) {
+        if (file.getSize() > 5_000_000) { // 5MB limit
+            throw new IllegalArgumentException("File size exceeds maximum limit");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !isAllowedContentType(contentType)) {
+            throw new IllegalArgumentException("Invalid file type");
+        }
+    }
+
+    private boolean isAllowedContentType(String contentType) {
+        return Arrays.asList(
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "text/plain"
+        ).contains(contentType);
+    }
+
+    private AssignmentDocumentDTO convertToDTO(AssignmentDocument document) {
+        return AssignmentDocumentDTO.builder()
+                .assignmentId(document.getAssignment().getId())
+                .documentId(document.getId())
+                .fileName(document.getFileName())
+                .fileType(document.getFileType())
+                .fileSize(document.getFileSize())
+                .uploadTime(document.getUploadTime())
+                .uploadedByUsername(document.getUploadedBy().getUsername())
+                .build();
+    }
+
+    private static <T> ResponseEntity<ApiResponse_<T>> httpError(HttpStatus s, String message) {
+        return ResponseEntity.
+                status(s).
+                body(new ApiResponse_<>(
+                        false,
+                        message,
+                        null
+                ));
     }
 }
