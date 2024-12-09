@@ -3,11 +3,14 @@ package com.lsm.controller;
 import com.lsm.model.DTOs.*;
 import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.AssignmentDocument;
+import com.lsm.model.entity.StudentSubmission;
 import com.lsm.model.entity.base.AppUser;
+import com.lsm.model.entity.enums.AssignmentStatus;
 import com.lsm.model.entity.enums.Role;
 import com.lsm.service.AssignmentDocumentService;
 import com.lsm.service.AssignmentService;
 
+import com.nimbusds.jose.util.Pair;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -413,7 +416,7 @@ public class AssignmentController {
             @ApiResponse(responseCode = "404", description = "Assignment not found")
     })
     @PatchMapping(value = "/{assignmentId}/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse_<AssignmentDTO>> submitAssignment(
+    public ResponseEntity<ApiResponse_<StudentSubmissionDTO>> submitAssignment(
             @Parameter(description = "ID of the assignment to submit", required = true)
             @PathVariable @Positive Long assignmentId,
             @Valid @ModelAttribute SubmitAssignmentDTO submitDTO,
@@ -426,12 +429,12 @@ public class AssignmentController {
             // Validate file
             validateFile(submitDTO.getDocument());
 
-            Assignment submitted = assignmentService.submitAssignment(assignmentId, submitDTO, currentUser);
+            StudentSubmission submission = assignmentService.submitAssignment(assignmentId, submitDTO, currentUser);
 
             return ResponseEntity.ok(new ApiResponse_<>(
                     true,
                     "Assignment submitted successfully",
-                    new AssignmentDTO(submitted, "Submitted successfully")
+                    new StudentSubmissionDTO(submission)
             ));
         } catch (IOException e) {
             log.error("An exception occurred when submitting an assignment: {}", e.getMessage());

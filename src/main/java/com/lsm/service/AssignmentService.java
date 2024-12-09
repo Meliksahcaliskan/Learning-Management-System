@@ -17,6 +17,7 @@ import com.lsm.model.entity.ClassEntity;
 import com.lsm.model.entity.Course;
 import com.lsm.model.entity.enums.AssignmentStatus;
 import com.lsm.repository.*;
+import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -341,7 +342,7 @@ public class AssignmentService {
     }
 
     @Transactional
-    public Assignment submitAssignment(Long assignmentId, SubmitAssignmentDTO submitDTO, AppUser currentUser)
+    public StudentSubmission submitAssignment(Long assignmentId, SubmitAssignmentDTO submitDTO, AppUser currentUser)
             throws IllegalStateException, IOException {
         Assignment assignment = findById(assignmentId);
 
@@ -387,8 +388,8 @@ public class AssignmentService {
                 currentUser
         );
         assignment.getStudentSubmissions().add(studentSubmission);
-
-        return assignmentRepository.save(assignment);
+        assignmentRepository.save(assignment);
+        return studentSubmission;
     }
 
     public Assignment findById(Long id) {
