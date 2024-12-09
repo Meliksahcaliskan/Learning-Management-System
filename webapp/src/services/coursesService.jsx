@@ -1,8 +1,9 @@
 import axios from "axios";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const getAllCourses = async (accessToken) => {
   const response = await axios.get(
-    '/api/v1/courses',
+    `${BASE_URL}/api/v1/courses`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -12,21 +13,9 @@ export const getAllCourses = async (accessToken) => {
     return response.data;
 };
 
-// export const getAllCoursesbyClassID = async (accessToken, classID) => {
-//   const response = await axios.get(
-//     `/api/v1/courses/class/${classID}`,
-//     {
-//       headers : {
-//         Authorization : `Bearer ${accessToken}`
-//       }
-//     }
-//   );
-//   return response;
-// };
-
 export const getAllSubjectsOf = async (classID, accessToken) => {
   const response = await axios.get(
-    `/api/v1/courses/class/${classID}`,
+    `${BASE_URL}/api/v1/courses/class/${classID}`,
     {
       headers : {
         Authorization : `Bearer ${accessToken}`

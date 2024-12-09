@@ -15,8 +15,9 @@ const assignmentOptions = {
             status : 'PENDING',
             index : 0,
             compare : (assignment) =>
-                        !assignment.mySubmission &&
-                        ((new Date(assignment.dueDate)) >= (new Date()))
+                        // (!assignment.mySubmission && ((new Date(assignment.dueDate)) >= (new Date()))) ||
+                        ((new Date(assignment.dueDate)) >= (new Date())) &&
+                        (!assignment.mySubmission || (assignment.mySubmission.status === 'PENDING'))
         },
         {
             title: 'Gönderilmiş',

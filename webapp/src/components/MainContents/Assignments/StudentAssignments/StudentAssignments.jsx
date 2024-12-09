@@ -63,6 +63,7 @@ const StudentAssignments = ({ user }) => {
               <SingleAssigment 
                 assignment={selectedAssignment}
                 refreshAssignments={fetchAssignments}
+                status={selectedOption.status}
               />
             </li>
           ))}
