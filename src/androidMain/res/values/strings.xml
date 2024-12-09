@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="welcome_again">Welcome Again</string>
-    <string name="email_placeholder">Email</string>
+    <string name="email_placeholder">E-Mail or Username</string>
     <string name="password_placeholder">Password</string>
     <string name="remember_me">Remember Me</string>
     <string name="forgot_password">Forgot Password?</string>

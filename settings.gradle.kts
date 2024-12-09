@@ -26,6 +26,13 @@ dependencyResolutionManagement {
 rootProject.name = "LoginMultiplatform"
 
 // Proje modüllerini ekliyoruz
-include(":androidApp")   // Android uygulaması modülü
+include(":androidMain")   // Android uygulaması modülü
+project(":androidMain").projectDir = file("src/androidMain")
+/*include(":androidApp")
+project(":androidApp").projectDir = file("src/androidApp")*/
 include(":commonMain")   // Ortak multiplatform kodları içeren modül
+project(":commonMain").projectDir = file("src/commonMain")
 include(":iosMain")      // iOS uygulaması modülü
+project(":iosMain").projectDir = file("src/iosMain")
+include(":backend")
+project(":backend").projectDir = file("src/backend")

@@ -7,6 +7,17 @@ actual fun getPlatformResourceContainer(): ResourceContainer {
     val context = AppContext.context
 
     return object : ResourceContainer {
+        override val logo: Int = R.drawable.logo
+        override val notification: Int = R.drawable.notification
+        override val pp: Int = R.drawable.pp
+        override val sidemenu: Int = R.drawable.sidemenu
+        override val mainpage: Int = R.drawable.mainpage
+        override val exams: Int = R.drawable.exams
+        override val homework: Int = R.drawable.homework
+        override val attendance: Int = R.drawable.attendance
+        override val announcement: Int = R.drawable.announcement
+        override val eyeOpen: Int = R.drawable.ic_eye_open
+        override val eyeClose: Int = R.drawable.ic_eye_close
         override val lighthouse: Int = R.drawable.lighthouse
         override val appLogo: Int = R.drawable.app_logo
         override val welcomeAgain: String = context.getString(R.string.welcome_again)

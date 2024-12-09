@@ -1,9 +1,10 @@
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.konan.target.HostManager
 plugins {
     kotlin("multiplatform") version "1.9.0"
+    //id("org.springframework.boot") version "3.2.0"
+    //id("io.spring.dependency-management") version "1.1.3"
     id("org.jetbrains.compose") version "1.5.0"
-    id("com.android.application") version "8.1.1"
+    id("com.android.application") version "8.2.2"
     //id("dev.icerock.mobile.multiplatform-resources") version "0.23.0"
 }
 
@@ -11,7 +12,7 @@ repositories {
     google()
     mavenCentral()
     gradlePluginPortal()
-    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev") // JetBrains Compose repository'si
+    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev") // JetBrains Compose repository(si
 }
 
 kotlin {
@@ -31,6 +32,20 @@ kotlin {
             //kotlin.srcDir("build/generated/moko/commonMain/src")
             dependencies {
                 implementation(kotlin("stdlib"))
+                // AspectJ
+                //implementation("org.aspectj:aspectjrt:1.9.20")
+                //implementation("org.aspectj:aspectjweaver:1.9.20")
+
+                // SLF4J
+                //implementation("org.slf4j:slf4j-api:2.0.9")
+                //implementation("org.slf4j:slf4j-simple:2.0.9")
+                // Spring Core (Temel bileşenler için gerekli)
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
+                implementation("androidx.navigation:navigation-compose:2.7.3")
+                // Kotlin Coroutines
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
                 implementation("org.jetbrains.compose.runtime:runtime:1.5.0")
                 implementation("org.jetbrains.compose.foundation:foundation:1.5.0")
                 implementation("org.jetbrains.compose.material:material:1.5.0")
@@ -57,6 +72,15 @@ kotlin {
             //kotlin.srcDir("build/generated/moko/androidMain/src")
 
             dependencies {
+                // AspectJ
+                /*implementation("org.aspectj:aspectjrt:1.9.20")
+                implementation("org.aspectj:aspectjweaver:1.9.20")*/
+
+                // SLF4J
+                //implementation("org.slf4j:slf4j-api:2.0.9")
+                //implementation("org.slf4j:slf4j-simple:2.0.9")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
+                implementation("androidx.navigation:navigation-compose:2.7.3")
                 implementation("androidx.core:core-ktx:1.10.1")
                 implementation("androidx.compose.ui:ui:1.5.0")
                 implementation("androidx.compose.material:material:1.5.0")
@@ -69,12 +93,15 @@ kotlin {
                 implementation("com.squareup.okhttp3:logging-interceptor:4.10.0") // Loglama için
                 /*implementation("dev.icerock.moko:resources-compose:0.23.0")
                 implementation("dev.icerock.moko:resources:0.23.0")*/
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material)
                 //kotlin.srcDirs("build/generated/moko/androidMain/src")
             }
         }
+        
         val androidUnitTest by getting {
             dependencies {
                 implementation("junit:junit:4.13.2")
@@ -109,6 +136,13 @@ kotlin {
     }
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
+
 android {
     namespace = "com.example.loginmultiplatform"
     compileSdk = 34
@@ -133,7 +167,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 /*multiplatformResources {
-    multiplatformResourcesPackage = "com.example.loginmultiplatform" // Use your project's package name here
+    multiplatformResourcesPackage = "com.example.loginmultiplatform" // Use your project(s package name here
     //useExperimentalPlugin = true
     //disableStaticFrameworkWarning = true
     //disable("iosX64", "iosArm64", "iosSimulatorArm64")

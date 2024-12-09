@@ -5,8 +5,9 @@ package com.example.loginmultiplatform
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.example.loginmultiplatform.ui.LoginScreen
-import com.example.loginmultiplatform.AppContext
+import com.example.loginmultiplatform.ui.navigation.NavigationGraph
+import com.example.loginmultiplatform.viewmodel.AttendanceViewModel
+import com.example.loginmultiplatform.viewmodel.LoginViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -15,8 +16,13 @@ class MainActivity : ComponentActivity() {
         AppContext.context = this.applicationContext
 
         setContent {
-            // Call your LoginScreen composable
-            LoginScreen()
+            val loginViewModel = LoginViewModel()
+            val attendanceViewModel = AttendanceViewModel()
+
+            NavigationGraph(
+                loginViewModel = loginViewModel,
+                attendanceViewModel = attendanceViewModel
+            )
         }
     }
 }

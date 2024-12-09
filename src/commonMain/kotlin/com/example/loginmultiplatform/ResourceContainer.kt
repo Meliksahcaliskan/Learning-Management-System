@@ -2,9 +2,22 @@
 
 package com.example.loginmultiplatform
 
+import androidx.compose.ui.viewinterop.InteropView
+
 interface ResourceContainer {
-    val lighthouse: Int      // Changed from Any to Int
-    val appLogo: Int         // Changed from Any to Int
+    val lighthouse: Int
+    val appLogo: Int
+    val logo: Int
+    val notification: Int
+    val pp: Int
+    val sidemenu: Int
+    val mainpage: Int
+    val exams: Int
+    val homework: Int
+    val attendance: Int
+    val announcement: Int
+    val eyeOpen: Int
+    val eyeClose: Int
     val welcomeAgain: String
     val emailPlaceholder: String
     val passwordPlaceholder: String

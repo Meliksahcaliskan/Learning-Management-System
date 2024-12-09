@@ -17,16 +17,23 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.ContentScale
+import androidx.navigation.NavController
+import com.example.loginmultiplatform.R
 import com.example.loginmultiplatform.getPlatformResourceContainer
 import com.example.loginmultiplatform.ResourceContainer
 import com.example.loginmultiplatform.viewmodel.LoginViewModel
 
 @Composable
-actual fun LoginScreen(viewModel: LoginViewModel) {
+actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) {
     //val context = LocalContext.current
     val resources = getPlatformResourceContainer()
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var showErrorDialog by remember { mutableStateOf(false) }
     var successMessage by remember { mutableStateOf("") } // Başarı mesajı için state
+    var showSuccessDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") } // Hata mesajı için state
 
     Box(
@@ -66,33 +73,23 @@ actual fun LoginScreen(viewModel: LoginViewModel) {
             )
             Spacer(modifier = Modifier.height(2.dp))
 
-            // Welcome Text
-            /*Text(
-                text = resources.welcomeAgain,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-            Spacer(modifier = Modifier.height(32.dp))*/
-
             // Email Field
-            var email by remember { mutableStateOf("") }
             OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
+                value = username,
+                onValueChange = { username = it },
                 label = { Text(text = resources.emailPlaceholder, color=Color.White) },
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = LocalTextStyle.current.copy(color = Color.White),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     unfocusedBorderColor = Color.White,
-                    cursorColor = Color.White
+                    cursorColor = Color.White,
+                    focusedBorderColor = Color(0xFF5270FF)
                 )
             )
             Spacer(modifier = Modifier.height(16.dp))
 
             // Password Field
-            var password by remember { mutableStateOf("") }
             var passwordVisible by remember { mutableStateOf(false) }
             OutlinedTextField(
                 value = password,
@@ -107,7 +104,7 @@ actual fun LoginScreen(viewModel: LoginViewModel) {
                     Row {
                         // X icon: Her zaman metin yazıldığında göster
                         if (password.isNotEmpty()) {
-                            IconButton(onClick = { password = "" }) {
+                            IconButton(onClick = { password = "" }, modifier = Modifier.alpha(1f)) {
                                 Icon(
                                     painter = painterResource(id = android.R.drawable.ic_menu_close_clear_cancel),
                                     contentDescription = "Clear text",
@@ -117,11 +114,11 @@ actual fun LoginScreen(viewModel: LoginViewModel) {
                         }
 
                         // Eye icon: Şifre görünürlüğünü kontrol eder
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }, modifier = Modifier.alpha(1f)) {
                             val eyeIcon = if (passwordVisible) {
-                                android.R.drawable.ic_menu_view // Şifreyi gösterirken göz
+                                resources.eyeClose // Şifreyi gösterirken göz
                             } else {
-                                android.R.drawable.ic_menu_view // Şifreyi gizlerken göz
+                                resources.eyeOpen // Şifreyi gizlerken göz
                             }
                             Icon(
                                 painter = painterResource(id = eyeIcon),
@@ -130,20 +127,11 @@ actual fun LoginScreen(viewModel: LoginViewModel) {
                             )
                         }
                     }
-
-
-                    /*val image = if (passwordVisible)
-                        painterResource(id = android.R.drawable.ic_menu_view)
-                    else
-                        painterResource(id = android.R.drawable.ic_menu_close_clear_cancel)
-
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(painter = image, contentDescription = null)
-                    }*/
                 },
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     unfocusedBorderColor = Color.White,
-                    cursorColor = Color.White
+                    cursorColor = Color.White,
+                    focusedBorderColor = Color(0xFF5270FF)
                 )
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -169,7 +157,7 @@ actual fun LoginScreen(viewModel: LoginViewModel) {
                     Text(text = resources.rememberMe, color = Color.White)
                 }
                 TextButton(onClick = { /* Handle forgot password */ }) {
-                    Text(text = resources.forgotPassword, color = Color.Blue)
+                    Text(text = resources.forgotPassword, color = Color(0xFF5270FF))
                 }
             }
             Spacer(modifier = Modifier.height(32.dp))
@@ -177,23 +165,34 @@ actual fun LoginScreen(viewModel: LoginViewModel) {
             // Sign In Button
             Button(
                 onClick = {
-                    viewModel.login(
-                        email = email,
-                        password = password,
-                        onSuccess = { token ->
-                            successMessage = "Login Successful! Token: $token"
-                            errorMessage = ""
-                        },
-                        onError = {error ->
-                            errorMessage = "Error: $error"
-                            successMessage = ""
-                        }
-                    )
+                    if (username.isBlank() || password.isBlank()) {
+                        errorMessage = "Email and Password cannot be empty"
+                        showErrorDialog = true
+                    } else {
+                        viewModel.login(
+                            username = username,
+                            password = password,
+                            onSuccess = { loginData ->
+                                successMessage = "Login Successful!"
+                                showSuccessDialog = true
+                                when (loginData.role) {
+                                    "ROLE_STUDENT" -> navController.navigate("student_dashboard")
+                                    "ROLE_TEACHER" -> navController.navigate("teacher_dashboard")
+                                    "ROLE_COORDINATOR" -> navController.navigate("coordinator_dashboard")
+                                    "ROLE_ADMIN" -> navController.navigate("admin_dashboard")
+                                }
+                            },
+                            onError = { error ->
+                                errorMessage = "Error: $error"
+                                showErrorDialog = true
+                            }
+                        )
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
-                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Blue)
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF5270FF))
             ) {
                 Text(
                     text = resources.signIn,
@@ -203,19 +202,29 @@ actual fun LoginScreen(viewModel: LoginViewModel) {
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (successMessage.isNotEmpty()) {
-                Text(
-                    text = successMessage,
-                    color = Color.Green,
-                    fontSize = 16.sp
+            if (showErrorDialog) {
+                AlertDialog(
+                    onDismissRequest = { showErrorDialog = false },
+                    title = { Text("Error") },
+                    text = { Text(errorMessage) },
+                    confirmButton = {
+                        Button(onClick = { showErrorDialog = false }) {
+                            Text("OK")
+                        }
+                    }
                 )
             }
 
-            if (errorMessage.isNotEmpty()) {
-                Text(
-                    text = errorMessage,
-                    color = Color.Red,
-                    fontSize = 16.sp
+            if (showSuccessDialog) {
+                AlertDialog(
+                    onDismissRequest = { showSuccessDialog = false },
+                    title = { Text("Success") },
+                    text = { Text(successMessage) },
+                    confirmButton = {
+                        Button(onClick = { showSuccessDialog = false }) {
+                            Text("OK")
+                        }
+                    }
                 )
             }
         }
@@ -227,8 +236,19 @@ actual fun LoginScreen(viewModel: LoginViewModel) {
 fun LoginScreenPreview() {
     // Mock ResourceContainer for preview
     val mockResources = object : ResourceContainer {
+        override val logo: Int = R.drawable.logo
+        override val notification: Int = R.drawable.notification
+        override val pp: Int = R.drawable.pp
+        override val sidemenu: Int = R.drawable.sidemenu
+        override val mainpage: Int = R.drawable.mainpage
+        override val exams: Int = R.drawable.exams
+        override val homework: Int = R.drawable.homework
+        override val attendance: Int = R.drawable.attendance
+        override val announcement: Int = R.drawable.announcement
         override val lighthouse: Int = android.R.drawable.ic_menu_gallery
         override val appLogo: Int = android.R.drawable.sym_def_app_icon
+        override val eyeOpen: Int = android.R.drawable.ic_menu_view
+        override val eyeClose: Int = android.R.drawable.ic_menu_view
         override val welcomeAgain: String = "Welcome Again"
         override val emailPlaceholder: String = "Email"
         override val passwordPlaceholder: String = "Password"
