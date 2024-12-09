@@ -139,7 +139,7 @@ public class AssignmentService {
         }
         if (dueDate != null) {
             assignments = assignments.stream()
-                    .filter(assignment -> assignment.getDueDate().isBefore(dueDate))
+                    .filter(assignment -> !assignment.getDueDate().isAfter(dueDate))
                     .collect(Collectors.toList());
         }
 
@@ -332,9 +332,10 @@ public class AssignmentService {
         if (studentSubmission.getGrade() != null)
             throw new IllegalStateException("Cannot unsubmit graded assignments");
 
+        assignment.getStudentSubmissions().remove(studentSubmission);
         // Reset to pending status
-        studentSubmission.setStatus(AssignmentStatus.PENDING);
-        studentSubmission.setDocument(null);
+        // studentSubmission.setStatus(AssignmentStatus.PENDING);
+        // studentSubmission.setDocument(null);
 
         return assignmentRepository.save(assignment);
     }
@@ -385,6 +386,7 @@ public class AssignmentService {
                 submitDTO,
                 currentUser
         );
+        assignment.getStudentSubmissions().add(studentSubmission);
 
         return assignmentRepository.save(assignment);
     }

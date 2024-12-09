@@ -469,10 +469,15 @@ public class AssignmentController {
         } catch (AccessDeniedException e) {
             log.error("Access denied while un-submitting the assignment: {}", e.getMessage());
             return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error while un-submitting the assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Error: " + e.getMessage());
         }
     }
 
     private void validateFile(MultipartFile file) {
+        if (file == null || file.isEmpty())
+            return;
         if (file.getSize() > 5_000_000) { // 5MB limit
             throw new IllegalArgumentException("File size exceeds maximum limit");
         }
