@@ -30,6 +30,18 @@ export const getTeacherClasses = async (accessToken) => {
     return response.data;
 }
 
+export const getClassByID = async (classID, accessToken) => {
+  const response = await axios.get(
+    `${BASE_URL}/api/v1/classes/${classID}`,
+    {
+      headers : {
+        Authorization : `Bearer ${accessToken}`
+      }
+    }
+  );
+  return response;
+}
+
 export const getClasses = async (userRole, accessToken) => {
   if(userRole === 'ROLE_TEACHER') return await getTeacherClasses(accessToken);
   else if(userRole === 'ROLE_ADMIN' || userRole === 'ROLE_COORDINATOR') return await getAllClasses(accessToken);

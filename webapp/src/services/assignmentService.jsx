@@ -3,7 +3,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const createAssignment = async (assignmentData, accessToken) => {
     const response = await axios.post(
-        `${BASE_URL}/v1/assignments/createAssignment`,
+        `${BASE_URL}/api/v1/assignments/createAssignment`,
         assignmentData,
         {
             headers : {
@@ -17,7 +17,7 @@ export const createAssignment = async (assignmentData, accessToken) => {
 
 export const deleteAssignment = async (assignmentID, accessToken) => {
     const response = await axios.delete(
-        `${BASE_URL}/v1/assignments/${assignmentID}`,
+        `${BASE_URL}/api/v1/assignments/${assignmentID}`,
         {
             headers : {
                 Authorization : `Bearer ${accessToken}`,
@@ -30,7 +30,7 @@ export const deleteAssignment = async (assignmentID, accessToken) => {
 
 export const updateAssignment = async (assignmentID, updatedRequest, accessToken) => {
     const response = await axios.put(
-        `${BASE_URL}/v1/assignments/${assignmentID}`,
+        `${BASE_URL}/api/v1/assignments/${assignmentID}`,
         updatedRequest,
         {
             headers : {
@@ -38,8 +38,6 @@ export const updateAssignment = async (assignmentID, updatedRequest, accessToken
             }
         }
     );
-
-    console.log('update response : ', response);
     return response.data;
 }
 
@@ -49,7 +47,7 @@ export const uploadDocument = async (assignmentID, file, accessToken) => {
     fileData.append('file', file);
 
     const response = await axios.post(
-        `${BASE_URL}/v1/assignments/${assignmentID}/documents`,
+        `${BASE_URL}/api/v1/assignments/${assignmentID}/documents`,
         fileData,
         {
             headers : {
@@ -63,7 +61,7 @@ export const uploadDocument = async (assignmentID, file, accessToken) => {
 
 export const deleteDocument = async (documentID, accessToken) => {
     const response = await axios.delete(
-        `${BASE_URL}/v1/assignments/documents/${documentID}`,
+        `${BASE_URL}/api/v1/assignments/documents/${documentID}`,
         {
             headers : {
                 Authorization : `Bearer ${accessToken}`,
@@ -75,7 +73,7 @@ export const deleteDocument = async (documentID, accessToken) => {
 
 export const submitAssignment = async (assignmentID, fileData, accessToken) => {
     const response = await axios.patch(
-        `${BASE_URL}/v1/assignments/${assignmentID}/submit`,
+        `${BASE_URL}/api/v1/assignments/${assignmentID}/submit`,
         fileData,
         {
             headers : {
@@ -90,7 +88,7 @@ export const submitAssignment = async (assignmentID, fileData, accessToken) => {
 export const unsubmitStudentAssignment = async (assignmentID, accessToken) => {
     try {
         const response = await axios.patch(
-            `${BASE_URL}/v1/assignments/${assignmentID}/unsubmit`,
+            `${BASE_URL}/api/v1/assignments/${assignmentID}/unsubmit`,
             {},
             {
                 headers : {
@@ -117,7 +115,7 @@ export const getAssignments = async (userRole, userID, filter, accessToken) => {
 
 export const getAssignmentsForStudent = async (studentID, accessToken) => {
     const response = await axios.get(
-        `${BASE_URL}/v1/assignments/student/${studentID}`,
+        `${BASE_URL}/api/v1/assignments/student/${studentID}`,
         {
             headers : {
                 Authorization : `Bearer ${accessToken}`
@@ -131,7 +129,7 @@ export const getAssignmentsForTeacher = async (teacherID, filter, accessToken) =
     const {classId, courseId, dueDate} = filter;
     console.log(classId, courseId, dueDate);
     const response = await axios.get(
-        `${BASE_URL}/v1/assignments/teacher/${teacherID}`,
+        `${BASE_URL}/api/v1/assignments/teacher/${teacherID}`,
         {
             headers : {
                 Authorization : `Bearer ${accessToken}`,
@@ -148,7 +146,7 @@ export const getAssignmentsForTeacher = async (teacherID, filter, accessToken) =
 
 export const getAllAssignments = async (accessToken) => {
     const response = await axios.get(
-        `${BASE_URL}/v1/assignments`,
+        `${BASE_URL}/api/v1/assignments`,
         {
             headers : {
                 Authorization : `Bearer ${accessToken}`,
@@ -157,4 +155,5 @@ export const getAllAssignments = async (accessToken) => {
     );
     return response.data;
 }
-// export default { createAssignment, getAssignmentsForStudent };
+
+export default { createAssignment, getAssignmentsForStudent };

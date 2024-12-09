@@ -14,15 +14,25 @@ const ActiveHomeworksOfficer = () => {
         setAssignments(response);
     };
 
+    const handleAssignmentUpdate = (updatedAssignment, ) => {
+        console.log("updated assignment : ",updatedAssignment);
+        setAssignments((prevAssignments) => {
+            return prevAssignments.map(assignment =>
+                assignment.id === updatedAssignment.id ? updatedAssignment : assignment
+            )
+        });
+    }
+
     return (
         <>
             <AssignmentSearch onSearchResults={handleSearchResults} />
             {isSearched && (
                 assignments.length > 0 ? (
-                    assignments.map((assignment, index) => (
+                    assignments.map((assignment) => (
                         <UpdateAssignment
-                            key={index}
+                            key={assignment.id}
                             assignment={assignment}
+                            onUpdate={handleAssignmentUpdate}
                         />
                     ))
                 ) : (
