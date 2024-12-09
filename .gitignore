@@ -35,9 +35,18 @@ out/
 
 ### VS Code ###
 .vscode/
+postman
+sampledata
+src/backend
 
 ### Trash ###
 trash/
 
-# Ignore .env file
-.env
+docker-compose.yml
+Dockerfile
+gradle.properties
+gradlew
+gradlew.bat
+LICENSE
+lsm_database_dump.sql
+README.md
