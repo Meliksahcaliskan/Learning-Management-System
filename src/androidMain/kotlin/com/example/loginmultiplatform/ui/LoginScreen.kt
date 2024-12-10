@@ -231,7 +231,7 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
     }
 }
 
-@Preview(showBackground = true)
+/*@Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
     // Mock ResourceContainer for preview
@@ -249,6 +249,7 @@ fun LoginScreenPreview() {
         override val appLogo: Int = android.R.drawable.sym_def_app_icon
         override val eyeOpen: Int = android.R.drawable.ic_menu_view
         override val eyeClose: Int = android.R.drawable.ic_menu_view
+        override val settings: Int = android.R.drawable.s
         override val welcomeAgain: String = "Welcome Again"
         override val emailPlaceholder: String = "Email"
         override val passwordPlaceholder: String = "Password"
@@ -374,4 +375,4 @@ fun LoginScreenContent(resources: ResourceContainer) {
             }
         }
     }
-}
+}*/

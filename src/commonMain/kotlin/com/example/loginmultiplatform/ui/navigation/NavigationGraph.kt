@@ -26,7 +26,7 @@ fun NavigationGraph(
         }
 
         composable("student_dashboard") {
-            StudentDashboard(navController = navController, viewModel = loginViewModel)
+            StudentDashboard(navController = navController, attendanceViewModel = attendanceViewModel, loginViewModel = loginViewModel)
         }
 
         composable("attendance_screen/{studentId}/{classId}",

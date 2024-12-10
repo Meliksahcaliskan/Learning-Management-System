@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.loginmultiplatform.model.AttendanceResponse
 import com.example.loginmultiplatform.model.AttendanceStatsResponse
+import com.example.loginmultiplatform.model.ResponseWrapper
 import com.example.loginmultiplatform.repository.AttendanceRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,8 +16,8 @@ class AttendanceViewModel : ViewModel() {
     private val _attendanceList = MutableStateFlow<List<AttendanceResponse>>(emptyList())
     val attendanceList: StateFlow<List<AttendanceResponse>> = _attendanceList
 
-    private val _attendanceStats = MutableStateFlow<AttendanceStatsResponse?>(null)
-    val attendanceStats: StateFlow<AttendanceStatsResponse?> = _attendanceStats
+    private val _attendanceStats = MutableStateFlow<ResponseWrapper<AttendanceStatsResponse>?>(null)
+    val attendanceStats: StateFlow<ResponseWrapper<AttendanceStatsResponse>?> = _attendanceStats
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage

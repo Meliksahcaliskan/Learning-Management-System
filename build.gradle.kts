@@ -38,6 +38,8 @@ kotlin {
 
                 // SLF4J
                 //implementation("org.slf4j:slf4j-api:2.0.9")
+                implementation("androidx.compose.foundation:foundation:1.5.1")
+
                 //implementation("org.slf4j:slf4j-simple:2.0.9")
                 // Spring Core (Temel bileşenler için gerekli)
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
@@ -75,9 +77,12 @@ kotlin {
                 // AspectJ
                 /*implementation("org.aspectj:aspectjrt:1.9.20")
                 implementation("org.aspectj:aspectjweaver:1.9.20")*/
-
+                implementation("androidx.compose.foundation:foundation:1.5.1")
                 // SLF4J
                 //implementation("org.slf4j:slf4j-api:2.0.9")
+                implementation("com.google.accompanist:accompanist-pager:0.30.0")
+                implementation("com.google.accompanist:accompanist-pager-indicators:0.30.0")
+
                 //implementation("org.slf4j:slf4j-simple:2.0.9")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
                 implementation("androidx.navigation:navigation-compose:2.7.3")

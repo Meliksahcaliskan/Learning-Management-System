@@ -24,6 +24,7 @@ interface ResourceContainer {
     val rememberMe: String
     val forgotPassword: String
     val signIn: String
+    val settings: Int
 }
 
 expect fun getPlatformResourceContainer(): ResourceContainer
