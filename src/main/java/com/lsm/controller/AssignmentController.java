@@ -40,8 +40,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/assignments")
@@ -402,6 +404,71 @@ public class AssignmentController {
         } catch (AccessDeniedException e) {
             log.error("Access denied while grading the assignment: {}", e.getMessage());
             return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Bulk grade assignments",
+            description = "Allows teachers to grade multiple student submissions for an assignment at once"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Assignments graded successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid grade data"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Assignment not found")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    @PatchMapping("/{assignmentId}/bulk-grade")
+    public ResponseEntity<ApiResponse_<List<AssignmentDTO>>> bulkGradeAssignment(
+            @Parameter(description = "ID of the assignment to grade", required = true)
+            @PathVariable @Positive Long assignmentId,
+            @Valid @RequestBody BulkGradeRequestDTO bulkGradeRequest,
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            log.info("Bulk grading assignment: {}, user: {}", assignmentId, currentUser.getUsername());
+
+            List<Assignment> gradedAssignments = new ArrayList<>();
+            List<String> errors = new ArrayList<>();
+
+            for (BulkGradeRequestDTO.BulkGradeItem gradeItem : bulkGradeRequest.getGrades()) {
+                try {
+                    Assignment graded = assignmentService.gradeAssignment(
+                            assignmentId,
+                            gradeItem.getGrade(),
+                            currentUser,
+                            gradeItem.getStudentId()
+                    );
+                    gradedAssignments.add(graded);
+                } catch (Exception e) {
+                    errors.add("Failed to grade student " + gradeItem.getStudentId() + ": " + e.getMessage());
+                    log.error("Error grading assignment for student {}: {}", gradeItem.getStudentId(), e.getMessage());
+                }
+            }
+
+            if (!errors.isEmpty()) {
+                return ResponseEntity
+                        .status(HttpStatus.PARTIAL_CONTENT)
+                        .body(new ApiResponse_<>(
+                                false,
+                                "Some grades failed to be applied: " + String.join("; ", errors),
+                                gradedAssignments.stream()
+                                        .map(a -> new AssignmentDTO(a, "Graded successfully"))
+                                        .collect(Collectors.toList())
+                        ));
+            }
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "All assignments graded successfully",
+                    gradedAssignments.stream()
+                            .map(a -> new AssignmentDTO(a, "Graded successfully"))
+                            .collect(Collectors.toList())
+            ));
+        } catch (Exception e) {
+            log.error("Error during bulk grading: {}", e.getMessage());
+            return httpError(HttpStatus.BAD_REQUEST, "Error during bulk grading: " + e.getMessage());
         }
     }
 

@@ -2,6 +2,7 @@ package com.lsm.service;
 
 import com.lsm.model.entity.ClassEntity;
 import com.lsm.model.entity.base.AppUser;
+import com.lsm.model.entity.enums.Role;
 import com.lsm.repository.AppUserRepository;
 import com.lsm.repository.ClassEntityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,13 +11,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityNotFoundException;
+
+import java.nio.file.AccessDeniedException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-public class ClassEntityService implements ClassEntityServiceInterface {
+public class ClassEntityService {
 
     private final ClassEntityRepository classRepository;
     private final AppUserRepository appUserRepository;
@@ -29,12 +32,15 @@ public class ClassEntityService implements ClassEntityServiceInterface {
         this.classEntityRepository = classEntityRepository;
     }
 
-    @Override
     @Transactional
-    public ClassEntity createClass(ClassEntity classEntity, Long teacherId, List<Long> studentIds) {
+    public ClassEntity createClass(AppUser loggedInUser, ClassEntity classEntity, Long teacherId, List<Long> studentIds)
+            throws AccessDeniedException {
         // Find and set teacher
         AppUser teacher = appUserRepository.findById(teacherId)
-                .orElseThrow(() -> new EntityNotFoundException("Teacher not found with id: " + teacherId));
+                .orElseThrow(() -> new EntityNotFoundException("AppUser not found with id: " + teacherId));
+        if (loggedInUser.getRole().equals(Role.ROLE_TEACHER) && !loggedInUser.getId().equals(teacher.getId()))
+            throw new AccessDeniedException("Logged in teacher and the teacher id in the request are different.");
+
         classEntity.setTeacher(teacher);
 
         // Find and set students if provided
@@ -58,7 +64,6 @@ public class ClassEntityService implements ClassEntityServiceInterface {
                 .orElseThrow(() -> new EntityNotFoundException("Class not found with id: " + id));
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<ClassEntity> getAllClasses(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -67,7 +72,6 @@ public class ClassEntityService implements ClassEntityServiceInterface {
         return classRepository.findAllWithAssociations();
     }
 
-    @Override
     @Transactional
     public ClassEntity updateClass(Long id, ClassEntity classEntity, Long teacherId, List<Long> studentIds) {
         ClassEntity existingClass = getClassById(id);
@@ -96,7 +100,6 @@ public class ClassEntityService implements ClassEntityServiceInterface {
         return classRepository.save(existingClass);
     }
 
-    @Override
     @Transactional
     public ClassEntity updateClass(Long id, ClassEntity classEntity) {
         ClassEntity existingClass = getClassById(id);
@@ -117,7 +120,6 @@ public class ClassEntityService implements ClassEntityServiceInterface {
         return classRepository.save(existingClass);
     }
 
-    @Override
     @Transactional
     public void deleteClass(Long id) {
         if (!classRepository.existsById(id)) {
@@ -126,7 +128,6 @@ public class ClassEntityService implements ClassEntityServiceInterface {
         classRepository.deleteById(id);
     }
 
-    @Override
     @Transactional
     public ClassEntity addStudent(Long classId, Long studentId) {
         ClassEntity classEntity = getClassById(classId);
@@ -145,7 +146,6 @@ public class ClassEntityService implements ClassEntityServiceInterface {
         return classEntity;
     }
 
-    @Override
     @Transactional
     public ClassEntity removeStudent(Long classId, Long studentId) {
         ClassEntity classEntity = getClassById(classId);

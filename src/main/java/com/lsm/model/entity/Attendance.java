@@ -18,8 +18,8 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class Attendance {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "attendance_id")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "attendance_id_seq")
+    @SequenceGenerator(name = "attendance_id_seq", sequenceName = "attendance_id_seq", allocationSize = 1)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

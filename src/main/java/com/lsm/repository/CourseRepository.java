@@ -26,4 +26,6 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     Optional<Course> findCourseByName(String courseName);
 
     Set<Course> findAllByIdIn(List<Long> ids);
+
+    boolean existsByCodeAndIdNot(String code, Long id);
 }
