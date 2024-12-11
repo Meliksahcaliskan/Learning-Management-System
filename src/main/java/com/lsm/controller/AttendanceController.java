@@ -124,8 +124,8 @@ public class AttendanceController {
     ) {
         try {
             AppUser loggedInUser = (AppUser) authentication.getPrincipal();
-            if (loggedInUser.getRole().equals(Role.ROLE_STUDENT) && loggedInUser.getId().equals(studentId))
-                throw new AccessDeniedException("");
+            if (loggedInUser.getRole().equals(Role.ROLE_STUDENT) && !loggedInUser.getId().equals(studentId))
+                throw new AccessDeniedException("The student can't view other students stats");
             List<AttendanceStatsDTO> stats = attendanceService.getAttendanceStatsByStudent(loggedInUser, studentId, classId);
             return ResponseEntity.ok(new ApiResponse_<>(
                     true,
