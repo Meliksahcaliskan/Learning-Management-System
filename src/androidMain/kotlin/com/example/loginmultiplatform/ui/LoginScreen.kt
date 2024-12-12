@@ -19,6 +19,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.navigation.NavController
 import com.example.loginmultiplatform.R
 import com.example.loginmultiplatform.getPlatformResourceContainer
@@ -35,6 +37,12 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
     var successMessage by remember { mutableStateOf("") } // Başarı mesajı için state
     var showSuccessDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") } // Hata mesajı için state
+
+    val customFontFamily = FontFamily(
+        Font(R.font.montserrat_regular, FontWeight.Normal),
+        Font(R.font.montserrat_bold, FontWeight.Bold),
+        Font(R.font.montserrat_semibold, FontWeight.Bold)
+    )
 
     Box(
         modifier = Modifier
@@ -53,7 +61,7 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.4f))
+                .background(color = Color.Black.copy(0.6f))
         )
 
         // Foreground Content
@@ -62,7 +70,7 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
                 .fillMaxSize()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Bottom
+            verticalArrangement = Arrangement.Center
         ) {
             // App Logo
             Icon(
@@ -77,14 +85,15 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text(text = resources.emailPlaceholder, color=Color.White) },
+                label = { Text(text = resources.emailPlaceholder, color=Color.White.copy(alpha = 0.5f), fontFamily = customFontFamily, fontWeight = FontWeight.Normal) },
                 modifier = Modifier.fillMaxWidth(),
-                textStyle = LocalTextStyle.current.copy(color = Color.White),
+                textStyle = LocalTextStyle.current.copy(color = Color(234,228,221)),
+                //textFontFamily = customFontFamily,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     unfocusedBorderColor = Color.White,
                     cursorColor = Color.White,
-                    focusedBorderColor = Color(0xFF5270FF)
+                    focusedBorderColor = Color(234,228,221)
                 )
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -94,9 +103,9 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text(text = resources.passwordPlaceholder, color = Color.White) },
+                label = { Text(text = resources.passwordPlaceholder, color = Color.White.copy(alpha = 0.5f), fontFamily = customFontFamily, fontWeight = FontWeight.Normal) },
                 modifier = Modifier.fillMaxWidth(),
-                textStyle = LocalTextStyle.current.copy(color = Color.White),
+                textStyle = LocalTextStyle.current.copy(color = Color(234,228,221)),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -131,7 +140,7 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     unfocusedBorderColor = Color.White,
                     cursorColor = Color.White,
-                    focusedBorderColor = Color(0xFF5270FF)
+                    focusedBorderColor = Color(234,228,221)
                 )
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -148,16 +157,16 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
                         checked = rememberMe,
                         onCheckedChange = { rememberMe = it },
                         colors = CheckboxDefaults.colors(
-                            //checkedColor = Color.White, // Seçili olduğunda beyaz
-                            uncheckedColor = Color.White, // Seçili değilken beyaz
-                            //checkmarkColor = Color.Black // İşaret rengi siyah (isteğe bağlı)
+                            checkedColor = Color(234,228,221), // Seçili olduğunda beyaz
+                            uncheckedColor = Color(234,228,221), // Seçili değilken beyaz
+                            checkmarkColor = Color(41,95,152) // İşaret rengi siyah (isteğe bağlı)
                         )
 
                     )
-                    Text(text = resources.rememberMe, color = Color.White)
+                    Text(text = resources.rememberMe, color = Color(234,228,221), fontFamily = customFontFamily, fontWeight = FontWeight.Normal)
                 }
                 TextButton(onClick = { /* Handle forgot password */ }) {
-                    Text(text = resources.forgotPassword, color = Color(0xFF5270FF))
+                    Text(text = resources.forgotPassword, color = Color(234,228,221), fontFamily = customFontFamily, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(32.dp))
@@ -190,14 +199,15 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
                     }
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .width(196.dp)
                     .height(48.dp),
-                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF5270FF))
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color(234,228,221))
             ) {
                 Text(
                     text = resources.signIn,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
+                    color = Color(41,95,152),
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = customFontFamily
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -205,17 +215,17 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
             if (showErrorDialog) {
                 AlertDialog(
                     onDismissRequest = { showErrorDialog = false },
-                    title = { Text("Error") },
-                    text = { Text(errorMessage) },
+                    title = { Text("Error", fontFamily = customFontFamily, fontWeight = FontWeight.Bold, color = Color.Red) },
+                    text = { Text(errorMessage, fontFamily = customFontFamily, fontWeight = FontWeight.Normal) },
                     confirmButton = {
                         Button(onClick = { showErrorDialog = false }) {
-                            Text("OK")
+                            Text("OK", fontFamily = customFontFamily, fontWeight = FontWeight.Bold)
                         }
                     }
                 )
             }
 
-            if (showSuccessDialog) {
+            /*if (showSuccessDialog) {
                 AlertDialog(
                     onDismissRequest = { showSuccessDialog = false },
                     title = { Text("Success") },
@@ -226,153 +236,7 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
                         }
                     }
                 )
-            }
+            }*/
         }
     }
 }
-
-/*@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    // Mock ResourceContainer for preview
-    val mockResources = object : ResourceContainer {
-        override val logo: Int = R.drawable.logo
-        override val notification: Int = R.drawable.notification
-        override val pp: Int = R.drawable.pp
-        override val sidemenu: Int = R.drawable.sidemenu
-        override val mainpage: Int = R.drawable.mainpage
-        override val exams: Int = R.drawable.exams
-        override val homework: Int = R.drawable.homework
-        override val attendance: Int = R.drawable.attendance
-        override val announcement: Int = R.drawable.announcement
-        override val lighthouse: Int = android.R.drawable.ic_menu_gallery
-        override val appLogo: Int = android.R.drawable.sym_def_app_icon
-        override val eyeOpen: Int = android.R.drawable.ic_menu_view
-        override val eyeClose: Int = android.R.drawable.ic_menu_view
-        override val settings: Int = android.R.drawable.s
-        override val welcomeAgain: String = "Welcome Again"
-        override val emailPlaceholder: String = "Email"
-        override val passwordPlaceholder: String = "Password"
-        override val rememberMe: String = "Remember Me"
-        override val forgotPassword: String = "Forgot Password?"
-        override val signIn: String = "Sign In"
-    }
-
-    // Use the mock resources in the preview
-    LoginScreenContent(resources = mockResources)
-}
-
-@Composable
-fun LoginScreenContent(resources: ResourceContainer) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        // Background Image
-        Image(
-            painter = painterResource(id = resources.lighthouse),
-            contentDescription = "Background Image",
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.5f),
-            alignment = Alignment.TopCenter
-        )
-
-        // Foreground Content
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Bottom
-        ) {
-            // App Logo
-            Icon(
-                painter = painterResource(id = resources.appLogo),
-                contentDescription = "App Logo",
-                modifier = Modifier.size(64.dp),
-                tint = Color.Unspecified
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Welcome Text
-            Text(
-                text = resources.welcomeAgain,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Email Field
-            var email by remember { mutableStateOf("") }
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text(text = resources.emailPlaceholder) },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Password Field
-            var password by remember { mutableStateOf("") }
-            var passwordVisible by remember { mutableStateOf(false) }
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text(text = resources.passwordPlaceholder) },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    val image = if (passwordVisible)
-                        painterResource(id = android.R.drawable.ic_menu_view)
-                    else
-                        painterResource(id = android.R.drawable.ic_menu_close_clear_cancel)
-
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(painter = image, contentDescription = null)
-                    }
-                }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Remember Me and Forgot Password
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    var rememberMe by remember { mutableStateOf(false) }
-                    Checkbox(
-                        checked = rememberMe,
-                        onCheckedChange = { rememberMe = it }
-                    )
-                    Text(text = resources.rememberMe, color = Color.Gray)
-                }
-                TextButton(onClick = { /* Handle forgot password */ }) {
-                    Text(text = resources.forgotPassword, color = Color.Blue)
-                }
-            }
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Sign In Button
-            Button(
-                onClick = { /* Handle sign-in logic */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Blue)
-            ) {
-                Text(
-                    text = resources.signIn,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}*/

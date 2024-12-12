@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.launch
 
 @Composable
-actual fun TopBar(userName: String?, onSettingsClick: () -> Unit, onProfileClick: () -> Unit) {
+actual fun TopBar(userName: String?, onSettingsClick: @Composable () -> Unit, onProfileClick: () -> Unit) {
 
     val customFontFamily = FontFamily(
         Font(R.font.montserrat_regular, FontWeight.Normal),
@@ -43,15 +43,6 @@ actual fun TopBar(userName: String?, onSettingsClick: () -> Unit, onProfileClick
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        /*// Logo
-        Image(
-            painter = painterResource(id = getPlatformResourceContainer().logo),
-            modifier = Modifier
-                .padding(start = 10.dp, top = 5.dp, bottom = 5.dp)
-                .size(60.dp),
-            contentDescription = "Logo"
-        )*/
-
         IconButton(
             modifier = Modifier.padding(start = 8.dp),
             onClick = onSettingsClick
@@ -79,6 +70,7 @@ actual fun TopBar(userName: String?, onSettingsClick: () -> Unit, onProfileClick
                 fontSize = 14.sp,
                 color = Color.White,
                 fontFamily = customFontFamily,
+                fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(end = 8.dp)
             )
 
@@ -94,54 +86,6 @@ actual fun TopBar(userName: String?, onSettingsClick: () -> Unit, onProfileClick
                 )
             }
         }
-
-        /*// Notification Button
-        IconButton(
-            modifier = Modifier
-                .padding(start = 40.dp, top = 35.dp)
-                .background(color = Color.White, shape = CircleShape)
-                .size(40.dp),
-            onClick = onNotificationClick
-        ) {
-            Icon(
-                painter = painterResource(id = getPlatformResourceContainer().notification),
-                modifier = Modifier.size(20.dp),
-                contentDescription = "Notification"
-            )
-        }
-
-        // Profile Picture
-        Image(
-            painter = painterResource(id = getPlatformResourceContainer().pp),
-            modifier = Modifier
-                .padding(start = 10.dp, top = 7.dp)
-                .size(65.dp)
-                .clip(CircleShape),
-            contentDescription = "Profile Picture"
-        )
-
-        // User Name
-        Text(
-            text = "Hog Rider",
-            fontSize = 13.sp,
-            modifier = Modifier.padding(start = 5.dp),
-            color = Color.White,
-            fontFamily = customFontFamily
-        )
-
-        // Side Menu Button
-        IconButton(
-            modifier = Modifier
-                .size(70.dp)
-                .padding(start = 5.dp),
-            onClick = onMenuClick
-        ) {
-            Icon(
-                painter = painterResource(id = getPlatformResourceContainer().sidemenu),
-                modifier = Modifier.size(25.dp),
-                contentDescription = "Side Menu icon"
-            )
-        }*/
     }
 }
 
@@ -149,7 +93,11 @@ actual fun TopBar(userName: String?, onSettingsClick: () -> Unit, onProfileClick
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 actual fun BottomNavigationBar(pagerState: PagerState) {
-    val items = listOf("Yoklama","Ana Menü","Ödev")
+    val items = listOf(
+        Triple("Yoklama", R.drawable.attendance, 0),
+        Triple("Ana Menü", R.drawable.mainpage, 1),
+        Triple("Ödev", R.drawable.homework, 2)
+    )
     val coroutineScope = rememberCoroutineScope()
 
     val customFontFamily = FontFamily(
@@ -167,7 +115,8 @@ actual fun BottomNavigationBar(pagerState: PagerState) {
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        items.forEachIndexed { index, title ->
+
+        items.forEach { (title, iconRes, index) ->
             val isSelected = pagerState.currentPage == index
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -177,6 +126,14 @@ actual fun BottomNavigationBar(pagerState: PagerState) {
                     }
                 }
             ) {
+
+                Image(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = title,
+                    //tint = if (isSelected) Color.White else Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.size(24.dp)
+                )
+
                 // Metin
                 Text(
                     text = title,

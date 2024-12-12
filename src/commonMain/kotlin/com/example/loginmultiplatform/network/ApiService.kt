@@ -3,6 +3,7 @@ package com.example.loginmultiplatform.network
 import com.example.loginmultiplatform.model.AttendanceResponse
 import com.example.loginmultiplatform.model.AttendanceStatsResponse
 import com.example.loginmultiplatform.model.ResponseWrapper
+import com.example.loginmultiplatform.model.StudentCourseResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -19,6 +20,11 @@ interface ApiService {
         @Query("startDate") startDate: String,
         @Query("endDate") endDate: String
     ): ResponseWrapper<List<AttendanceResponse>>
+
+    @GET("/api/v1/courses/student/{studentId}")
+    suspend fun getStudentCourses(
+        @Path("studentId") studentId: Int
+    ): ResponseWrapper<List<StudentCourseResponse>>
 
     /*@GET("/api/v1/attendance/stats/student/{studentId}")
     suspend fun getAttendanceStats(

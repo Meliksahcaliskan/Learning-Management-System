@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.loginmultiplatform.model.AttendanceResponse
 import com.example.loginmultiplatform.model.AttendanceStatsResponse
 import com.example.loginmultiplatform.model.ResponseWrapper
+import com.example.loginmultiplatform.model.StudentCourseResponse
 import com.example.loginmultiplatform.repository.AttendanceRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +26,9 @@ class AttendanceViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _studentCourses = MutableStateFlow<List<StudentCourseResponse>>(emptyList())
+    val studentCourses: StateFlow<List<StudentCourseResponse>> = _studentCourses
+
     fun fetchAttendance(studentId: Int, startDate: String, endDate: String) {
         _isLoading.value = true
         _errorMessage.value = null
@@ -35,6 +39,21 @@ class AttendanceViewModel : ViewModel() {
                 _attendanceList.value = attendance
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Unknown error occured"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun fetchStudentCourses(studentId: Int) {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val response = repository.getStudentCourses(studentId)
+                _studentCourses.value = response
+                _errorMessage.value = null
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
             } finally {
                 _isLoading.value = false
             }
