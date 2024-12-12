@@ -17,7 +17,6 @@ import com.lsm.model.entity.ClassEntity;
 import com.lsm.model.entity.Course;
 import com.lsm.model.entity.enums.AssignmentStatus;
 import com.lsm.repository.*;
-import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -199,6 +198,8 @@ public class AssignmentService {
 
             // Update assignment fields
             updateAssignmentFields(existingAssignment, dto, classEntity, course);
+            existingAssignment.setLastModified(LocalDate.now());
+            existingAssignment.setLastModifiedBy(user);
 
             log.info("Assignment updated successfully: {}", assignmentId);
             return assignmentRepository.save(existingAssignment);
@@ -304,11 +305,11 @@ public class AssignmentService {
         Assignment assignment = findById(assignmentId);
 
         if (assignment.getDueDate().isBefore(LocalDate.now()))
-            throw new IllegalStateException("Can only unsubmit assignments that have been due.");
+            throw new IllegalStateException("Can only un-submit assignments that have been due.");
 
-        // Validate that only the student can unsubmit their assignment
+        // Validate that only the student can un-submit their assignment
         if (currentUser .getRole() != Role.ROLE_STUDENT)
-            throw new AccessDeniedException("Only students can unsubmit assignments");
+            throw new AccessDeniedException("Only students can un-submit assignments");
 
         // Check if the class entity exists
         ClassEntity classEntity = classEntityRepository.findById(currentUser .getStudentDetails().getClassEntity())
@@ -316,7 +317,7 @@ public class AssignmentService {
 
         // Verify the assignment belongs to the student
         if (!classEntity.getCourses().contains(assignment.getCourse()))
-            throw new AccessDeniedException("You can only unsubmit your own assignments");
+            throw new AccessDeniedException("You can only un-submit your own assignments");
 
         // Find the student's submission
         StudentSubmission studentSubmission = assignment.getStudentSubmissions().stream()
@@ -326,17 +327,14 @@ public class AssignmentService {
 
         // Validate submission status
         if (studentSubmission.getStatus() != AssignmentStatus.SUBMITTED) {
-            throw new IllegalStateException("Can only unsubmit assignments that have been submitted.");
+            throw new IllegalStateException("Can only un-submit assignments that have been submitted.");
         }
 
         // Validate that assignment is in SUBMITTED status and not yet graded
         if (studentSubmission.getGrade() != null)
-            throw new IllegalStateException("Cannot unsubmit graded assignments");
+            throw new IllegalStateException("Cannot un-submit graded assignments");
 
         assignment.getStudentSubmissions().remove(studentSubmission);
-        // Reset to pending status
-        // studentSubmission.setStatus(AssignmentStatus.PENDING);
-        // studentSubmission.setDocument(null);
 
         return assignmentRepository.save(assignment);
     }
@@ -469,39 +467,4 @@ public class AssignmentService {
 
         return assignment;
     }
-
-    /*
-    private void validateUniqueTitle(String title, ClassEntity classEntity, Long... existingAssignmentId) {
-        log.debug("Validating title uniqueness: {} for class: {}", title, classEntity.getName());
-
-        // Normalize the title for comparison (trim whitespace and convert to lowercase)
-        String normalizedTitle = title.trim().toLowerCase();
-
-        // Check if any assignment with the same normalized title exists in the class
-        Optional<Assignment> existingAssignment = assignmentRepository
-                .findByTitleIgnoreCaseAndClassEntity(normalizedTitle, classEntity);
-
-        if (existingAssignment.isPresent()) {
-            // For update scenario, check if the found assignment is the same as the one being updated
-            if (existingAssignmentId != null && existingAssignmentId.length > 0) {
-                if (!existingAssignment.get().getId().equals(existingAssignmentId[0])) {
-                    log.warn("Duplicate title found: {} for class: {}", title, classEntity.getName());
-                    throw new IllegalArgumentException(
-                            String.format("An assignment with title '%s' already exists in class %s",
-                                    title, classEntity.getName())
-                    );
-                }
-            } else {
-                // For create scenario, any existing assignment with same title is a conflict
-                log.warn("Attempted to create assignment with duplicate title: {} in class: {}",
-                        title, classEntity.getName());
-                throw new IllegalArgumentException(
-                        String.format("An assignment with title '%s' already exists in class %s",
-                                title, classEntity.getName())
-                );
-            }
-        }
-        log.debug("Title validation passed for: {} in class: {}", title, classEntity.getName());
-    }
-     */
 }

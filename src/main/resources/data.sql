@@ -82,17 +82,24 @@ WHERE s.role = 'ROLE_STUDENT';
 
 -- Create Assignments
 INSERT INTO assignments (id, title, description, due_date, assigned_by_teacher_id,
-                         class_id, course_id, assignment_date) VALUES
-                                                                   (nextval('assignments_seq'), 'Math Homework 1', 'Complete exercises 1-10', '2024-12-01',
-                                                                    (SELECT id FROM app_users WHERE username = 'teacher1'),
-                                                                    (SELECT id FROM classes WHERE name = '11-A-MF'),
-                                                                    (SELECT id FROM courses WHERE code = 'MAT-1'),
-                                                                    '2024-11-24'),
-                                                                   (nextval('assignments_seq'), 'Literacy Report', 'Write report on turkish literacy', '2024-12-05',
-                                                                    (SELECT id FROM app_users WHERE username = 'teacher2'),
-                                                                    (SELECT id FROM classes WHERE name = '11-B-TM'),
-                                                                    (SELECT id FROM courses WHERE code = 'EDB-1'),
-                                                                    '2024-11-24');
+                         last_modified_by_id, class_id, course_id, assignment_date, last_modified_date,
+                         teacher_document_id) VALUES
+                                                  (nextval('assignments_seq'), 'Math Homework 1', 'Complete exercises 1-10', CURRENT_DATE + INTERVAL '7 days',
+                                                   (SELECT id FROM app_users WHERE username = 'teacher1'),
+                                                   (SELECT id FROM app_users WHERE username = 'teacher1'),
+                                                   (SELECT id FROM classes WHERE name = '11-A-MF'),
+                                                   (SELECT id FROM courses WHERE code = 'MAT-1'),
+                                                   CURRENT_DATE,
+                                                   CURRENT_DATE,
+                                                   (SELECT id FROM assignment_documents WHERE file_name = 'math_homework.pdf')),
+                                                  (nextval('assignments_seq'), 'Literacy Report', 'Write report on turkish literacy', CURRENT_DATE + INTERVAL '10 days',
+                                                   (SELECT id FROM app_users WHERE username = 'teacher2'),
+                                                   (SELECT id FROM app_users WHERE username = 'teacher2'),
+                                                   (SELECT id FROM classes WHERE name = '11-B-TM'),
+                                                   (SELECT id FROM courses WHERE code = 'EDB-1'),
+                                                   CURRENT_DATE,
+                                                   CURRENT_DATE,
+                                                   (SELECT id FROM assignment_documents WHERE file_name = 'literature_hw.pdf'));
 
 -- Create Teacher Assignment Documents
 INSERT INTO assignment_documents (id, file_name, file_path, upload_time, file_type, file_size,

@@ -1,6 +1,7 @@
 package com.lsm.controller;
 
 import com.lsm.model.DTOs.CourseDTO;
+import com.lsm.model.DTOs.StudentDTO;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.Role;
 import com.lsm.service.CourseService;
@@ -50,17 +51,20 @@ public class CourseController {
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR', 'ROLE_TEACHER', 'ROLE_STUDENT')")
     public ResponseEntity<ApiResponse_<CourseDTO>> getCourseById(
             @Parameter(description = "ID of the course", required = true)
-            @PathVariable @Positive Long id
+            @PathVariable @Positive Long id,
+            Authentication authentication
     ) {
         try {
+            AppUser loggedInUser = (AppUser) authentication.getPrincipal();
             log.info("Retrieving course with ID: {}", id);
+            CourseDTO courseDTO = courseService.getCourseById(loggedInUser, id);
             return ResponseEntity.ok(new ApiResponse_<>(
                     true,
                     "Course retrieved successfully",
-                    courseService.getCourseById(id)
+                    courseDTO
             ));
         } catch (EntityNotFoundException e) {
-            log.error("Course not found with ID {}: {}", id, e.getMessage());
+            log.error("Course not found with ID in getCourseById({}): {}", id, e.getMessage());
             return httpError(HttpStatus.NOT_FOUND, "Course not found: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error retrieving course with ID {}: {}", id, e.getMessage());
@@ -239,6 +243,73 @@ public class CourseController {
         } catch (Exception e) {
             log.error("Error deleting course {}: {}", id, e.getMessage());
             return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error deleting course: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/teacher/{teacherId}")
+    @Operation(summary = "Get courses by teacher", description = "Retrieve all courses assigned to a specific teacher")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Courses retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Teacher not found")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR', 'ROLE_TEACHER')")
+    public ResponseEntity<ApiResponse_<List<CourseDTO>>> getCoursesByTeacher(
+            @Parameter(description = "ID of the teacher", required = true)
+            @PathVariable @Positive Long teacherId,
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            log.info("Retrieving courses for teacher ID: {}", teacherId);
+
+            // Teachers can only view their own courses
+            if (currentUser.getRole() == Role.ROLE_TEACHER && !currentUser.getId().equals(teacherId)) {
+                throw new AccessDeniedException("Teachers can only view their own courses");
+            }
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Teacher courses retrieved successfully",
+                    courseService.getCoursesByTeacher(teacherId)
+            ));
+        } catch (EntityNotFoundException e) {
+            log.error("Teacher not found with ID {}: {}", teacherId, e.getMessage());
+            return httpError(HttpStatus.NOT_FOUND, "Teacher not found: " + e.getMessage());
+        } catch (AccessDeniedException e) {
+            log.error("Access denied for teacher courses: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error retrieving courses for teacher {}: {}", teacherId, e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving courses: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "Search courses", description = "Search courses by name, code, or description")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Search results retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR', 'ROLE_TEACHER', 'ROLE_STUDENT')")
+    public ResponseEntity<ApiResponse_<List<CourseDTO>>> searchCourses(
+            @Parameter(description = "Search query")
+            @RequestParam(required = false) String query,
+            @Parameter(description = "Filter by semester")
+            @RequestParam(required = false) String semester,
+            @Parameter(description = "Filter by year")
+            @RequestParam(required = false) Integer year
+    ) {
+        try {
+            log.info("Searching courses with query: {}, semester: {}, year: {}", query, semester, year);
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Search results retrieved successfully",
+                    courseService.searchCourses(query, semester, year)
+            ));
+        } catch (Exception e) {
+            log.error("Error searching courses: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error searching courses: " + e.getMessage());
         }
     }
 

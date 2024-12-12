@@ -1,6 +1,7 @@
 package com.lsm.repository;
 
 import com.lsm.model.entity.Course;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -28,4 +29,8 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     Set<Course> findAllByIdIn(List<Long> ids);
 
     boolean existsByCodeAndIdNot(String code, Long id);
+
+    List<Course> findByTeacherId(Long teacherId);
+
+    List<Course> findAll(Specification<Course> spec);
 }

@@ -43,7 +43,7 @@ public class ClassEntity {
             joinColumns = @JoinColumn(name = "class_id"),
             inverseJoinColumns = @JoinColumn(name = "student_id")
     )
-    private Set<AppUser> students = new HashSet<>(); // Changed to Set for consistency
+    private Set<AppUser> students = new HashSet<>();
 
     @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Assignment> assignments = new HashSet<>();

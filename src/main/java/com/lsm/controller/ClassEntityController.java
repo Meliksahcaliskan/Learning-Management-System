@@ -70,10 +70,10 @@ public class ClassEntityController {
             );
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (AccessDeniedException e) {
-            log.error("Access denied: {}", e.getMessage());
+            log.error("Access denied in createClass: {}", e.getMessage());
             return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (Exception e) {
-            log.error("Unexpected error: {}", e.getMessage());
+            log.error("Unexpected error in createClass: {}", e.getMessage());
             return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
         }
     }
@@ -86,14 +86,23 @@ public class ClassEntityController {
     })
     @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_STUDENT', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse_<ClassEntityResponseDTO>> getClassById(@PathVariable Long id) {
-        ClassEntity classEntity = classService.getClassById(id);
-        ApiResponse_<ClassEntityResponseDTO> response = new ApiResponse_<>(
-                true,
-                "Class retrieved successfully",
-                classMapper.toDTO(classEntity)
-        );
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse_<ClassEntityResponseDTO>> getClassById(@PathVariable Long id, Authentication authentication) {
+        try {
+            AppUser loggedInUser = (AppUser) authentication.getPrincipal();
+            ClassEntity classEntity = classService.getClassById(loggedInUser, id);
+            ApiResponse_<ClassEntityResponseDTO> response = new ApiResponse_<>(
+                    true,
+                    "Class retrieved successfully",
+                    classMapper.toDTO(classEntity)
+            );
+            return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            log.error("Access denied in getClassById: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error in getClassById: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
+        }
     }
 
     @Operation(summary = "Get all classes", description = "Admin can view all classes, teachers see their classes, students see enrolled classes")
@@ -104,16 +113,21 @@ public class ClassEntityController {
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @GetMapping
     public ResponseEntity<ApiResponse_<List<ClassEntityResponseDTO>>> getAllClasses(Authentication authentication) {
-        List<ClassEntityResponseDTO> classes = classService.getAllClasses(authentication)
-                .stream()
-                .map(classMapper::toDTO)
-                .collect(Collectors.toList());
-        ApiResponse_<List<ClassEntityResponseDTO>> response = new ApiResponse_<>(
-                true,
-                "Classes retrieved successfully",
-                classes
-        );
-        return ResponseEntity.ok(response);
+        try {
+            List<ClassEntityResponseDTO> classes = classService.getAllClasses(authentication)
+                    .stream()
+                    .map(classMapper::toDTO)
+                    .collect(Collectors.toList());
+            ApiResponse_<List<ClassEntityResponseDTO>> response = new ApiResponse_<>(
+                    true,
+                    "Classes retrieved successfully",
+                    classes
+            );
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Unexpected error in getAllClasses: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
+        }
     }
 
     @Operation(summary = "Update a class", description = "Teachers can only update their own classes")
@@ -127,15 +141,25 @@ public class ClassEntityController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse_<ClassEntityResponseDTO>> updateClass(
             @PathVariable Long id,
-            @Valid @RequestBody ClassEntityRequestDTO requestDTO) {
-        ClassEntity entity = classMapper.toEntity(requestDTO);
-        ClassEntity updatedClass = classService.updateClass(id, entity, requestDTO.getTeacherId(), requestDTO.getStudentIds());
-        ApiResponse_<ClassEntityResponseDTO> response = new ApiResponse_<>(
-                true,
-                "Class updated successfully",
-                classMapper.toDTO(updatedClass)
-        );
-        return ResponseEntity.ok(response);
+            @Valid @RequestBody ClassEntityRequestDTO requestDTO,
+            Authentication authentication) {
+        try {
+            AppUser loggedInUser = (AppUser) authentication.getPrincipal();
+            ClassEntity entity = classMapper.toEntity(requestDTO);
+            ClassEntity updatedClass = classService.updateClass(loggedInUser, id, entity, requestDTO.getTeacherId(), requestDTO.getStudentIds());
+            ApiResponse_<ClassEntityResponseDTO> response = new ApiResponse_<>(
+                    true,
+                    "Class updated successfully",
+                    classMapper.toDTO(updatedClass)
+            );
+            return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            log.error("Access denied in updateClass: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error in updateClass: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
+        }
     }
 
     @Operation(summary = "Delete a class", description = "Teachers can only delete their own classes")
@@ -147,13 +171,21 @@ public class ClassEntityController {
     @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse_<Void>> deleteClass(@PathVariable Long id) {
-        classService.deleteClass(id);
-        ApiResponse_<Void> response = new ApiResponse_<>(
-                true,
-                "Class deleted successfully",
-                null
-        );
-        return ResponseEntity.ok(response);
+        try {
+            classService.deleteClass(id);
+            ApiResponse_<Void> response = new ApiResponse_<>(
+                    true,
+                    "Class deleted successfully",
+                    null
+            );
+            return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            log.error("Access denied in deleteClass: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error in deleteClass: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
+        }
     }
 
     @Operation(summary = "Add student to class", description = "Teachers can add students to their own classes")
@@ -166,14 +198,54 @@ public class ClassEntityController {
     @PostMapping("/{classId}/students/{studentId}")
     public ResponseEntity<ApiResponse_<ClassEntityResponseDTO>> addStudent(
             @PathVariable Long classId,
-            @PathVariable Long studentId) {
-        ClassEntity updatedClass = classService.addStudent(classId, studentId);
-        ApiResponse_<ClassEntityResponseDTO> response = new ApiResponse_<>(
-                true,
-                "Student added successfully",
-                classMapper.toDTO(updatedClass)
-        );
-        return ResponseEntity.ok(response);
+            @PathVariable Long studentId,
+            Authentication authentication) {
+        try {
+            AppUser loggedInUser = (AppUser) authentication.getPrincipal();
+            ClassEntity updatedClass = classService.addStudent(loggedInUser, classId, studentId);
+            ApiResponse_<ClassEntityResponseDTO> response = new ApiResponse_<>(
+                    true,
+                    "Student added successfully",
+                    classMapper.toDTO(updatedClass)
+            );
+            return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            log.error("Access denied in addStudent: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error in addStudent: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
+        }
+    }
+
+    @Operation(summary = "Add multiple students to class", description = "Teachers can add multiple students to their own classes in a single request")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Students added successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Class or one or more students not found")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    @PostMapping("/{classId}/students/bulk")
+    public ResponseEntity<ApiResponse_<ClassEntityResponseDTO>> addStudentsBulk(
+            @PathVariable Long classId,
+            @Valid @RequestBody List<Long> studentIds,
+            Authentication authentication) {
+        try {
+            AppUser loggedInUser = (AppUser) authentication.getPrincipal();
+            ClassEntity updatedClass = classService.addStudentsBulk(loggedInUser, classId, studentIds);
+            ApiResponse_<ClassEntityResponseDTO> response = new ApiResponse_<>(
+                    true,
+                    String.format("Successfully added %d students to the class", studentIds.size()),
+                    classMapper.toDTO(updatedClass)
+            );
+            return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            log.error("Access denied while adding students in bulk: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error while adding students in bulk: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
+        }
     }
 
     @Operation(summary = "Remove student from class", description = "Teachers can remove students from their own classes")
@@ -186,14 +258,24 @@ public class ClassEntityController {
     @DeleteMapping("/{classId}/students/{studentId}")
     public ResponseEntity<ApiResponse_<ClassEntityResponseDTO>> removeStudent(
             @PathVariable Long classId,
-            @PathVariable Long studentId) {
-        ClassEntity updatedClass = classService.removeStudent(classId, studentId);
-        ApiResponse_<ClassEntityResponseDTO> response = new ApiResponse_<>(
-                true,
-                "Student removed successfully",
-                classMapper.toDTO(updatedClass)
-        );
-        return ResponseEntity.ok(response);
+            @PathVariable Long studentId,
+            Authentication authentication) {
+        try {
+            AppUser loggedInUser = (AppUser) authentication.getPrincipal();
+            ClassEntity updatedClass = classService.removeStudent(loggedInUser, classId, studentId);
+            ApiResponse_<ClassEntityResponseDTO> response = new ApiResponse_<>(
+                    true,
+                    "Student removed successfully",
+                    classMapper.toDTO(updatedClass)
+            );
+            return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            log.error("Access denied in removeStudent: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error in removeStudent: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
+        }
     }
 
     @Operation(summary = "Get all classes of the teacher", description = "Teachers can view all their classes")
@@ -204,16 +286,24 @@ public class ClassEntityController {
     @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @GetMapping("/teacher")
     public ResponseEntity<ApiResponse_<List<ClassEntityResponseDTO>>> getTeacherClasses(Authentication authentication) {
-        List<ClassEntityResponseDTO> classes = classService.getTeacherClasses(authentication)
-                .stream()
-                .map(classMapper::toDTO)
-                .collect(Collectors.toList());
-        ApiResponse_<List<ClassEntityResponseDTO>> response = new ApiResponse_<>(
-                true,
-                "Teacher classes retrieved successfully",
-                classes
-        );
-        return ResponseEntity.ok(response);
+        try {
+            List<ClassEntityResponseDTO> classes = classService.getTeacherClasses(authentication)
+                    .stream()
+                    .map(classMapper::toDTO)
+                    .collect(Collectors.toList());
+            ApiResponse_<List<ClassEntityResponseDTO>> response = new ApiResponse_<>(
+                    true,
+                    "Teacher classes retrieved successfully",
+                    classes
+            );
+            return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            log.error("Access denied in getTeacherClasses: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error in getTeacherClasses: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
+        }
     }
 
     @Operation(summary = "Get all classes of the student", description = "Students can view all their enrolled classes")
@@ -224,13 +314,21 @@ public class ClassEntityController {
     @PreAuthorize("hasAnyRole('ROLE_STUDENT', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @GetMapping("/student")
     public ResponseEntity<ApiResponse_<ClassEntityResponseDTO>> getStudentClasses(Authentication authentication) {
-        ClassEntity classEntity = classService.getStudentClasses(authentication);
-        ApiResponse_<ClassEntityResponseDTO> response = new ApiResponse_<>(
-                true,
-                "Student classes retrieved successfully",
-                classMapper.toDTO(classEntity)
-        );
-        return ResponseEntity.ok(response);
+        try {
+            ClassEntity classEntity = classService.getStudentClasses(authentication);
+            ApiResponse_<ClassEntityResponseDTO> response = new ApiResponse_<>(
+                    true,
+                    "Student classes retrieved successfully",
+                    classMapper.toDTO(classEntity)
+            );
+            return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            log.error("Access denied: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
+        }
     }
 
     private static <T> ResponseEntity<ApiResponse_<T>> httpError(HttpStatus s, String message) {

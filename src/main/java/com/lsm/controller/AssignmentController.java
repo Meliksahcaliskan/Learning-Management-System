@@ -127,6 +127,9 @@ public class AssignmentController {
         } catch (AccessDeniedException e) {
             log.error("Access denied while updating assignment: {}", e.getMessage());
             return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error occurred while updating assignment: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error: " + e.getMessage());
         }
     }
 

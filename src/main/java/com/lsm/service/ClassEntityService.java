@@ -57,11 +57,21 @@ public class ClassEntityService {
         return classRepository.save(classEntity);
     }
 
-    // @Override
     @Transactional
-    public ClassEntity getClassById(Long id) {
-        return classRepository.findById(id)
+    public ClassEntity getClassById(AppUser loggedInUser, Long id) throws AccessDeniedException, EntityNotFoundException {
+        ClassEntity classEntity = classRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Class not found with id: " + id));
+
+        if (loggedInUser.getRole().equals(Role.ROLE_STUDENT)
+                && !loggedInUser.getStudentDetails().getClassEntity().equals(classEntity.getId()))
+            throw new AccessDeniedException("Students can't get the class which they are not enrolled.");
+
+        if (loggedInUser.getRole().equals(Role.ROLE_TEACHER)
+                && loggedInUser.getTeacherDetails().getClasses().stream()
+                .noneMatch(classEntity1 -> classEntity1.getId().equals(classEntity.getId())))
+            throw new AccessDeniedException("Students can't get the class which they are not teaching.");
+
+        return classEntity;
     }
 
     @Transactional(readOnly = true)
@@ -73,8 +83,9 @@ public class ClassEntityService {
     }
 
     @Transactional
-    public ClassEntity updateClass(Long id, ClassEntity classEntity, Long teacherId, List<Long> studentIds) {
-        ClassEntity existingClass = getClassById(id);
+    public ClassEntity updateClass(AppUser loggedInUser, Long id, ClassEntity classEntity, Long teacherId, List<Long> studentIds)
+            throws AccessDeniedException, EntityNotFoundException {
+        ClassEntity existingClass = getClassById(loggedInUser, id);
 
         // Update basic fields
         existingClass.setName(classEntity.getName());
@@ -101,27 +112,7 @@ public class ClassEntityService {
     }
 
     @Transactional
-    public ClassEntity updateClass(Long id, ClassEntity classEntity) {
-        ClassEntity existingClass = getClassById(id);
-
-        existingClass.setName(classEntity.getName());
-        existingClass.setDescription(classEntity.getDescription());
-
-        // Only update teacher if provided in the entity
-        if (classEntity.getTeacher() != null) {
-            existingClass.setTeacher(classEntity.getTeacher());
-        }
-
-        // Only update students if provided in the entity
-        if (classEntity.getStudents() != null) {
-            existingClass.setStudents(classEntity.getStudents());
-        }
-
-        return classRepository.save(existingClass);
-    }
-
-    @Transactional
-    public void deleteClass(Long id) {
+    public void deleteClass(Long id) throws AccessDeniedException, EntityNotFoundException {
         if (!classRepository.existsById(id)) {
             throw new EntityNotFoundException("Class not found with id: " + id);
         }
@@ -129,8 +120,9 @@ public class ClassEntityService {
     }
 
     @Transactional
-    public ClassEntity addStudent(Long classId, Long studentId) {
-        ClassEntity classEntity = getClassById(classId);
+    public ClassEntity addStudent(AppUser loggedInUser, Long classId, Long studentId)
+            throws AccessDeniedException, EntityNotFoundException {
+        ClassEntity classEntity = getClassById(loggedInUser, classId);
         AppUser student = appUserRepository.findById(studentId)
                 .orElseThrow(() -> new EntityNotFoundException("Student not found with id: " + studentId));
 
@@ -147,8 +139,33 @@ public class ClassEntityService {
     }
 
     @Transactional
-    public ClassEntity removeStudent(Long classId, Long studentId) {
-        ClassEntity classEntity = getClassById(classId);
+    public ClassEntity addStudentsBulk(AppUser loggedInUser, Long classId, List<Long> studentIds) throws AccessDeniedException {
+        ClassEntity classEntity = getClassById(loggedInUser, classId);
+
+        // Check if the current user has permission to modify this class
+        /*
+        if (!hasPermissionToModify(classEntity)) {
+            throw new AccessDeniedException("You don't have permission to modify this class");
+        }
+         */
+
+        // Validate all student IDs exist before adding any
+        List<AppUser> studentsToAdd = appUserRepository.findAllById(studentIds);
+        if (studentsToAdd.size() != studentIds.size()) {
+            throw new EntityNotFoundException("One or more student IDs are invalid");
+        }
+
+        // Add all students to the class
+        classEntity.getStudents().addAll(studentsToAdd);
+
+        // Save and return the updated class
+        return classRepository.save(classEntity);
+    }
+
+    @Transactional
+    public ClassEntity removeStudent(AppUser loggedInUser, Long classId, Long studentId)
+            throws AccessDeniedException, EntityNotFoundException {
+        ClassEntity classEntity = getClassById(loggedInUser, classId);
 
         // Check if student exists before attempting to remove
         appUserRepository.findById(studentId)
@@ -164,13 +181,13 @@ public class ClassEntityService {
     }
 
     @Transactional(readOnly = true)
-    public List<ClassEntity> getTeacherClasses(Authentication authentication) {
+    public List<ClassEntity> getTeacherClasses(Authentication authentication) throws AccessDeniedException {
         AppUser teacher = (AppUser) authentication.getPrincipal();
         return classEntityRepository.findClassesByTeacherId(teacher.getId());
     }
 
     @Transactional
-    public ClassEntity getStudentClasses(Authentication authentication) {
+    public ClassEntity getStudentClasses(Authentication authentication) throws AccessDeniedException {
         AppUser student = (AppUser) authentication.getPrincipal();
         return classEntityRepository.getClassEntityById(student.getStudentDetails().getClassEntity()).orElseThrow
                 (() -> new EntityNotFoundException("Class not found with id: " + student.getStudentDetails().getClassEntity()));

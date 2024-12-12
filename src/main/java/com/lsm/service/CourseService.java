@@ -1,9 +1,11 @@
 package com.lsm.service;
 
 import com.lsm.model.DTOs.CourseDTO;
+import com.lsm.model.DTOs.StudentDTO;
 import com.lsm.model.entity.Course;
 import com.lsm.model.entity.ClassEntity;
 import com.lsm.model.entity.base.AppUser;
+import com.lsm.model.entity.enums.Role;
 import com.lsm.repository.AppUserRepository;
 import com.lsm.repository.ClassEntityRepository;
 import com.lsm.repository.CourseRepository;
@@ -14,6 +16,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.Cacheable;
@@ -21,7 +24,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,12 +37,13 @@ public class CourseService {
     private final AppUserRepository appUserRepository;
 
     @Cacheable(value = "courses", key = "#id", unless = "#result == null")
-    public CourseDTO getCourseById(Long id) {
+    public CourseDTO getCourseById(AppUser loggedInUser, Long id) {
+        // TODO: constraints
         log.debug("Fetching course with id: {}", id);
         return courseRepository.findById(id)
                 .map(this::mapToDTO)
                 .orElseThrow(() -> {
-                    log.error("Course not found with id: {}", id);
+                    log.error("Course not found with id in getCourseById: {}", id);
                     return new ResourceNotFoundException("Course not found with id: " + id);
                 });
     }
@@ -189,6 +192,81 @@ public class CourseService {
                     .collect(Collectors.toList());
             course.setClasses(classes);
         }
+    }
+
+    @Cacheable(value = "coursesByTeacher", key = "#teacherId")
+    public List<CourseDTO> getCoursesByTeacher(Long teacherId) {
+        log.debug("Fetching courses for teacher id: {}", teacherId);
+
+        AppUser teacher = appUserRepository.findById(teacherId)
+                .orElseThrow(() -> {
+                    log.error("Teacher not found with id: {}", teacherId);
+                    return new ResourceNotFoundException("Teacher not found with id: " + teacherId);
+                });
+
+        if (teacher.getRole() != Role.ROLE_TEACHER) {
+            throw new IllegalArgumentException("User is not a teacher");
+        }
+
+        // Assuming there's a relationship between Course and Teacher
+        return courseRepository.findByTeacherId(teacherId).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Cacheable(value = "courses", key = "'search:' + #query + ':' + #semester + ':' + #year")
+    public List<CourseDTO> searchCourses(String query, String semester, Integer year) {
+        log.debug("Searching courses with query: {}, semester: {}, year: {}", query, semester, year);
+
+        // Create specification for dynamic filtering
+        Specification<Course> spec = Specification.where(null);
+
+        if (query != null && !query.trim().isEmpty()) {
+            spec = spec.and((root, criteriaQuery, criteriaBuilder) ->
+                    criteriaBuilder.or(
+                            criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), "%" + query.toLowerCase() + "%"),
+                            criteriaBuilder.like(criteriaBuilder.lower(root.get("code")), "%" + query.toLowerCase() + "%"),
+                            criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), "%" + query.toLowerCase() + "%")
+                    )
+            );
+        }
+
+        if (semester != null && !semester.trim().isEmpty()) {
+            spec = spec.and((root, criteriaQuery, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("semester"), semester)
+            );
+        }
+
+        if (year != null) {
+            spec = spec.and((root, criteriaQuery, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("year"), year)
+            );
+        }
+
+        return courseRepository.findAll(spec).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private StudentDTO mapToStudentDTO(AppUser user) {
+        if (user.getRole() != Role.ROLE_STUDENT || user.getStudentDetails() == null) {
+            throw new IllegalArgumentException("User is not a student");
+        }
+
+        return StudentDTO.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .name(user.getName())
+                .surname(user.getSurname())
+                .email(user.getEmail())
+                .phone(user.getStudentDetails().getPhone())
+                .tc(user.getStudentDetails().getTc())
+                .birthDate(user.getStudentDetails().getBirthDate())
+                .registrationDate(user.getStudentDetails().getRegistrationDate())
+                .parentName(user.getStudentDetails().getParentName())
+                .parentPhone(user.getStudentDetails().getParentPhone())
+                .classEntityId(user.getStudentDetails().getClassEntity())
+                .build();
     }
 
     private CourseDTO mapToDTO(Course course) {
