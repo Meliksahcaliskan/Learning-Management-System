@@ -1,26 +1,20 @@
 package com.example.loginmultiplatform.ui
 
-import android.annotation.SuppressLint
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.google.android.material.datepicker.MaterialDatePicker
-import com.google.android.material.datepicker.CalendarConstraints
-import com.google.android.material.datepicker.DateValidatorPointForward
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import androidx.fragment.app.FragmentActivity
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -41,8 +35,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import com.example.loginmultiplatform.model.AttendanceResponse
 import com.example.loginmultiplatform.model.AttendanceStats
-import com.example.loginmultiplatform.ui.components.BottomNavigationBar
-import com.example.loginmultiplatform.ui.components.TopBar
 import com.example.loginmultiplatform.viewmodel.AttendanceViewModel
 
 val customFontFamily = FontFamily(
@@ -67,8 +59,6 @@ actual fun AttendanceScreen(viewModel: AttendanceViewModel, navController: NavCo
     val loading by viewModel.isLoading.collectAsState()
     val attendanceStats by viewModel.attendanceStats.collectAsState()
     val groupedData = attendanceList.groupBy { it.courseId } //derslere göre gruplandırma
-    //val pagerState = rememberPagerState(initialPage = 0, pageCount = { 3 })
-    //val coroutineScope = rememberCoroutineScope()
     val coursesList by viewModel.studentCourses.collectAsState()
 
     val currentYear = Calendar.getInstance().get(Calendar.YEAR)
@@ -78,18 +68,6 @@ actual fun AttendanceScreen(viewModel: AttendanceViewModel, navController: NavCo
     var resetVisible by remember { mutableStateOf(false) }
     var startDate by remember { mutableStateOf(defaultStartDate) }
     var endDate by remember { mutableStateOf(defaultEndDate) }
-
-
-    fun isValidDate(date: String): Boolean {
-        return try {
-            val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            formatter.isLenient = false
-            formatter.parse(date)
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
 
     LaunchedEffect(studentId, classId) {
         try {
@@ -179,11 +157,6 @@ actual fun AttendanceScreen(viewModel: AttendanceViewModel, navController: NavCo
                                 ExpendableTableCard(
                                     lessonName = course.name,
                                     attendances = filteredAttendances,
-                                    defaultStartDate = startDate,
-                                    defaultEndDate = endDate,
-                                    onFilter = { startDate, endDate ->
-                                        viewModel.fetchAttendance(studentId, startDate, endDate)
-                                    },
                                     statistics = attendanceStats,
                                     classId = classId,
                                     courseId = courseId.toInt()
@@ -207,18 +180,6 @@ actual fun AttendanceScreen(viewModel: AttendanceViewModel, navController: NavCo
                     }
                 }
             }
-
-            /*Spacer(modifier = Modifier.height(32.dp))
-            Divider(color = Color(0XFF5A5A5A), thickness = 1.dp)
-
-            LazyColumn {
-                items(attendanceStatsList) { stat ->
-                    TableCell("Attendance Percentage: ${stat.attendancePercentage}%")
-                    TableCell("Present Count: ${stat.presentCount}")
-                    TableCell("Absent Count: ${stat.absentCount}")
-
-                }
-            }*/
         }
     }
 }
@@ -326,9 +287,6 @@ fun DateRangePicker(
 fun ExpendableTableCard(
     lessonName: String,
     attendances: List<AttendanceResponse>,
-    defaultStartDate: String,
-    defaultEndDate: String,
-    onFilter: (String, String) -> Unit,
     statistics: List<AttendanceStats>,
     classId: Int,
     courseId: Int
@@ -336,10 +294,6 @@ fun ExpendableTableCard(
 
     var expanded by remember { mutableStateOf(false) }
     val filteredStats = statistics.filter { it.classId == classId && it.courseId == courseId}
-    /*var startDate by remember { mutableStateOf(defaultStartDate) }
-    var endDate by remember { mutableStateOf(defaultEndDate) }
-    val datePattern = Regex("\\d{4}-\\d{2}-\\d{2}")*/
-
 
     Card(
         modifier = Modifier
@@ -367,8 +321,6 @@ fun ExpendableTableCard(
                 )
             }
 
-            //Divider(color = Color(0xFF5A5A5A), thickness = 1.dp)
-
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically(),
@@ -378,39 +330,8 @@ fun ExpendableTableCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                        //.heightIn(max = 300.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-
-                    /*Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = startDate,
-                            onValueChange = { value ->
-                                startDate = value
-                                if (datePattern.matches(value) && datePattern.matches(endDate)) {
-                                    onFilter(startDate, endDate)
-                                }
-                            },
-                            label = { Text("Başlangıç Tarihi (YYYY-AA-GG)") },
-                            modifier = Modifier.weight(1f).fillMaxHeight()
-                        )
-                        OutlinedTextField(
-                            value = endDate,
-                            onValueChange = { value ->
-                                endDate = value
-                                if (datePattern.matches(value) && datePattern.matches(endDate)) {
-                                    onFilter(startDate, endDate)
-                                }
-                            },
-                            label = { Text("Bitiş Tarihi (YYYY-AA-GG)") },
-                            modifier = Modifier.weight(1f).fillMaxHeight()
-                        )
-                    }*/
 
                     Row(
                         modifier = Modifier
@@ -418,7 +339,6 @@ fun ExpendableTableCard(
                             .padding(bottom = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        //TableHeaderCell("Ders Adı", Modifier.weight(1.5f))
                         TableHeaderCell("TARİH", Modifier.weight(2f))
                         TableHeaderCell("SAAT", Modifier.weight(1f))
                         TableHeaderCell("AÇIKLAMA", Modifier.weight(3f))
@@ -427,12 +347,10 @@ fun ExpendableTableCard(
                     Divider(color = Color(0xFF5A5A5A), thickness = 1.dp)
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Veriler doğru şekilde hizalanıyor
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(max = 300.dp),
-                            //.padding(top = 48.dp), // Divider ile LazyColumn arasında bir hizalama sağlıyor
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         items(attendances) { item ->
@@ -499,8 +417,6 @@ fun DataRow(item: AttendanceResponse) {
                     shape = CircleShape
                 )
         )
-
-        //TableCell(item.studentName, Modifier.weight(1.5f))
         TableCell(formatToReadableDate(item.date), Modifier.weight(2f))
         TableCell("2", Modifier.weight(1f)) // Saat örnek verisi
         TableCell(item.comment ?: "-", Modifier.weight(3f))
