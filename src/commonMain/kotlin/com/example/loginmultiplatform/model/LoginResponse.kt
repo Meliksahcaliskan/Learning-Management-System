@@ -1,4 +1,4 @@
-package com.example.loginmultiplatform.network
+package com.example.loginmultiplatform.model
 
 data class LoginResponse(
     val success: Boolean,

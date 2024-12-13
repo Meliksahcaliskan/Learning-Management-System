@@ -3,7 +3,7 @@ package com.example.loginmultiplatform.repository
 import com.example.loginmultiplatform.network.ApiClient
 import com.example.loginmultiplatform.network.ApiService
 import com.example.loginmultiplatform.network.LoginRequest
-import com.example.loginmultiplatform.network.LoginData
+import com.example.loginmultiplatform.model.LoginData
 
 class UserRepository {
     private val apiService = ApiClient.retrofit.create(ApiService::class.java)

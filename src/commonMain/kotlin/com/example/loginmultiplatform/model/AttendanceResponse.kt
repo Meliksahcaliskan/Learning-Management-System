@@ -20,17 +20,17 @@ data class AttendanceResponse(
     val courseId: Long
 )
 
-data class AttendanceStatsResponse(
-    val studentId: Long,
+data class AttendanceStats(
+    val studentId: Int,
     val studentName: String,
-    val classId: Long,
+    val classId: Int,
     val className: String,
-    val courseId: Long,
+    val courseId: Int,
     val courseName: String,
-    val attendancePercentage: Int,
+    val attendancePercentage: Double,
     val totalClasses: Int,
     val presentCount: Int,
     val absentCount: Int,
     val lateCount: Int,
-    val recentAttendance: List<AttendanceResponse>
+    val recentAttendance: List<AttendanceResponse>?
 )

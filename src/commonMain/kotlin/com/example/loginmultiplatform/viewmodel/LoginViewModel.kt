@@ -2,7 +2,7 @@ package com.example.loginmultiplatform.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.loginmultiplatform.network.LoginData
+import com.example.loginmultiplatform.model.LoginData
 import com.example.loginmultiplatform.network.TokenManager
 import com.example.loginmultiplatform.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow

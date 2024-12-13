@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.launch
 
 @Composable
-actual fun TopBar(userName: String?, onSettingsClick: @Composable () -> Unit, onProfileClick: () -> Unit) {
+actual fun TopBar(userName: String?, onSettingsClick: () -> Unit, onProfileClick: () -> Unit) {
 
     val customFontFamily = FontFamily(
         Font(R.font.montserrat_regular, FontWeight.Normal),

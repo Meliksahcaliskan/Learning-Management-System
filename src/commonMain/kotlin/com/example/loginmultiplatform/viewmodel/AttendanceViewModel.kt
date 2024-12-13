@@ -3,7 +3,7 @@ package com.example.loginmultiplatform.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.loginmultiplatform.model.AttendanceResponse
-import com.example.loginmultiplatform.model.AttendanceStatsResponse
+import com.example.loginmultiplatform.model.AttendanceStats
 import com.example.loginmultiplatform.model.ResponseWrapper
 import com.example.loginmultiplatform.model.StudentCourseResponse
 import com.example.loginmultiplatform.repository.AttendanceRepository
@@ -17,8 +17,8 @@ class AttendanceViewModel : ViewModel() {
     private val _attendanceList = MutableStateFlow<List<AttendanceResponse>>(emptyList())
     val attendanceList: StateFlow<List<AttendanceResponse>> = _attendanceList
 
-    private val _attendanceStats = MutableStateFlow<ResponseWrapper<AttendanceStatsResponse>?>(null)
-    val attendanceStats: StateFlow<ResponseWrapper<AttendanceStatsResponse>?> = _attendanceStats
+    private val _attendanceStats = MutableStateFlow<List<AttendanceStats>>(emptyList())
+    val attendanceStats: StateFlow<List<AttendanceStats>> = _attendanceStats
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
@@ -60,19 +60,20 @@ class AttendanceViewModel : ViewModel() {
         }
     }
 
-    /*fun fetchAttendanceStats(studentId: Int, classId: Int) {
-        _isLoading.value = true
+    fun fetchAttendanceStats(studentId: Int, classId: Int) {
+
         _errorMessage.value = null
 
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 val stats = repository.fetchAttendanceStats(studentId, classId)
                 _attendanceStats.value = stats
             } catch (e: Exception) {
-                _errorMessage.value = e.message
+                _errorMessage.value = "Bir hata oluştu: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
         }
-    }*/
+    }
 }

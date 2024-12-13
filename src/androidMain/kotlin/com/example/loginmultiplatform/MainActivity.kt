@@ -5,11 +5,12 @@ package com.example.loginmultiplatform
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import com.example.loginmultiplatform.ui.navigation.NavigationGraph
 import com.example.loginmultiplatform.viewmodel.AttendanceViewModel
 import com.example.loginmultiplatform.viewmodel.LoginViewModel
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Initialize AppContext if using the singleton approach

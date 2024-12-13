@@ -2,7 +2,7 @@ package com.example.loginmultiplatform.repository
 
 import com.example.loginmultiplatform.network.ApiClient
 import com.example.loginmultiplatform.model.AttendanceResponse
-import com.example.loginmultiplatform.model.AttendanceStatsResponse
+import com.example.loginmultiplatform.model.AttendanceStats
 import com.example.loginmultiplatform.model.ResponseWrapper
 import com.example.loginmultiplatform.model.StudentCourseResponse
 import com.example.loginmultiplatform.network.ApiService
@@ -35,11 +35,19 @@ class AttendanceRepository {
         }
     }
 
-    /*suspend fun fetchAttendanceStats(
+    suspend fun fetchAttendanceStats(
         studentId: Int,
         classId: Int
-    ): ResponseWrapper<AttendanceStatsResponse> {
+    ): List<AttendanceStats> {
+
+        val response = apiService.getAttendanceStats(studentId, classId)
+
+        if (response.success) {
+            return response.data
+        } else {
+            throw Exception(response.message)
+        }
         //println("StudentId in attendance stats: $studentId, ClassId: $classId")
-        return apiService.getAttendanceStats(studentId, classId)
-    }*/
+        //return apiService.getAttendanceStats(studentId, classId)
+    }
 }
