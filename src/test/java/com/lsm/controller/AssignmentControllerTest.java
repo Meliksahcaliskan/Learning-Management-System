@@ -1,129 +1,285 @@
 package com.lsm.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lsm.model.DTOs.*;
+import com.lsm.model.entity.Assignment;
+import com.lsm.model.entity.AssignmentDocument;
+import com.lsm.model.entity.StudentSubmission;
+import com.lsm.model.entity.base.AppUser;
+import com.lsm.model.entity.enums.AssignmentStatus;
+import com.lsm.model.entity.enums.Role;
+import com.lsm.service.AssignmentDocumentService;
+import com.lsm.service.AssignmentService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+
 import java.nio.file.AccessDeniedException;
-import java.security.Principal;
-import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import static org.mockito.Mockito.when;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.lsm.model.DTOs.AssignmentDTO;
-import com.lsm.model.DTOs.AssignmentRequestDTO;
-import com.lsm.model.entity.Assignment;
-import com.lsm.model.entity.base.AppUser;
-import com.lsm.model.entity.enums.Role;
-import com.lsm.service.AppUserService;
-import com.lsm.service.AssignmentService;
+@WebMvcTest(AssignmentController.class)
+class AssignmentControllerTest {
 
-public class AssignmentControllerTest {
+    @Autowired
+    private MockMvc mockMvc;
 
-    @Mock
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockBean
     private AssignmentService assignmentService;
 
-    @Mock
-    private AppUserService appUserService;
+    @MockBean
+    private AssignmentDocumentService documentService;
 
-    @InjectMocks
-    private AssignmentController assignmentController;
-
-    @Mock
-    private Principal principal;
-
-    @Mock
-    private Authentication authentication;
-
-    private AppUser mockUser;
-
-    private AppUser mockUserStudent;
+    private AppUser teacherUser;
+    private AppUser studentUser;
+    private Assignment testAssignment;
+    private AssignmentRequestDTO testAssignmentRequest;
+    private AssignmentDocument testDocument;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        mockUser = new AppUser();
-        mockUser.setId(1L);
-        mockUser.setUsername("teacherUser");
-        mockUser.setRole(Role.ROLE_TEACHER);
-        mockUserStudent = new AppUser();
-        mockUserStudent.setId(2L);
-        mockUserStudent.setUsername("studentUser");
-        mockUserStudent.setRole(Role.ROLE_STUDENT);
+        // Setup teacher user
+        teacherUser = AppUser.builder()
+                .id(1L)
+                .username("teacher")
+                .role(Role.ROLE_TEACHER)
+                .build();
+
+        // Setup student user
+        studentUser = AppUser.builder()
+                .id(2L)
+                .username("student")
+                .role(Role.ROLE_STUDENT)
+                .build();
+
+        // Setup test assignment
+        testAssignment = Assignment.builder()
+                .id(1L)
+                .title("Test Assignment")
+                .description("Test Description")
+                .dueDate(LocalDate.now().plusDays(7))
+                .assignedBy(teacherUser)
+                .build();
+
+        // Setup test assignment request
+        testAssignmentRequest = new AssignmentRequestDTO();
+        testAssignmentRequest.setTitle("Test Assignment");
+        testAssignmentRequest.setDescription("Test Description");
+        testAssignmentRequest.setDueDate(LocalDate.now().plusDays(7));
+        testAssignmentRequest.setClassId(1L);
+        testAssignmentRequest.setCourseId(1L);
+
+        // Setup test document
+        testDocument = AssignmentDocument.builder()
+                .id(1L)
+                .fileName("test.pdf")
+                .fileType("application/pdf")
+                .uploadTime(LocalDateTime.now())
+                .uploadedBy(teacherUser)
+                .assignment(testAssignment)
+                .build();
     }
 
-    @Test
-    void createAssignment_ShouldReturnCreatedStatus_WhenSuccessful() throws Exception {
-        when(principal.getName()).thenReturn("teacherUser");
-        when(appUserService.findByUsername("teacherUser")).thenReturn(mockUser);
-        when(assignmentService.createAssignment(any(AssignmentRequestDTO.class), any(Long.class)))
-                .thenReturn(new Assignment());
+    @Nested
+    @DisplayName("Create Assignment Tests")
+    class CreateAssignmentTests {
 
-        AssignmentRequestDTO requestDTO = new AssignmentRequestDTO();
-        ResponseEntity<?> response = assignmentController.createAssignment(requestDTO, principal);
+        @Test
+        @WithMockUser(roles = "TEACHER")
+        @DisplayName("Should create assignment successfully")
+        void shouldCreateAssignment() throws Exception {
+            when(assignmentService.createAssignment(any(), any()))
+                    .thenReturn(testAssignment);
 
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+            mockMvc.perform(post("/api/v1/assignments/createAssignment")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(testAssignmentRequest)))
+                    .andExpect(status().isCreated())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @WithMockUser(roles = "STUDENT")
+        @DisplayName("Should not allow students to create assignment")
+        void shouldNotAllowStudentToCreateAssignment() throws Exception {
+            mockMvc.perform(post("/api/v1/assignments/createAssignment")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(testAssignmentRequest)))
+                    .andExpect(status().isForbidden());
+        }
     }
 
-    @Test
-    void createAssignment_ShouldReturnForbidden_WhenAccessDenied() throws Exception {
-        // Mock the behavior to throw AccessDeniedException
-        when(principal.getName()).thenReturn("studentUser");
-        when(appUserService.findByUsername("studentUser")).thenReturn(mockUserStudent);
-        when(assignmentService.createAssignment(any(AssignmentRequestDTO.class), any(Long.class)))
-                .thenThrow(new AccessDeniedException("Access denied"));
+    @Nested
+    @DisplayName("Upload Document Tests")
+    class UploadDocumentTests {
 
-        // Setup the AssignmentRequestDTO
-        List<Long> students = new ArrayList<>();
-        students.add(2L);
-        AssignmentRequestDTO requestDTO = new AssignmentRequestDTO();
+        @Test
+        @WithMockUser(roles = "TEACHER")
+        @DisplayName("Should upload document successfully")
+        void shouldUploadDocument() throws Exception {
+            MockMultipartFile file = new MockMultipartFile(
+                    "file",
+                    "test.pdf",
+                    "application/pdf",
+                    "test content".getBytes()
+            );
 
-        // Call the controller method and assert the response
-        ResponseEntity<?> response = assignmentController.createAssignment(requestDTO, principal);
-        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-        assertEquals("Access denied", ((AssignmentDTO) response.getBody()).getMessage());
+            when(documentService.uploadDocument(any(), eq(1L), any()))
+                    .thenReturn(testDocument);
+
+            mockMvc.perform(multipart("/api/v1/assignments/1/documents")
+                            .file(file)
+                            .with(csrf()))
+                    .andExpect(status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @WithMockUser(roles = "TEACHER")
+        @DisplayName("Should reject invalid file type")
+        void shouldRejectInvalidFileType() throws Exception {
+            MockMultipartFile file = new MockMultipartFile(
+                    "file",
+                    "test.exe",
+                    "application/x-msdownload",
+                    "test content".getBytes()
+            );
+
+            mockMvc.perform(multipart("/api/v1/assignments/1/documents")
+                            .file(file)
+                            .with(csrf()))
+                    .andExpect(status().isBadRequest());
+        }
     }
 
+    @Nested
+    @DisplayName("Get Assignments Tests")
+    class GetAssignmentsTests {
 
-    @Test
-    void displayAssignmentsForStudent_ShouldReturnOkStatus_WhenSuccessful() throws Exception {
-        Assignment assignment = new Assignment(); // TODO: fill with placeholders
-        when(authentication.getPrincipal()).thenReturn(mockUser);
-        when(assignmentService.displayAssignmentsForStudent(any(Long.class), any(Long.class)))
-                .thenReturn(Collections.singletonList(new AssignmentDTO(assignment, "Assigned succesfully.")));
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        @DisplayName("Should get all assignments")
+        void shouldGetAllAssignments() throws Exception {
+            when(assignmentService.getAllAssignments(any()))
+                    .thenReturn(Collections.singletonList(new AssignmentDTO(testAssignment, "")));
 
-        ResponseEntity<?> response = assignmentController.displayAssignmentsForStudent(2L, authentication);
+            mockMvc.perform(get("/api/v1/assignments")
+                            .with(csrf()))
+                    .andExpect(status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.data").isArray());
+        }
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        @Test
+        @WithMockUser(roles = "TEACHER")
+        @DisplayName("Should get teacher assignments")
+        void shouldGetTeacherAssignments() throws Exception {
+            when(assignmentService.getAssignmentsByTeacher(eq(1L), any(), any(), any(), any()))
+                    .thenReturn(Collections.singletonList(new AssignmentDTO(testAssignment, "")));
+
+            mockMvc.perform(get("/api/v1/assignments/teacher/1")
+                            .with(csrf()))
+                    .andExpect(status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.data").isArray());
+        }
     }
 
-    @Test
-    void updateAssignment_ShouldReturnOkStatus_WhenSuccessful() throws Exception {
-        when(authentication.getPrincipal()).thenReturn(mockUser);
-        when(assignmentService.updateAssignment(any(Long.class), any(AssignmentRequestDTO.class), any(Long.class)))
-                .thenReturn(new Assignment());
+    @Nested
+    @DisplayName("Grade Assignment Tests")
+    class GradeAssignmentTests {
 
-        AssignmentRequestDTO updateRequest = new AssignmentRequestDTO();
-        ResponseEntity<?> response = assignmentController.updateAssignment(1L, updateRequest, authentication);
+        @Test
+        @WithMockUser(roles = "TEACHER")
+        @DisplayName("Should grade assignment successfully")
+        void shouldGradeAssignment() throws Exception {
+            GradeDTO gradeDTO = new GradeDTO();
+            gradeDTO.setGrade(85.0);
+            gradeDTO.setFeedback("Good work");
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+            when(assignmentService.gradeAssignment(eq(1L), any(), any(), eq(2L)))
+                    .thenReturn(testAssignment);
+
+            mockMvc.perform(patch("/api/v1/assignments/1/2/grade")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(gradeDTO)))
+                    .andExpect(status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.success").value(true));
+        }
     }
 
-    @Test
-    void deleteAssignment_ShouldReturnOkStatus_WhenSuccessful() throws Exception {
-        when(principal.getName()).thenReturn("teacherUser");
-        when(appUserService.findByUsername("teacherUser")).thenReturn(mockUser);
+    @Nested
+    @DisplayName("Submit Assignment Tests")
+    class SubmitAssignmentTests {
 
-        ResponseEntity<?> response = assignmentController.deleteAssignment(1L, principal);
+        @Test
+        @WithMockUser(roles = "STUDENT")
+        @DisplayName("Should submit assignment successfully")
+        void shouldSubmitAssignment() throws Exception {
+            MockMultipartFile file = new MockMultipartFile(
+                    "document",
+                    "submission.pdf",
+                    "application/pdf",
+                    "test content".getBytes()
+            );
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+            StudentSubmission submission = StudentSubmission.builder()
+                    .id(1L)
+                    .student(studentUser)
+                    .status(AssignmentStatus.SUBMITTED)
+                    .build();
+
+            when(assignmentService.submitAssignment(eq(1L), any(), any()))
+                    .thenReturn(submission);
+
+            mockMvc.perform(multipart("/api/v1/assignments/1/submit")
+                            .file(file)
+                            .with(csrf()))
+                    .andExpect(status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.success").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("Download Document Tests")
+    class DownloadDocumentTests {
+
+        @Test
+        @WithMockUser(roles = "TEACHER")
+        @DisplayName("Should download document successfully")
+        void shouldDownloadDocument() throws Exception {
+            ByteArrayResource resource = new ByteArrayResource("test content".getBytes());
+            when(documentService.downloadDocument(eq(1L), any()))
+                    .thenReturn(resource);
+
+            mockMvc.perform(get("/api/v1/assignments/documents/1")
+                            .with(csrf()))
+                    .andExpect(status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.success").value(true));
+        }
     }
 }

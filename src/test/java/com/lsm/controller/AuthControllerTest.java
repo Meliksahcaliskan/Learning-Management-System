@@ -1,32 +1,32 @@
 package com.lsm.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lsm.exception.*;
+import com.lsm.mapper.UserMapper;
+import com.lsm.model.DTOs.TokenRefreshResult;
+import com.lsm.model.DTOs.auth.*;
+import com.lsm.model.entity.base.AppUser;
+import com.lsm.model.entity.enums.Role;
+import com.lsm.security.RateLimiter;
+import com.lsm.service.AuthService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lsm.model.DTOs.auth.LoginRequestDTO;
-import com.lsm.model.DTOs.auth.RegisterRequestDTO;
-import com.lsm.model.entity.base.AppUser;
-import com.lsm.model.entity.enums.Role;
-import com.lsm.service.AuthService;
-import com.lsm.service.JwtTokenProvider;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
-@AutoConfigureMockMvc(addFilters = false)
-public class AuthControllerTest {
+class AuthControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -38,96 +38,219 @@ public class AuthControllerTest {
     private AuthService authService;
 
     @MockBean
-    private UserDetailsService userDetailsService;
+    private RateLimiter rateLimiter;
 
     @MockBean
-    private JwtTokenProvider jwtTokenProvider;
+    private UserMapper userMapper;
 
-    @MockBean
-    private AuthenticationManager authenticationManager;
+    private LoginRequestDTO loginRequest;
+    private RegisterRequestDTO registerRequest;
+    private AppUser testUser;
+    private LoginResponseDTO loginResponse;
+    private RegisterResponseDTO registerResponse;
 
-    @Test
-    @WithMockUser
-    public void testRegister_Success() throws Exception {
-        // Create request DTO
-        RegisterRequestDTO request = new RegisterRequestDTO();
-        request.setUsername("newuser");
-        request.setPassword("password");
-        request.setEmail("email@example.com");
-        request.setRole(Role.ROLE_STUDENT);
+    @BeforeEach
+    void setUp() {
+        // Setup login request
+        loginRequest = new LoginRequestDTO();
+        loginRequest.setUsername("testuser");
+        loginRequest.setPassword("password123");
 
-        // Create mock response
-        AppUser mockUser = new AppUser();
-        // mockUser.setId(1L);
-        mockUser.setUsername("newuser");
-        mockUser.setEmail("email@example.com");
-        mockUser.setRole(Role.ROLE_STUDENT);
+        // Setup register request
+        registerRequest = new RegisterRequestDTO();
+        registerRequest.setUsername("newuser");
+        registerRequest.setEmail("newuser@test.com");
+        registerRequest.setPassword("password123");
 
-        // Mock service behavior
-        when(authService.registerUser(any(RegisterRequestDTO.class))).thenReturn(mockUser);
+        // Setup test user
+        testUser = AppUser.builder()
+                .id(1L)
+                .username("testuser")
+                .email("test@test.com")
+                .role(Role.ROLE_STUDENT)
+                .build();
 
-        // Perform test
-        mockMvc.perform(post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").value("Registered successfully"));
+        // Setup login response
+        loginResponse = LoginResponseDTO.builder()
+                .id(1L)
+                .username("testuser")
+                .email("test@test.com")
+                .role(Role.ROLE_STUDENT)
+                .accessToken("test-access-token")
+                .refreshToken("test-refresh-token")
+                .build();
+
+        // Setup register response
+        registerResponse = RegisterResponseDTO.builder()
+                .userId(1L)
+                .username("newuser")
+                .email("newuser@test.com")
+                .role(Role.ROLE_STUDENT)
+                .build();
     }
 
-    @Test
-    public void testRegister_UsernameAlreadyExists() throws Exception {
-        RegisterRequestDTO request = new RegisterRequestDTO();
-        request.setUsername("existinguser");
-        request.setPassword("password");
-        request.setEmail("email@example.com");
-        request.setRole(Role.ROLE_STUDENT);
+    @Nested
+    @DisplayName("Login Tests")
+    class LoginTests {
 
-        when(authService.registerUser(any(RegisterRequestDTO.class)))
-            .thenThrow(new IllegalArgumentException("Username already exists"));
+        @Test
+        @DisplayName("Should login successfully")
+        void shouldLoginSuccessfully() throws Exception {
+            // Arrange
+            AuthenticationResult authResult = new AuthenticationResult(
+                    "test-access-token", "test-refresh-token", testUser, 3600L);
 
-        mockMvc.perform(post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Username already exists"));
+            when(authService.authenticate(any(LoginRequestDTO.class), any(String.class)))
+                    .thenReturn(authResult);
+            when(userMapper.toLoginResponse(eq(testUser), any(), any(), any()))
+                    .thenReturn(loginResponse);
+            doNothing().when(rateLimiter).checkRateLimit(any());
+
+            // Act & Assert
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(loginRequest)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.username").value(loginResponse.getUsername()));
+        }
+
+        @Test
+        @DisplayName("Should handle rate limit exceeded")
+        void shouldHandleRateLimitExceeded() throws Exception {
+            // Arrange
+            doThrow(new RateLimitExceededException("Too many attempts"))
+                    .when(rateLimiter).checkRateLimit(any());
+
+            // Act & Assert
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(loginRequest)))
+                    .andExpect(status().isTooManyRequests())
+                    .andExpect(jsonPath("$.success").value(false));
+        }
+
+        @Test
+        @DisplayName("Should handle invalid credentials")
+        void shouldHandleInvalidCredentials() throws Exception {
+            // Arrange
+            doNothing().when(rateLimiter).checkRateLimit(any());
+            when(authService.authenticate(any(), any()))
+                    .thenThrow(new AuthenticationException("Invalid credentials"));
+
+            // Act & Assert
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(loginRequest)))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.success").value(false));
+        }
     }
 
-    @Test
-    public void testLogin_Success() throws Exception {
-        LoginRequestDTO loginRequest = new LoginRequestDTO();
-        loginRequest.setUsername("user");
-        loginRequest.setPassword("password");
+    @Nested
+    @DisplayName("Register Tests")
+    class RegisterTests {
 
-        AppUser mockUser = new AppUser();
-        mockUser.setUsername("user");
-        mockUser.setId(1L);
-        
-        when(authService.authenticate(any(LoginRequestDTO.class))).thenReturn(mockUser);
-        when(jwtTokenProvider.generateToken(any(AppUser.class))).thenReturn("mock-jwt-token");
+        @Test
+        @DisplayName("Should register successfully")
+        void shouldRegisterSuccessfully() throws Exception {
+            // Arrange
+            when(authService.registerUser(any(RegisterRequestDTO.class)))
+                    .thenReturn(testUser);
+            when(userMapper.toRegisterResponse(testUser))
+                    .thenReturn(registerResponse);
 
-        mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("mock-jwt-token"));
+            // Act & Assert
+            mockMvc.perform(post("/api/v1/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(registerRequest)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.username").value(registerResponse.getUsername()));
+        }
+
+        @Test
+        @DisplayName("Should handle duplicate username")
+        void shouldHandleDuplicateUsername() throws Exception {
+            // Arrange
+            when(authService.registerUser(any()))
+                    .thenThrow(new DuplicateResourceException("Username already exists"));
+
+            // Act & Assert
+            mockMvc.perform(post("/api/v1/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(registerRequest)))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.success").value(false));
+        }
     }
 
-    @Test
-    public void testLogin_BadCredentials() throws Exception {
-        // Arrange
-        LoginRequestDTO loginRequest = new LoginRequestDTO();
-        loginRequest.setUsername("wrongUser");
-        loginRequest.setPassword("wrongPassword");
+    @Nested
+    @DisplayName("Token Tests")
+    class TokenTests {
 
-        // Mock the behavior of authService.authenticate to throw BadCredentialsException
-        when(authService.authenticate(any(LoginRequestDTO.class)))
-            .thenThrow(new IllegalArgumentException("Bad credentials"));
+        @Test
+        @DisplayName("Should refresh token successfully")
+        void shouldRefreshTokenSuccessfully() throws Exception {
+            // Arrange
+            TokenRefreshResult refreshResult = new TokenRefreshResult(
+                    "new-access-token", "new-refresh-token");
+            when(authService.refreshToken(any()))
+                    .thenReturn(refreshResult);
 
-        // Act and Assert
-        mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isUnauthorized());
+            // Act & Assert
+            mockMvc.perform(post("/api/v1/auth/refresh")
+                            .header("Refresh-Token", "old-refresh-token"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.accessToken").value("new-access-token"));
+        }
+
+        @Test
+        @DisplayName("Should handle invalid refresh token")
+        void shouldHandleInvalidRefreshToken() throws Exception {
+            // Arrange
+            when(authService.refreshToken(any()))
+                    .thenThrow(new InvalidTokenException("Invalid refresh token"));
+
+            // Act & Assert
+            mockMvc.perform(post("/api/v1/auth/refresh")
+                            .header("Refresh-Token", "invalid-token"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.success").value(false));
+        }
     }
 
+    @Nested
+    @DisplayName("Logout Tests")
+    class LogoutTests {
+
+        @Test
+        @DisplayName("Should logout successfully")
+        void shouldLogoutSuccessfully() throws Exception {
+            // Arrange
+            doNothing().when(authService).logout(any(), any());
+
+            // Act & Assert
+            mockMvc.perform(post("/api/v1/auth/logout")
+                            .header("Authorization", "Bearer test-token")
+                            .header("Refresh-Token", "test-refresh-token"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("Should handle logout failure")
+        void shouldHandleLogoutFailure() throws Exception {
+            // Arrange
+            doThrow(new LogoutException("Logout failed"))
+                    .when(authService).logout(any(), any());
+
+            // Act & Assert
+            mockMvc.perform(post("/api/v1/auth/logout")
+                            .header("Authorization", "Bearer test-token"))
+                    .andExpect(status().isInternalServerError())
+                    .andExpect(jsonPath("$.success").value(false));
+        }
+    }
 }

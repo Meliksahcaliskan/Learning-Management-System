@@ -20,6 +20,7 @@ import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -61,14 +62,33 @@ public class AttendanceService {
         return attendanceRepository.save(attendance);
     }
 
-    // TODO: fix it like the markAttendance
     @Transactional
-    public void markBulkAttendance(AppUser loggedInUser, List<AttendanceRequestDTO> attendanceRequests)
+    public void markBulkAttendance(AppUser  loggedInUser , List<AttendanceRequestDTO> attendanceRequests)
             throws AccessDeniedException {
-        if (loggedInUser.getRole().equals(Role.ROLE_STUDENT))
+        // Check if the logged-in user is a student
+        if (loggedInUser .getRole().equals(Role.ROLE_STUDENT)) {
             throw new AccessDeniedException("Students can't mark attendance");
-        for(AttendanceRequestDTO attendanceRequest : attendanceRequests) {
-            AppUser student = appUserRepository.findById(attendanceRequest.getStudentId())
+        }
+
+        // Check if the logged-in user is a teacher and validate their access to the courses
+        if (loggedInUser .getRole().equals(Role.ROLE_TEACHER)) {
+            AppUser  user = appUserService.getCurrentUserWithDetails(loggedInUser .getId());
+            Set<Long> courseIds = user.getTeacherDetails().getClasses().stream()
+                    .flatMap(classEntity -> classEntity.getCourses().stream())
+                    .map(Course::getId)
+                    .collect(Collectors.toSet());
+
+            // Validate that all attendance requests are for courses the teacher is associated with
+            for (AttendanceRequestDTO attendanceRequest : attendanceRequests) {
+                if (!courseIds.contains(attendanceRequest.getCourseId())) {
+                    throw new AccessDeniedException("Teachers can only mark attendance to their courses");
+                }
+            }
+        }
+
+        // Process each attendance request
+        for (AttendanceRequestDTO attendanceRequest : attendanceRequests) {
+            AppUser  student = appUserRepository.findById(attendanceRequest.getStudentId())
                     .orElseThrow(() -> new IllegalArgumentException(
                             String.format("Student with ID %d not found.", attendanceRequest.getStudentId())
                     ));
