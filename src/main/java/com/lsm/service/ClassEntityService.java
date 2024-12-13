@@ -23,13 +23,11 @@ public class ClassEntityService {
 
     private final ClassEntityRepository classRepository;
     private final AppUserRepository appUserRepository;
-    private final ClassEntityRepository classEntityRepository;
 
     @Autowired
-    public ClassEntityService(ClassEntityRepository classRepository, AppUserRepository appUserRepository, ClassEntityRepository classEntityRepository) {
+    public ClassEntityService(ClassEntityRepository classRepository, AppUserRepository appUserRepository) {
         this.classRepository = classRepository;
         this.appUserRepository = appUserRepository;
-        this.classEntityRepository = classEntityRepository;
     }
 
     @Transactional
@@ -183,13 +181,13 @@ public class ClassEntityService {
     @Transactional(readOnly = true)
     public List<ClassEntity> getTeacherClasses(Authentication authentication) throws AccessDeniedException {
         AppUser teacher = (AppUser) authentication.getPrincipal();
-        return classEntityRepository.findClassesByTeacherId(teacher.getId());
+        return classRepository.findClassesByTeacherId(teacher.getId());
     }
 
     @Transactional
     public ClassEntity getStudentClasses(Authentication authentication) throws AccessDeniedException {
         AppUser student = (AppUser) authentication.getPrincipal();
-        return classEntityRepository.getClassEntityById(student.getStudentDetails().getClassEntity()).orElseThrow
+        return classRepository.getClassEntityById(student.getStudentDetails().getClassEntity()).orElseThrow
                 (() -> new EntityNotFoundException("Class not found with id: " + student.getStudentDetails().getClassEntity()));
     }
 

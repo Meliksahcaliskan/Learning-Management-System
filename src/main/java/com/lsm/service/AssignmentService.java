@@ -86,6 +86,9 @@ public class AssignmentService {
             AppUser teacher = appUserRepository.findById(loggedInUserId)
                     .orElseThrow(() -> new EntityNotFoundException("Teacher not found"));
 
+            if (teacher.getRole().equals(Role.ROLE_STUDENT))
+                throw new AccessDeniedException("Students can't create assignments");
+
             ClassEntity classEntity = classEntityRepository.findById(dto.getClassId())
                     .orElseThrow(() -> new EntityNotFoundException("Class not found"));
 
@@ -93,7 +96,6 @@ public class AssignmentService {
                     .orElseThrow(() -> new EntityNotFoundException("Course not found"));
 
             validateTeacherAccess(teacher, classEntity);
-            // validateUniqueTitle(dto.getTitle(), classEntity); // No existingAssignmentId for creation
 
             Assignment assignment = createAssignmentEntity(dto, teacher, classEntity, course);
 
@@ -165,7 +167,7 @@ public class AssignmentService {
                 .orElseThrow(() -> new EntityNotFoundException("Class not found by id: " + student.getStudentDetails().getClassEntity()));
 
         // Get all assignments for the student's class
-        List<Assignment> assignments = assignmentRepository.findByClassEntityOrderByDueDateDesc(classEntity);
+        Set<Assignment> assignments = assignmentRepository.findByClassEntityOrderByDueDateDesc(classEntity);
 
         // Convert to StudentAssignmentViewDTO
         return assignments.stream()
@@ -444,7 +446,8 @@ public class AssignmentService {
         }
 
         if (teacher.getRole() == Role.ROLE_TEACHER &&
-                !teacher.getTeacherDetails().getClasses().contains(classEntity)) {
+                teacher.getTeacherDetails().getClasses().stream()
+                        .noneMatch(c -> c.getId().equals(classEntity.getId()))) {
             throw new AccessDeniedException("Teachers can create assignments only for their assigned classes");
         }
     }

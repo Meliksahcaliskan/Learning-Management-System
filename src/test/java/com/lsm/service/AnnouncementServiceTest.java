@@ -129,6 +129,7 @@ class AnnouncementServiceTest {
         void shouldNotAllowStudentToCreateAnnouncement() {
             // Arrange
             when(appUserService.getCurrentUserWithDetails(studentUser.getId())).thenReturn(studentUser);
+            when(classEntityRepository.findById(1L)).thenReturn(Optional.of(classEntity));
 
             // Act & Assert
             assertThrows(AccessDeniedException.class,
@@ -203,6 +204,7 @@ class AnnouncementServiceTest {
             // Arrange
             when(appUserService.getCurrentUserWithDetails(teacherUser.getId())).thenReturn(teacherUser);
             when(announcementRepository.findById(1L)).thenReturn(Optional.of(announcement));
+            when(classEntityRepository.findById(1L)).thenReturn(Optional.of(classEntity));
             when(announcementRepository.save(any(Announcement.class))).thenReturn(announcement);
 
             // Act
@@ -212,6 +214,7 @@ class AnnouncementServiceTest {
             assertNotNull(result);
             assertEquals(announcementDTO.getTitle(), result.getTitle());
             verify(announcementRepository).save(any(Announcement.class));
+            verify(classEntityRepository).findById(1L);
         }
 
         @Test

@@ -2,6 +2,7 @@ package com.lsm.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import com.lsm.model.entity.ClassEntity;
 import com.lsm.model.entity.StudentSubmission;
@@ -33,7 +34,7 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
     List<Assignment> findByCourseIdAndAssignedBy(Long courseId, AppUser teacher);
 
     // Find assignments by due date for a class
-    List<Assignment> findByClassEntityOrderByDueDateDesc(ClassEntity classEntity);
+    Set<Assignment> findByClassEntityOrderByDueDateDesc(ClassEntity classEntity);
 
     // Find assignments by due date for a course
     List<Assignment> findByCourseIdOrderByDueDateDesc(Long courseId);

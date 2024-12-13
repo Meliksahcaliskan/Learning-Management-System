@@ -16,9 +16,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -116,6 +119,21 @@ class AssignmentServiceTest {
     @DisplayName("Create Assignment Tests")
     class CreateAssignmentTests {
 
+        @BeforeEach
+        void setUpValidationFields() {
+            // Inject maxTitleLength into service for testing
+            ReflectionTestUtils.setField(assignmentService, "maxTitleLength", 100);
+            ReflectionTestUtils.setField(assignmentService, "minDueDateDays", 1);
+
+            // Ensure validRequestDTO has valid values
+            validRequestDTO = new AssignmentRequestDTO();
+            validRequestDTO.setTitle("Test Assignment"); // Short valid title
+            validRequestDTO.setDescription("Test Description");
+            validRequestDTO.setDueDate(LocalDate.now().plusDays(7));
+            validRequestDTO.setClassId(1L);
+            validRequestDTO.setCourseId(1L);
+        }
+
         @Test
         @DisplayName("Should successfully create assignment when valid request")
         void shouldCreateAssignmentSuccessfully() throws AccessDeniedException {
@@ -142,8 +160,11 @@ class AssignmentServiceTest {
             when(appUserRepository.findById(2L)).thenReturn(Optional.of(studentUser));
 
             // Act & Assert
-            assertThrows(AccessDeniedException.class,
+            AccessDeniedException exception = assertThrows(AccessDeniedException.class,
                     () -> assignmentService.createAssignment(validRequestDTO, 2L));
+
+            assertEquals("Students can't create assignments", exception.getMessage());
+            verify(classEntityRepository, never()).findById(any());
         }
 
         @Test
@@ -154,8 +175,67 @@ class AssignmentServiceTest {
             when(classEntityRepository.findById(1L)).thenReturn(Optional.empty());
 
             // Act & Assert
-            assertThrows(EntityNotFoundException.class,
+            EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
                     () -> assignmentService.createAssignment(validRequestDTO, 1L));
+
+            assertEquals("Class not found", exception.getMessage());
+            verify(courseRepository, never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when title exceeds max length")
+        void shouldThrowExceptionWhenTitleTooLong() {
+            // Arrange
+            validRequestDTO.setTitle("A".repeat(101)); // Exceeds maxTitleLength of 100
+
+            // Act & Assert
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                    () -> assignmentService.createAssignment(validRequestDTO, 1L));
+
+            assertEquals("Title exceeds maximum length", exception.getMessage());
+            verify(appUserRepository, never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when due date is too soon")
+        void shouldThrowExceptionWhenDueDateTooSoon() {
+            // Arrange
+            validRequestDTO.setDueDate(LocalDate.now()); // Less than minDueDateDays
+
+            // Act & Assert
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                    () -> assignmentService.createAssignment(validRequestDTO, 1L));
+
+            assertEquals("Due date must be at least 1 days in the future", exception.getMessage());
+            verify(appUserRepository, never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("Should throw AccessDeniedException when teacher tries to create assignment for another class")
+        void shouldThrowAccessDeniedForWrongClass() {
+            // Arrange
+            ClassEntity otherClass = ClassEntity.builder()
+                    .id(2L)
+                    .name("Other Class")
+                    .build();
+
+            // Update validRequestDTO to use the otherClass id
+            validRequestDTO.setClassId(2L);  // Trying to create assignment for another class
+
+            // Setup mocks
+            when(appUserRepository.findById(1L)).thenReturn(Optional.of(teacherUser));
+            when(classEntityRepository.findById(2L)).thenReturn(Optional.of(otherClass));
+            when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+            // Act & Assert
+            AccessDeniedException exception = assertThrows(AccessDeniedException.class,
+                    () -> assignmentService.createAssignment(validRequestDTO, 1L));
+
+            assertEquals("Teachers can create assignments only for their assigned classes", exception.getMessage());
+
+            // Verify only the necessary calls
+            verify(appUserRepository).findById(1L);
+            verify(classEntityRepository).findById(2L);
         }
     }
 
@@ -185,7 +265,7 @@ class AssignmentServiceTest {
         @DisplayName("Should return student's assignments")
         void shouldGetStudentAssignments() throws AccessDeniedException {
             // Arrange
-            List<Assignment> assignments = Collections.singletonList(assignment);
+            Set<Assignment> assignments = Collections.singleton(assignment);
             when(appUserRepository.findById(2L)).thenReturn(Optional.of(studentUser));
             when(classEntityRepository.findById(1L)).thenReturn(Optional.of(classEntity));
             when(assignmentRepository.findByClassEntityOrderByDueDateDesc(classEntity))
@@ -209,16 +289,39 @@ class AssignmentServiceTest {
         void shouldSubmitAssignmentSuccessfully() throws Exception {
             // Arrange
             SubmitAssignmentDTO submitDTO = new SubmitAssignmentDTO();
+
+            // Set up class with courses
+            classEntity = ClassEntity.builder()
+                    .id(1L)
+                    .name("Test Class")
+                    .courses(new HashSet<>())
+                    .build();
+            classEntity.getCourses().add(course);
+
+            // Update assignment with properly setup class and studentSubmissions list
+            assignment = Assignment.builder()
+                    .id(1L)
+                    .title("Test Assignment")
+                    .description("Test Description")
+                    .dueDate(LocalDate.now().plusDays(7))
+                    .assignedBy(teacherUser)
+                    .classEntity(classEntity)
+                    .course(course)
+                    .studentSubmissions(new ArrayList<>())
+                    .build();
+
+            // Create submission with SUBMITTED status
             StudentSubmission submission = StudentSubmission.builder()
                     .id(1L)
                     .student(studentUser)
                     .assignment(assignment)
-                    .status(AssignmentStatus.SUBMITTED)
+                    .status(AssignmentStatus.SUBMITTED)  // Ensure status is SUBMITTED
+                    .submissionDate(LocalDate.now())
                     .build();
 
             when(assignmentRepository.findById(1L)).thenReturn(Optional.of(assignment));
             when(classEntityRepository.findById(1L)).thenReturn(Optional.of(classEntity));
-            when(studentSubmissionService.submitAssignment(eq(1L), any(), eq(studentUser)))
+            when(studentSubmissionService.submitAssignment(eq(1L), any(SubmitAssignmentDTO.class), eq(studentUser)))
                     .thenReturn(submission);
             when(assignmentRepository.save(any(Assignment.class))).thenReturn(assignment);
 
@@ -229,6 +332,7 @@ class AssignmentServiceTest {
             assertNotNull(result);
             assertEquals(AssignmentStatus.SUBMITTED, result.getStatus());
             verify(assignmentRepository).save(any(Assignment.class));
+            verify(studentSubmissionService).submitAssignment(eq(1L), any(SubmitAssignmentDTO.class), eq(studentUser));
         }
 
         @Test

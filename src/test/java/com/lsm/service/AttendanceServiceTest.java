@@ -261,10 +261,27 @@ class AttendanceServiceTest {
         @DisplayName("Should get attendance stats by course")
         void shouldGetAttendanceStatsByCourse() throws AccessDeniedException {
             // Arrange
+            AppUser student = AppUser.builder()
+                    .id(1L)
+                    .name("Test Student")
+                    .role(Role.ROLE_STUDENT)
+                    .build();
+
+            // Build attendance with proper student reference
+            attendance = Attendance.builder()
+                    .id(1L)
+                    .student(student)
+                    .courseId(course.getId())
+                    .classId(classEntity.getId())
+                    .status(AttendanceStatus.PRESENT)
+                    .build();
+
             when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
             when(classEntityRepository.getClassEntityById(classEntity.getId())).thenReturn(Optional.of(classEntity));
             when(attendanceRepository.findByCourseIdAndClassId(course.getId(), classEntity.getId()))
                     .thenReturn(Collections.singletonList(attendance));
+            // Add mock for student lookup
+            when(appUserRepository.findById(student.getId())).thenReturn(Optional.of(student));
 
             // Act
             List<AttendanceStatsDTO> result = attendanceService.getAttendanceStatsByCourse(
@@ -273,7 +290,13 @@ class AttendanceServiceTest {
             // Assert
             assertFalse(result.isEmpty());
             assertEquals(1, result.size());
-            assertEquals(classEntity.getId(), result.get(0).getClassId());
+            AttendanceStatsDTO stats = result.get(0);
+            assertEquals(classEntity.getId(), stats.getClassId());
+            assertEquals(student.getId(), stats.getStudentId());
+            assertEquals(student.getName(), stats.getStudentName());
+            assertEquals(1, stats.getTotalClasses());
+            assertEquals(1, stats.getPresentCount());
+            assertEquals(100.0, stats.getAttendancePercentage());
         }
     }
 }

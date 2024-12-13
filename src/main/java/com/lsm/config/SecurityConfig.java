@@ -102,7 +102,7 @@ public class SecurityConfig {
                         })
                 )
                 .authorizeHttpRequests(registry -> {
-                    // Public endpoints (TODO: register must restricted for non-admin users later.)
+                    // Public endpoints (TODO: register must restricted for non-admin users after production.)
                     registry.requestMatchers(
                             "/api/v1/auth/register",
                             "/api/v1/auth/login",
@@ -159,6 +159,7 @@ public class SecurityConfig {
                     registry.requestMatchers(HttpMethod.PATCH, "/api/v1/assignments/**")
                             .hasAnyAuthority("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
 
+                    // Attendance endpoints
                     registry.requestMatchers(HttpMethod.POST, "/api/v1/attendance/**")
                             .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
                     registry.requestMatchers(HttpMethod.GET, "/api/v1/attendance/**")
@@ -167,6 +168,17 @@ public class SecurityConfig {
                             .hasAnyAuthority("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
                     registry.requestMatchers(HttpMethod.DELETE, "/api/v1/attendance/**")
                             .hasAnyAuthority("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+
+                    // Announcements endpoints
+                    registry.requestMatchers(HttpMethod.POST, "/api/v1/announcements/")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+                    registry.requestMatchers(HttpMethod.GET, "/api/v1/announcements/**")
+                            .hasAnyAuthority("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+                    registry.requestMatchers(HttpMethod.PUT, "/api/v1/announcements/{id}")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+                    registry.requestMatchers(HttpMethod.DELETE, "/api/v1/announcements/{id}")
+                            .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
+
 
                     // Default policy
                     registry.anyRequest().authenticated();
