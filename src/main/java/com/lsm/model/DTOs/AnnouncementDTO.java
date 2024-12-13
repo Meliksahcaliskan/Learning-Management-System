@@ -1,14 +1,15 @@
 package com.lsm.model.DTOs;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Data
 public class AnnouncementDTO {
     private Long id;
-    private String title;
-    private String content;
-    private Long classId;
-    private LocalDateTime createdAt;
+    @NotNull private String title;
+    @NotNull private String content;
+    @NotNull private Long classId;
+    private LocalDate createdAt;
 }
 
