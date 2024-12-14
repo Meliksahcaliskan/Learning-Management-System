@@ -39,7 +39,7 @@ jobs:
           chmod 700 ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          eval $(ssh-agent -s)
+          eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_rsa
           ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
 
@@ -51,54 +51,58 @@ jobs:
       - name: Deploy to Server
         timeout-minutes: 5
         run: |
+          # Copy the JAR file
           scp -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts $APP_NAME $SERVER_USER@$SERVER_IP:/opt/learnovify/
+          
+          # SSH into the server and deploy
           ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts $SERVER_USER@$SERVER_IP << 'EOF'
             set -euo pipefail
-            cd /opt/learnovify
-            
-            # Check disk space
-            if [ $(df -P /opt | awk 'NR==2 {print $5}' | tr -d '%') -gt 90 ]; then
-              echo "Insufficient disk space"
+            DEPLOY_DIR="/opt/learnovify"
+            BACKUP_DIR="${DEPLOY_DIR}/backups"
+
+            # Ensure sufficient disk space
+            if [ $(df -P $DEPLOY_DIR | awk 'NR==2 {print $5}' | tr -d '%') -gt 90 ]; then
+              echo "Error: Insufficient disk space"
               exit 1
             fi
-            
-            # Backup with retention
-            backup_dir="/opt/learnovify/backups"
-            mkdir -p $backup_dir
-            [ -f lsm.jar ] && mv lsm.jar $backup_dir/lsm.jar.bak.$(date +%Y%m%d-%H%M%S)
-            find $backup_dir -name "*.bak.*" -mtime +7 -delete
-            
-            # Deploy new version
-            mv $APP_NAME lsm.jar
-            chmod 640 lsm.jar
-            
-            # Restart service (needs sudo)
+
+            # Backup the current JAR with retention
+            mkdir -p $BACKUP_DIR
+            [ -f "${DEPLOY_DIR}/lsm.jar" ] && mv "${DEPLOY_DIR}/lsm.jar" "${BACKUP_DIR}/lsm.jar.bak.$(date +%Y%m%d-%H%M%S)"
+            find $BACKUP_DIR -name "*.bak.*" -mtime +7 -delete
+
+            # Deploy the new version
+            mv "${DEPLOY_DIR}/$APP_NAME" "${DEPLOY_DIR}/lsm.jar"
+            chmod 640 "${DEPLOY_DIR}/lsm.jar"
+
+            # Restart the service
             sudo systemctl restart learnovify.service || {
-              echo "Failed to restart service"
+              echo "Error: Failed to restart service"
               exit 1
             }
-            
-            # Health check
+
+            # Health check for service status
             timeout 30s bash -c '
               until systemctl is-active --quiet learnovify.service; do
                 sleep 2
               done
             ' || {
-              echo "Service failed to start within timeout"
+              echo "Error: Service failed to start within timeout"
               exit 1
             }
-          EOF'
+          EOF
 
       - name: Health Check
         run: |
           for i in {1..12}; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.APP_URL }}/health)
+            response=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.APP_URL }}/health")
             if [ "$response" = "200" ]; then
+              echo "Health check passed"
               exit 0
             fi
             sleep 5
           done
-          echo "Health check failed after 1 minute"
+          echo "Error: Health check failed after 1 minute"
           exit 1
 
       - name: Cleanup
