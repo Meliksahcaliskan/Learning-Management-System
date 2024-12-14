@@ -73,8 +73,11 @@ jobs:
             mv $APP_NAME lsm.jar
             chmod 640 lsm.jar
             
-            # Restart service
-            sudo systemctl restart learnovify.service
+            # Restart service (needs sudo)
+            sudo systemctl restart learnovify.service || {
+              echo "Failed to restart service"
+              exit 1
+            }
             
             # Health check
             timeout 30s bash -c '
