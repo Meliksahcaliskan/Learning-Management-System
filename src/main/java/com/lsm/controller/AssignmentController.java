@@ -5,12 +5,10 @@ import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.AssignmentDocument;
 import com.lsm.model.entity.StudentSubmission;
 import com.lsm.model.entity.base.AppUser;
-import com.lsm.model.entity.enums.AssignmentStatus;
 import com.lsm.model.entity.enums.Role;
 import com.lsm.service.AssignmentDocumentService;
 import com.lsm.service.AssignmentService;
 
-import com.nimbusds.jose.util.Pair;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -36,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
@@ -58,23 +57,26 @@ public class AssignmentController {
     private final AssignmentDocumentService documentService;
 
     @Operation(
-        summary = "Create a new assignment",
-        description = "Allows teachers to create a new assignment for students"
+            summary = "Create a new assignment",
+            description = "Allows teachers to create a new assignment for students"
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Assignment created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-        @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+            @ApiResponse(responseCode = "201", description = "Assignment created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
     })
     @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @PostMapping("/createAssignment")
     public ResponseEntity<ApiResponse_<AssignmentDTO>> createAssignment(
             @Valid @RequestBody AssignmentRequestDTO assignmentRequest,
             Authentication authentication
-    ) {
+    ) throws AccessDeniedException {
         try {
             AppUser currentUser = (AppUser) authentication.getPrincipal();
             log.info("Creating assignment for teacher: {}", currentUser.getUsername());
+
+            if (currentUser.getRole() == Role.ROLE_STUDENT)
+                throw new AccessDeniedException("Students cannot create assignments");
 
             Assignment assignment = assignmentService.createAssignment(assignmentRequest, currentUser.getId());
 
@@ -87,10 +89,10 @@ public class AssignmentController {
                     ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while creating assignment: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            throw e;
         } catch (Exception e) {
             log.error("Error creating assignment: {}", e.getMessage());
-            return httpError(HttpStatus.BAD_REQUEST, "Error creating assignment" + e.getMessage());
+            return httpError(HttpStatus.BAD_REQUEST, "Error creating assignment: " + e.getMessage());
         }
     }
 
@@ -356,24 +358,22 @@ public class AssignmentController {
             description = "Download a document associated with an assignment"
     )
     @GetMapping("/documents/{documentId}")
-    public ResponseEntity<ApiResponse_<Resource>> downloadDocument(
+    public ResponseEntity<Resource> downloadDocument(
             @PathVariable Long documentId,
             Authentication authentication) {
         try {
             AppUser currentUser = (AppUser) authentication.getPrincipal();
-            Resource resource;
-            resource = documentService.downloadDocument(documentId, currentUser);
+            Resource resource = documentService.downloadDocument(documentId, currentUser);
+
             return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .header(HttpHeaders.CONTENT_DISPOSITION,
                             "attachment; filename=\"" + resource.getFilename() + "\"")
-                    .body(new ApiResponse_<>(
-                            true,
-                            "Successfully downloaded document",
-                            resource
-                    ));
+                    .body(resource);
         } catch (IOException e) {
-            log.error("Access denied while downloading the assignment: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            log.error("Error downloading document: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Access denied: " + e.getMessage());
         }
     }
 

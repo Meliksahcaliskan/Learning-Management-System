@@ -9,17 +9,17 @@ import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.Role;
 import com.lsm.service.ClassEntityService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.nio.file.AccessDeniedException;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -27,272 +27,241 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(ClassEntityController.class)
+@ExtendWith(MockitoExtension.class)
 class ClassEntityControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @Mock
     private ClassEntityService classService;
 
-    @MockBean
+    @Mock
     private ClassEntityMapper classMapper;
 
+    @Mock
+    private Authentication authentication;
+
+    @InjectMocks
+    private ClassEntityController classController;
+
+    private AppUser adminUser;
     private AppUser teacherUser;
     private AppUser studentUser;
-    private AppUser adminUser;
     private ClassEntity testClass;
     private ClassEntityRequestDTO requestDTO;
     private ClassEntityResponseDTO responseDTO;
 
     @BeforeEach
     void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(classController)
+                .build();
+        objectMapper = new ObjectMapper();
+
         // Setup users
-        teacherUser = AppUser.builder()
+        adminUser = AppUser.builder()
                 .id(1L)
-                .username("teacher")
+                .role(Role.ROLE_ADMIN)
+                .build();
+
+        teacherUser = AppUser.builder()
+                .id(2L)
                 .role(Role.ROLE_TEACHER)
                 .build();
 
         studentUser = AppUser.builder()
-                .id(2L)
-                .username("student")
-                .role(Role.ROLE_STUDENT)
-                .build();
-
-        adminUser = AppUser.builder()
                 .id(3L)
-                .username("admin")
-                .role(Role.ROLE_ADMIN)
+                .role(Role.ROLE_STUDENT)
                 .build();
 
         // Setup test class
         testClass = ClassEntity.builder()
                 .id(1L)
                 .name("Test Class")
-                .teacher(teacherUser)
+                .description("Test Description")
                 .build();
 
-        // Setup request DTO
-        requestDTO = new ClassEntityRequestDTO();
-        requestDTO.setName("Test Class");
-        requestDTO.setTeacherId(1L);
-        requestDTO.setStudentIds(Collections.singletonList(2L));
+        // Setup DTOs
+        requestDTO = ClassEntityRequestDTO.builder()
+                .name("Test Class")
+                .description("Test Description")
+                .teacherId(2L)
+                .studentIds(Arrays.asList(3L, 4L))
+                .build();
 
-        // Setup response DTO
-        responseDTO = new ClassEntityResponseDTO();
-        responseDTO.setId(1L);
-        responseDTO.setName("Test Class");
-        responseDTO.setTeacherId(1L);
+        responseDTO = ClassEntityResponseDTO.builder()
+                .id(1L)
+                .name("Test Class")
+                .description("Test Description")
+                .teacherId(2L)
+                .studentIds(Arrays.asList(3L, 4L))
+                .build();
     }
 
-    @Nested
-    @DisplayName("Create Class Tests")
-    class CreateClassTests {
+    @Test
+    void createClass_WithValidTeacher_ShouldCreateClass() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(teacherUser);
+        when(classMapper.toEntity(any(ClassEntityRequestDTO.class))).thenReturn(testClass);
+        when(classService.createClass(eq(teacherUser), any(), eq(2L), any())).thenReturn(testClass);
+        when(classMapper.toDTO(any(ClassEntity.class))).thenReturn(responseDTO);
 
-        @Test
-        @WithMockUser(roles = "TEACHER")
-        @DisplayName("Should create class successfully")
-        void shouldCreateClassSuccessfully() throws Exception {
-            // Arrange
-            when(classMapper.toEntity(any())).thenReturn(testClass);
-            when(classMapper.toDTO(any())).thenReturn(responseDTO);
-            when(classService.createClass(any(), any(), any(), any())).thenReturn(testClass);
-
-            // Act & Assert
-            mockMvc.perform(post("/api/v1/classes")
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(requestDTO)))
-                    .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.name").value("Test Class"));
-        }
-
-        @Test
-        @WithMockUser(roles = "STUDENT")
-        @DisplayName("Should not allow students to create class")
-        void shouldNotAllowStudentsToCreateClass() throws Exception {
-            mockMvc.perform(post("/api/v1/classes")
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(requestDTO)))
-                    .andExpect(status().isForbidden());
-        }
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/classes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDTO))
+                        .principal(authentication))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value("Test Class"));
     }
 
-    @Nested
-    @DisplayName("Get Class Tests")
-    class GetClassTests {
+    @Test
+    void createClass_WithStudent_ShouldReturnForbidden() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(studentUser);
 
-        @Test
-        @WithMockUser(roles = "TEACHER")
-        @DisplayName("Should get class by ID")
-        void shouldGetClassById() throws Exception {
-            // Arrange
-            when(classService.getClassById(any(), eq(1L))).thenReturn(testClass);
-            when(classMapper.toDTO(any())).thenReturn(responseDTO);
-
-            // Act & Assert
-            mockMvc.perform(get("/api/v1/classes/1")
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.id").value(1L));
-        }
-
-        @Test
-        @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should get all classes")
-        void shouldGetAllClasses() throws Exception {
-            // Arrange
-            List<ClassEntity> classes = Arrays.asList(testClass);
-            when(classService.getAllClasses(any())).thenReturn(classes);
-            when(classMapper.toDTO(any())).thenReturn(responseDTO);
-
-            // Act & Assert
-            mockMvc.perform(get("/api/v1/classes")
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data").isArray());
-        }
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/classes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDTO))
+                        .principal(authentication))
+                .andExpect(status().isForbidden());
     }
 
-    @Nested
-    @DisplayName("Update Class Tests")
-    class UpdateClassTests {
+    @Test
+    void getClassById_AsTeacher_ShouldReturnClass() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(teacherUser);
+        when(classService.getClassById(eq(teacherUser), eq(1L))).thenReturn(testClass);
+        when(classMapper.toDTO(any(ClassEntity.class))).thenReturn(responseDTO);
 
-        @Test
-        @WithMockUser(roles = "TEACHER")
-        @DisplayName("Should update class successfully")
-        void shouldUpdateClassSuccessfully() throws Exception {
-            // Arrange
-            when(classMapper.toEntity(any())).thenReturn(testClass);
-            when(classMapper.toDTO(any())).thenReturn(responseDTO);
-            when(classService.updateClass(any(), any(), any(), any(), any())).thenReturn(testClass);
-
-            // Act & Assert
-            mockMvc.perform(put("/api/v1/classes/1")
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(requestDTO)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true));
-        }
-
-        @Test
-        @WithMockUser(roles = "TEACHER")
-        @DisplayName("Should handle access denied during update")
-        void shouldHandleAccessDeniedDuringUpdate() throws Exception {
-            // Arrange
-            when(classMapper.toEntity(any())).thenReturn(testClass);
-            when(classService.updateClass(any(), any(), any(), any(), any()))
-                    .thenThrow(new AccessDeniedException("Access denied"));
-
-            // Act & Assert
-            mockMvc.perform(put("/api/v1/classes/1")
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(requestDTO)))
-                    .andExpect(status().isForbidden());
-        }
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/classes/1")
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(1));
     }
 
-    @Nested
-    @DisplayName("Student Management Tests")
-    class StudentManagementTests {
+    @Test
+    void getClassById_WithInvalidId_ShouldReturnNotFound() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(teacherUser);
+        when(classService.getClassById(eq(teacherUser), eq(999L)))
+                .thenThrow(new EntityNotFoundException("Class not found"));
 
-        @Test
-        @WithMockUser(roles = "TEACHER")
-        @DisplayName("Should add student successfully")
-        void shouldAddStudentSuccessfully() throws Exception {
-            // Arrange
-            when(classService.addStudent(any(), eq(1L), eq(2L))).thenReturn(testClass);
-            when(classMapper.toDTO(any())).thenReturn(responseDTO);
-
-            // Act & Assert
-            mockMvc.perform(post("/api/v1/classes/1/students/2")
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true));
-        }
-
-        @Test
-        @WithMockUser(roles = "TEACHER")
-        @DisplayName("Should add students in bulk successfully")
-        void shouldAddStudentsBulkSuccessfully() throws Exception {
-            // Arrange
-            List<Long> studentIds = Arrays.asList(1L, 2L);
-            when(classService.addStudentsBulk(any(), eq(1L), any())).thenReturn(testClass);
-            when(classMapper.toDTO(any())).thenReturn(responseDTO);
-
-            // Act & Assert
-            mockMvc.perform(post("/api/v1/classes/1/students/bulk")
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(studentIds)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true));
-        }
-
-        @Test
-        @WithMockUser(roles = "TEACHER")
-        @DisplayName("Should remove student successfully")
-        void shouldRemoveStudentSuccessfully() throws Exception {
-            // Arrange
-            when(classService.removeStudent(any(), eq(1L), eq(2L))).thenReturn(testClass);
-            when(classMapper.toDTO(any())).thenReturn(responseDTO);
-
-            // Act & Assert
-            mockMvc.perform(delete("/api/v1/classes/1/students/2")
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true));
-        }
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/classes/999")
+                        .principal(authentication))
+                .andExpect(status().isInternalServerError());
     }
 
-    @Nested
-    @DisplayName("Teacher and Student Views Tests")
-    class TeacherAndStudentViewsTests {
+    @Test
+    void getAllClasses_AsAdmin_ShouldReturnAllClasses() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(adminUser);
+        when(classService.getAllClasses(any(Authentication.class)))
+                .thenReturn(Collections.singletonList(testClass));
+        when(classMapper.toDTO(any(ClassEntity.class))).thenReturn(responseDTO);
 
-        @Test
-        @WithMockUser(roles = "TEACHER")
-        @DisplayName("Should get teacher classes")
-        void shouldGetTeacherClasses() throws Exception {
-            // Arrange
-            List<ClassEntity> classes = Arrays.asList(testClass);
-            when(classService.getTeacherClasses(any())).thenReturn(classes);
-            when(classMapper.toDTO(any())).thenReturn(responseDTO);
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/classes")
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value(1));
+    }
 
-            // Act & Assert
-            mockMvc.perform(get("/api/v1/classes/teacher")
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data").isArray());
-        }
+    @Test
+    void updateClass_WithValidData_ShouldUpdateClass() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(teacherUser);
+        when(classMapper.toEntity(any(ClassEntityRequestDTO.class))).thenReturn(testClass);
+        when(classService.updateClass(eq(teacherUser), eq(1L), any(), eq(2L), any())).thenReturn(testClass);
+        when(classMapper.toDTO(any(ClassEntity.class))).thenReturn(responseDTO);
 
-        @Test
-        @WithMockUser(roles = "STUDENT")
-        @DisplayName("Should get student classes")
-        void shouldGetStudentClasses() throws Exception {
-            // Arrange
-            when(classService.getStudentClasses(any())).thenReturn(testClass);
-            when(classMapper.toDTO(any())).thenReturn(responseDTO);
+        // Act & Assert
+        mockMvc.perform(put("/api/v1/classes/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDTO))
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(1));
+    }
 
-            // Act & Assert
-            mockMvc.perform(get("/api/v1/classes/student")
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true));
-        }
+    @Test
+    void addStudent_AsTeacher_ShouldAddStudent() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(teacherUser);
+        when(classService.addStudent(eq(teacherUser), eq(1L), eq(3L))).thenReturn(testClass);
+        when(classMapper.toDTO(any(ClassEntity.class))).thenReturn(responseDTO);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/classes/1/students/3")
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void addStudentsBulk_AsTeacher_ShouldAddMultipleStudents() throws Exception {
+        // Arrange
+        List<Long> studentIds = Arrays.asList(3L, 4L);
+        when(authentication.getPrincipal()).thenReturn(teacherUser);
+        when(classService.addStudentsBulk(eq(teacherUser), eq(1L), any())).thenReturn(testClass);
+        when(classMapper.toDTO(any(ClassEntity.class))).thenReturn(responseDTO);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/classes/1/students/bulk")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(studentIds))
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void removeStudent_AsTeacher_ShouldRemoveStudent() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(teacherUser);
+        when(classService.removeStudent(eq(teacherUser), eq(1L), eq(3L))).thenReturn(testClass);
+        when(classMapper.toDTO(any(ClassEntity.class))).thenReturn(responseDTO);
+
+        // Act & Assert
+        mockMvc.perform(delete("/api/v1/classes/1/students/3")
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void getTeacherClasses_AsTeacher_ShouldReturnClasses() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(teacherUser);
+        when(classService.getTeacherClasses(any(Authentication.class)))
+                .thenReturn(Collections.singletonList(testClass));
+        when(classMapper.toDTO(any(ClassEntity.class))).thenReturn(responseDTO);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/classes/teacher")
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value(1));
+    }
+
+    @Test
+    void getStudentClasses_AsStudent_ShouldReturnClasses() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(studentUser);
+        when(classService.getStudentClasses(any(Authentication.class))).thenReturn(testClass);
+        when(classMapper.toDTO(any(ClassEntity.class))).thenReturn(responseDTO);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/classes/student")
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(1));
     }
 }

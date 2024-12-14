@@ -1,0 +1,105 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - backend_dev-v2
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    environment: production
+
+    env:
+      SERVER_IP: ${{ secrets.SERVER_IP }}
+      SERVER_USER: ${{ secrets.SERVER_USER }}
+      APP_NAME: lsm-0.0.1-SNAPSHOT.jar
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up SSH
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
+          ssh-keyscan -t rsa,ecdsa,ed25519 -H $SERVER_IP >> ~/.ssh/known_hosts
+
+      - name: Run Tests
+        run: |
+          ./gradlew test --no-daemon
+
+      - name: Build Application
+        run: |
+          ./gradlew clean build -x test --no-daemon
+          cp build/libs/$APP_NAME .
+
+      - name: Deploy to Server
+        timeout-minutes: 5
+        run: |
+          scp -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts $APP_NAME $SERVER_USER@$SERVER_IP:/opt/
+          scp -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts .env $SERVER_USER@$SERVER_IP:/opt/
+          ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts $SERVER_USER@$SERVER_IP << 'EOF'
+            set -euo pipefail
+            cd /opt/
+          
+            # Check disk space before deployment
+            if [ $(df -P /opt | awk 'NR==2 {print $5}' | tr -d '%') -gt 90 ]; then
+              echo "Insufficient disk space"
+              exit 1
+            fi
+          
+            # Backup with retention
+            backup_dir="/opt/backups"
+            mkdir -p $backup_dir
+            mv $APP_NAME $backup_dir/$APP_NAME.bak.$(date +%Y%m%d-%H%M%S)
+            find $backup_dir -name "*.bak.*" -mtime +7 -delete
+          
+            # Deploy new version
+            mv /opt/$APP_NAME /opt/lsm.jar
+            chown $SERVER_USER:$SERVER_USER /opt/lsm.jar
+            chmod 640 /opt/lsm.jar
+          
+            # Restart service with proper error handling
+            if ! sudo systemctl restart learnovify.service; then
+              echo "Service restart failed"
+              exit 1
+            fi
+          
+            # Health check with timeout
+            timeout 30s bash -c '
+              until systemctl is-active --quiet learnovify.service; do
+                sleep 2
+              done
+            ' || {
+              echo "Service failed to start within timeout"
+              exit 1
+            }
+          EOF
+
+      - name: Health Check
+        run: |
+          for i in {1..12}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.APP_URL }}/health)
+            if [ "$response" = "200" ]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Health check failed after 1 minute"
+          exit 1
+
+      - name: Cleanup
+        if: always()
+        run: |
+          ssh-agent -k || true

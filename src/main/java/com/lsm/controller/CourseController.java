@@ -1,7 +1,6 @@
 package com.lsm.controller;
 
 import com.lsm.model.DTOs.CourseDTO;
-import com.lsm.model.DTOs.StudentDTO;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.Role;
 import com.lsm.service.CourseService;

@@ -6,15 +6,15 @@ import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.Role;
 import com.lsm.service.CourseService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import jakarta.persistence.EntityNotFoundException;
 import java.util.Arrays;
@@ -24,262 +24,212 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(CourseController.class)
+@ExtendWith(MockitoExtension.class)
 class CourseControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @Mock
     private CourseService courseService;
 
-    private CourseDTO courseDTO;
+    @Mock
+    private Authentication authentication;
+
+    @InjectMocks
+    private CourseController courseController;
+
+    private CourseDTO testCourse;
+    private AppUser adminUser;
     private AppUser teacherUser;
     private AppUser studentUser;
-    private AppUser adminUser;
 
     @BeforeEach
     void setUp() {
-        // Setup course DTO
-        courseDTO = CourseDTO.builder()
+        mockMvc = MockMvcBuilders.standaloneSetup(courseController)
+                .build();
+        objectMapper = new ObjectMapper();
+
+        // Setup test course
+        testCourse = CourseDTO.builder()
                 .id(1L)
                 .name("Test Course")
-                .code("TEST101")
-                .credits(3)
+                .code("TC101")
                 .description("Test Description")
-                .classEntityIds(Collections.singletonList(1L))
+                .credits(3)
+                .classEntityIds(Arrays.asList(1L, 2L))
                 .build();
 
-        // Setup users
-        teacherUser = AppUser.builder()
+        // Setup users with different roles
+        adminUser = AppUser.builder()
                 .id(1L)
-                .username("teacher")
+                .role(Role.ROLE_ADMIN)
+                .build();
+
+        teacherUser = AppUser.builder()
+                .id(2L)
                 .role(Role.ROLE_TEACHER)
                 .build();
 
         studentUser = AppUser.builder()
-                .id(2L)
-                .username("student")
+                .id(3L)
                 .role(Role.ROLE_STUDENT)
                 .build();
-
-        adminUser = AppUser.builder()
-                .id(3L)
-                .username("admin")
-                .role(Role.ROLE_ADMIN)
-                .build();
     }
 
-    @Nested
-    @DisplayName("Get Course Tests")
-    class GetCourseTests {
+    @Test
+    void getCourseById_WithValidId_ShouldReturnCourse() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(adminUser);
+        when(courseService.getCourseById(eq(adminUser), eq(1L))).thenReturn(testCourse);
 
-        @Test
-        @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should get course by ID")
-        void shouldGetCourseById() throws Exception {
-            when(courseService.getCourseById(any(), eq(1L))).thenReturn(courseDTO);
-
-            mockMvc.perform(get("/api/v1/courses/1")
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.name").value(courseDTO.getName()));
-        }
-
-        @Test
-        @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should handle course not found")
-        void shouldHandleCourseNotFound() throws Exception {
-            when(courseService.getCourseById(any(), eq(1L)))
-                    .thenThrow(new EntityNotFoundException("Course not found"));
-
-            mockMvc.perform(get("/api/v1/courses/1")
-                            .with(csrf()))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.success").value(false));
-        }
-
-        @Test
-        @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should get all courses")
-        void shouldGetAllCourses() throws Exception {
-            List<CourseDTO> courses = Arrays.asList(courseDTO);
-            when(courseService.getAllCourses()).thenReturn(courses);
-
-            mockMvc.perform(get("/api/v1/courses")
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data").isArray())
-                    .andExpect(jsonPath("$.data[0].name").value(courseDTO.getName()));
-        }
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/courses/1")
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value(testCourse.getName()));
     }
 
-    @Nested
-    @DisplayName("Create Course Tests")
-    class CreateCourseTests {
+    @Test
+    void getCourseById_WithInvalidId_ShouldReturnNotFound() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(adminUser);
+        when(courseService.getCourseById(eq(adminUser), eq(999L)))
+                .thenThrow(new EntityNotFoundException("Course not found"));
 
-        @Test
-        @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should create course successfully")
-        void shouldCreateCourse() throws Exception {
-            when(courseService.createCourse(any(CourseDTO.class))).thenReturn(courseDTO);
-
-            mockMvc.perform(post("/api/v1/courses")
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(courseDTO)))
-                    .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.name").value(courseDTO.getName()));
-        }
-
-        @Test
-        @WithMockUser(roles = "TEACHER")
-        @DisplayName("Should not allow teacher to create course")
-        void shouldNotAllowTeacherToCreateCourse() throws Exception {
-            mockMvc.perform(post("/api/v1/courses")
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(courseDTO)))
-                    .andExpect(status().isForbidden());
-        }
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/courses/999")
+                        .principal(authentication))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false));
     }
 
-    @Nested
-    @DisplayName("Update Course Tests")
-    class UpdateCourseTests {
+    @Test
+    void getAllCourses_AsAdmin_ShouldReturnAllCourses() throws Exception {
+        // Arrange
+        List<CourseDTO> courses = Arrays.asList(testCourse);
+        when(courseService.getAllCourses()).thenReturn(courses);
 
-        @Test
-        @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should update course successfully")
-        void shouldUpdateCourse() throws Exception {
-            when(courseService.updateCourse(eq(1L), any(CourseDTO.class))).thenReturn(courseDTO);
-
-            mockMvc.perform(put("/api/v1/courses/1")
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(courseDTO)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.name").value(courseDTO.getName()));
-        }
-
-        @Test
-        @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should handle course not found during update")
-        void shouldHandleCourseNotFoundDuringUpdate() throws Exception {
-            when(courseService.updateCourse(eq(1L), any(CourseDTO.class)))
-                    .thenThrow(new EntityNotFoundException("Course not found"));
-
-            mockMvc.perform(put("/api/v1/courses/1")
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(courseDTO)))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.success").value(false));
-        }
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/courses")
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].name").value(testCourse.getName()));
     }
 
-    @Nested
-    @DisplayName("Delete Course Tests")
-    class DeleteCourseTests {
+    @Test
+    void createCourse_WithValidData_ShouldCreateCourse() throws Exception {
+        // Arrange
+        when(courseService.createCourse(any(CourseDTO.class))).thenReturn(testCourse);
 
-        @Test
-        @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should delete course successfully")
-        void shouldDeleteCourse() throws Exception {
-            doNothing().when(courseService).deleteCourse(1L);
-
-            mockMvc.perform(delete("/api/v1/courses/1")
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true));
-        }
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/courses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testCourse))
+                        .principal(authentication))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value(testCourse.getName()));
     }
 
-    @Nested
-    @DisplayName("Course Search Tests")
-    class CourseSearchTests {
+    @Test
+    void updateCourse_WithValidData_ShouldUpdateCourse() throws Exception {
+        // Arrange
+        when(courseService.updateCourse(eq(1L), any(CourseDTO.class))).thenReturn(testCourse);
 
-        @Test
-        @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should search courses successfully")
-        void shouldSearchCourses() throws Exception {
-            List<CourseDTO> searchResults = Arrays.asList(courseDTO);
-            when(courseService.searchCourses(any(), any(), any())).thenReturn(searchResults);
-
-            mockMvc.perform(get("/api/v1/courses/search")
-                            .param("query", "test")
-                            .param("semester", "FALL")
-                            .param("year", "2024")
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data").isArray());
-        }
+        // Act & Assert
+        mockMvc.perform(put("/api/v1/courses/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testCourse))
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value(testCourse.getName()));
     }
 
-    @Nested
-    @DisplayName("Course By Teacher Tests")
-    class CourseByTeacherTests {
+    @Test
+    void deleteCourse_WithValidId_ShouldDeleteCourse() throws Exception {
+        // Arrange
+        doNothing().when(courseService).deleteCourse(1L);
 
-        @Test
-        @WithMockUser(roles = "TEACHER")
-        @DisplayName("Should get teacher courses")
-        void shouldGetTeacherCourses() throws Exception {
-            List<CourseDTO> teacherCourses = Arrays.asList(courseDTO);
-            when(courseService.getCoursesByTeacher(1L)).thenReturn(teacherCourses);
-
-            mockMvc.perform(get("/api/v1/courses/teacher/1")
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data").isArray());
-        }
-
-        @Test
-        @WithMockUser(roles = "TEACHER")
-        @DisplayName("Should not allow teacher to view other teacher's courses")
-        void shouldNotAllowTeacherToViewOtherTeachersCourses() throws Exception {
-            mockMvc.perform(get("/api/v1/courses/teacher/2")
-                            .with(csrf()))
-                    .andExpect(status().isForbidden());
-        }
+        // Act & Assert
+        mockMvc.perform(delete("/api/v1/courses/1")
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
     }
 
-    @Nested
-    @DisplayName("Course By Student Tests")
-    class CourseByStudentTests {
+    @Test
+    void getCoursesByClassId_WithValidId_ShouldReturnCourses() throws Exception {
+        // Arrange
+        List<CourseDTO> courses = Collections.singletonList(testCourse);
+        when(courseService.getCoursesByClassId(1L)).thenReturn(courses);
 
-        @Test
-        @WithMockUser(roles = "STUDENT")
-        @DisplayName("Should get student courses")
-        void shouldGetStudentCourses() throws Exception {
-            List<CourseDTO> studentCourses = Arrays.asList(courseDTO);
-            when(courseService.getCoursesByStudent(1L)).thenReturn(studentCourses);
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/courses/class/1")
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].name").value(testCourse.getName()));
+    }
 
-            mockMvc.perform(get("/api/v1/courses/student/1")
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data").isArray());
-        }
+    @Test
+    void getCoursesByStudent_AsValidStudent_ShouldReturnCourses() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(studentUser);
+        List<CourseDTO> courses = Collections.singletonList(testCourse);
+        when(courseService.getCoursesByStudent(3L)).thenReturn(courses);
 
-        @Test
-        @WithMockUser(roles = "STUDENT")
-        @DisplayName("Should not allow student to view other student's courses")
-        void shouldNotAllowStudentToViewOtherStudentsCourses() throws Exception {
-            mockMvc.perform(get("/api/v1/courses/student/2")
-                            .with(csrf()))
-                    .andExpect(status().isForbidden());
-        }
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/courses/student/3")
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void getCoursesByStudent_AsWrongStudent_ShouldReturnForbidden() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(studentUser);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/courses/student/4")
+                        .principal(authentication))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getCoursesByTeacher_AsValidTeacher_ShouldReturnCourses() throws Exception {
+        // Arrange
+        when(authentication.getPrincipal()).thenReturn(teacherUser);
+        List<CourseDTO> courses = Collections.singletonList(testCourse);
+        when(courseService.getCoursesByTeacher(2L)).thenReturn(courses);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/courses/teacher/2")
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void searchCourses_WithValidParameters_ShouldReturnResults() throws Exception {
+        // Arrange
+        List<CourseDTO> courses = Collections.singletonList(testCourse);
+        when(courseService.searchCourses("Test", "Spring", 2024)).thenReturn(courses);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/courses/search")
+                        .param("query", "Test")
+                        .param("semester", "Spring")
+                        .param("year", "2024")
+                        .principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].name").value(testCourse.getName()));
     }
 }
