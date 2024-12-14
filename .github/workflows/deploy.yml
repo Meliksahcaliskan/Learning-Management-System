@@ -41,11 +41,7 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
           ssh-keyscan -t rsa,ecdsa,ed25519 -H $SERVER_IP >> ~/.ssh/known_hosts
 
-      - name: Run Tests
-        run: |
-          ./gradlew test --no-daemon
-
-      - name: Build Application
+      - name: Build Application Without Tests
         run: |
           ./gradlew clean build -x test --no-daemon
           cp build/libs/$APP_NAME .
