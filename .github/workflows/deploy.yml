@@ -18,6 +18,7 @@ jobs:
       SERVER_IP: ${{ secrets.SERVER_IP }}
       SERVER_USER: ${{ secrets.SERVER_USER }}
       APP_NAME: lsm-0.0.1-SNAPSHOT.jar
+      HEALTH_URL: ${{ secrets.APP_URL }}/health
 
     steps:
       - name: Checkout Code
@@ -51,40 +52,31 @@ jobs:
       - name: Deploy to Server
         timeout-minutes: 5
         run: |
-          # Copy the JAR file to the server
           scp -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts $APP_NAME $SERVER_USER@$SERVER_IP:/opt/learnovify/
           
-          # SSH into the server and deploy
           ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts $SERVER_USER@$SERVER_IP << EOF
             set -euo pipefail
             
-            # Define variables inside the SSH session
             DEPLOY_DIR="/opt/learnovify"
             BACKUP_DIR="\${DEPLOY_DIR}/backups"
-            APP_NAME="$APP_NAME"
             
-            # Ensure sufficient disk space
             if [ \$(df -P \$DEPLOY_DIR | awk 'NR==2 {print \$5}' | tr -d '%') -gt 90 ]; then
               echo "Error: Insufficient disk space"
               exit 1
             fi
-
-            # Backup the current JAR with retention
+            
             mkdir -p \$BACKUP_DIR
             [ -f "\${DEPLOY_DIR}/lsm.jar" ] && mv "\${DEPLOY_DIR}/lsm.jar" "\${BACKUP_DIR}/lsm.jar.bak.\$(date +%Y%m%d-%H%M%S)"
             find \$BACKUP_DIR -name "*.bak.*" -mtime +7 -delete
 
-            # Deploy the new version
-            mv "\${DEPLOY_DIR}/\$APP_NAME" "\${DEPLOY_DIR}/lsm.jar"
+            mv "\${DEPLOY_DIR}/$APP_NAME" "\${DEPLOY_DIR}/lsm.jar"
             chmod 640 "\${DEPLOY_DIR}/lsm.jar"
 
-            # Restart the service
             sudo systemctl restart learnovify.service || {
               echo "Error: Failed to restart service"
               exit 1
             }
 
-            # Health check for service status
             timeout 30s bash -c '
               until systemctl is-active --quiet learnovify.service; do
                 sleep 2
@@ -98,7 +90,7 @@ jobs:
       - name: Health Check
         run: |
           for i in {1..12}; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.APP_URL }}/health")
+            response=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL")
             if [ "$response" = "200" ]; then
               echo "Health check passed"
               exit 0
