@@ -51,36 +51,32 @@ jobs:
       - name: Deploy to Server
         timeout-minutes: 5
         run: |
-          scp -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts $APP_NAME $SERVER_USER@$SERVER_IP:/opt/
-          scp -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts .env $SERVER_USER@$SERVER_IP:/opt/
+          scp -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts $APP_NAME $SERVER_USER@$SERVER_IP:/opt/learnovify/
+          scp -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts .env $SERVER_USER@$SERVER_IP:/opt/learnovify/
           ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts $SERVER_USER@$SERVER_IP << 'EOF'
             set -euo pipefail
-            cd /opt/
-          
-            # Check disk space before deployment
+            cd /opt/learnovify
+            
+            # Check disk space
             if [ $(df -P /opt | awk 'NR==2 {print $5}' | tr -d '%') -gt 90 ]; then
               echo "Insufficient disk space"
               exit 1
             fi
-          
+            
             # Backup with retention
-            backup_dir="/opt/backups"
+            backup_dir="/opt/learnovify/backups"
             mkdir -p $backup_dir
-            mv $APP_NAME $backup_dir/$APP_NAME.bak.$(date +%Y%m%d-%H%M%S)
+            [ -f lsm.jar ] && mv lsm.jar $backup_dir/lsm.jar.bak.$(date +%Y%m%d-%H%M%S)
             find $backup_dir -name "*.bak.*" -mtime +7 -delete
-          
+            
             # Deploy new version
-            mv /opt/$APP_NAME /opt/lsm.jar
-            chown $SERVER_USER:$SERVER_USER /opt/lsm.jar
-            chmod 640 /opt/lsm.jar
-          
-            # Restart service with proper error handling
-            if ! sudo systemctl restart learnovify.service; then
-              echo "Service restart failed"
-              exit 1
-            fi
-          
-            # Health check with timeout
+            mv $APP_NAME lsm.jar
+            chmod 640 lsm.jar
+            
+            # Restart service
+            sudo systemctl restart learnovify.service
+            
+            # Health check
             timeout 30s bash -c '
               until systemctl is-active --quiet learnovify.service; do
                 sleep 2
@@ -89,7 +85,7 @@ jobs:
               echo "Service failed to start within timeout"
               exit 1
             }
-          EOF
+          EOF'
 
       - name: Health Check
         run: |
