@@ -58,7 +58,11 @@ INSERT INTO class_courses (class_id, course_id) VALUES
                                                     ((SELECT id FROM classes WHERE name = '11-A-MF'),
                                                      (SELECT id FROM courses WHERE code = 'MAT-1')),
                                                     ((SELECT id FROM classes WHERE name = '11-B-TM'),
-                                                     (SELECT id FROM courses WHERE code = 'FIZ-1'));
+                                                     (SELECT id FROM courses WHERE code = 'FIZ-1')),
+                                                    ((SELECT id FROM classes WHERE name = '11-A-MF'),
+                                                     (SELECT id FROM courses WHERE code = 'FIZ-1')),
+                                                    ((SELECT id FROM classes WHERE name = '11-A-MF'),
+                                                     (SELECT id FROM courses WHERE code = 'EDB-1'));
 
 -- Insert Teacher-Course Relationships
 INSERT INTO teacher_courses (user_id, course_id) VALUES
@@ -189,7 +193,23 @@ INSERT INTO attendance (id, student_id, date_a, attendance, comment, class_id, c
                                                                                                'PRESENT',
                                                                                                NULL,
                                                                                                (SELECT id FROM classes WHERE name = '11-A-MF'),
-                                                                                               (SELECT id FROM courses WHERE code = 'MAT-1'));
+                                                                                               (SELECT id FROM courses WHERE code = 'MAT-1')),
+
+                                                                                              (nextval('attendance_id_seq'),
+                                                                                               (SELECT id FROM app_users WHERE username = 'student1'),
+                                                                                               '2024-12-05',
+                                                                                               'ABSENT',
+                                                                                               'No notification received.',
+                                                                                               (SELECT id FROM classes WHERE name = '11-A-MF'),
+                                                                                               (SELECT id FROM courses WHERE code = 'FIZ-1')),
+
+                                                                                              (nextval('attendance_id_seq'),
+                                                                                               (SELECT id FROM app_users WHERE username = 'student1'),
+                                                                                               '2024-12-06',
+                                                                                               'EXCUSED',
+                                                                                               'Traffic.',
+                                                                                               (SELECT id FROM classes WHERE name = '11-A-MF'),
+                                                                                               (SELECT id FROM courses WHERE code = 'EDB-1'));
 
 -- Insert attendance records for student2
 INSERT INTO attendance (id, student_id, date_a, attendance, comment, class_id, course_id) VALUES
