@@ -52,7 +52,6 @@ jobs:
         timeout-minutes: 5
         run: |
           scp -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts $APP_NAME $SERVER_USER@$SERVER_IP:/opt/learnovify/
-          scp -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts .env $SERVER_USER@$SERVER_IP:/opt/learnovify/
           ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts $SERVER_USER@$SERVER_IP << 'EOF'
             set -euo pipefail
             cd /opt/learnovify
