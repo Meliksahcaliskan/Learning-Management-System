@@ -23,11 +23,13 @@ public class ClassEntityService {
 
     private final ClassEntityRepository classRepository;
     private final AppUserRepository appUserRepository;
+    private final AppUserService appUserService;
 
     @Autowired
-    public ClassEntityService(ClassEntityRepository classRepository, AppUserRepository appUserRepository) {
+    public ClassEntityService(ClassEntityRepository classRepository, AppUserRepository appUserRepository, AppUserService appUserService) {
         this.classRepository = classRepository;
         this.appUserRepository = appUserRepository;
+        this.appUserService = appUserService;
     }
 
     @Transactional
@@ -57,15 +59,17 @@ public class ClassEntityService {
 
     @Transactional
     public ClassEntity getClassById(AppUser loggedInUser, Long id) throws AccessDeniedException, EntityNotFoundException {
-        ClassEntity classEntity = classRepository.findById(id)
+        ClassEntity classEntity = classRepository.findByIdWithAssignments(id)
                 .orElseThrow(() -> new EntityNotFoundException("Class not found with id: " + id));
 
-        if (loggedInUser.getRole().equals(Role.ROLE_STUDENT)
-                && !loggedInUser.getStudentDetails().getClassEntity().equals(classEntity.getId()))
+        AppUser user = appUserService.getCurrentUserWithDetails(loggedInUser.getId());
+
+        if (user.getRole().equals(Role.ROLE_STUDENT)
+                && !user.getStudentDetails().getClassEntity().equals(classEntity.getId()))
             throw new AccessDeniedException("Students can't get the class which they are not enrolled.");
 
-        if (loggedInUser.getRole().equals(Role.ROLE_TEACHER)
-                && loggedInUser.getTeacherDetails().getClasses().stream()
+        if (user.getRole().equals(Role.ROLE_TEACHER)
+                && user.getTeacherDetails().getClasses().stream()
                 .noneMatch(classEntity1 -> classEntity1.getId().equals(classEntity.getId())))
             throw new AccessDeniedException("Students can't get the class which they are not teaching.");
 

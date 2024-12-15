@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -140,12 +141,13 @@ public class AttendanceController {
 
     @Operation(
             summary = "Get attendance statistics",
-            description = "Retrieve attendance statistics for a specific student"
+            description = "Retrieve attendance statistics for a specific student within a date range"
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
             @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
-            @ApiResponse(responseCode = "404", description = "Student/Class not found")
+            @ApiResponse(responseCode = "404", description = "Student/Class not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid date format or range")
     })
     @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @GetMapping("/stats/course/{courseId}")
@@ -154,11 +156,24 @@ public class AttendanceController {
             @PathVariable @Positive Long courseId,
             @Parameter(description = "ID of the class")
             @RequestParam Long classId,
+            @Parameter(description = "Start date (format: yyyy-MM-dd)")
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "End date (format: yyyy-MM-dd)")
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             Authentication authentication
     ) {
         try {
             AppUser loggedInUser = (AppUser) authentication.getPrincipal();
-            List<AttendanceStatsDTO> stats = attendanceService.getAttendanceStatsByCourse(loggedInUser, courseId, classId);
+
+            // Validate date range if provided
+            if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                return httpError(HttpStatus.BAD_REQUEST, "Start date must be before or equal to end date");
+            }
+
+            List<AttendanceStatsDTO> stats = attendanceService.getAttendanceStatsByCourse(
+                    loggedInUser, courseId, classId, startDate, endDate);
             return ResponseEntity.ok(new ApiResponse_<>(
                     true,
                     "Attendance statistics retrieved successfully",

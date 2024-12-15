@@ -285,7 +285,7 @@ class AttendanceServiceTest {
 
             // Act
             List<AttendanceStatsDTO> result = attendanceService.getAttendanceStatsByCourse(
-                    teacherUser, course.getId(), classEntity.getId());
+                    teacherUser, course.getId(), classEntity.getId(), null, null);
 
             // Assert
             assertFalse(result.isEmpty());
