@@ -48,7 +48,7 @@ const NewAssignment = () => {
     useEffect(() => {
         getClasses(user.role, user.accessToken)
             .then(response => {
-                setAllClasses(response);
+                setAllClasses(response.data);
             })
             .catch(error => {
                 console.log(error);
@@ -64,7 +64,7 @@ const NewAssignment = () => {
     const loadCourses = async (classID) => {
         getAllSubjectsOf(classID, user.accessToken)
             .then(data => {
-                setAllSubjectsOfClass(data);
+                setAllSubjectsOfClass(data.data);
                 setAssignmentSubject({name : '', id : null});
             })
             .catch(error => {
@@ -192,6 +192,7 @@ const NewAssignment = () => {
                     }
                 })
                 .catch(error => {
+                    console.log(error);
                     setCreationError(true);
                 })
         }

@@ -18,7 +18,6 @@ const logout = async (accessToken, refreshToken = null) => {
     {
       headers : {
         Authorization : `Bearer ${accessToken}`,
-        ...(refreshToken && { 'Refresh-Token' : refreshToken})
       }
     }
   );
