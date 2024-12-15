@@ -67,6 +67,20 @@ public class Assignment {
     @JoinColumn(name = "teacher_document_id", referencedColumnName = "id")
     private AssignmentDocument teacherDocument;
 
+    @Builder.Default
     @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StudentSubmission> studentSubmissions = new ArrayList<>();
+
+    @PrePersist
+    protected void onCreate() {
+        if (date == null) {
+            date = LocalDate.now();
+        }
+        if (lastModified == null) {
+            lastModified = LocalDate.now();
+        }
+        if (studentSubmissions == null) {
+            studentSubmissions = new ArrayList<>();
+        }
+    }
 }

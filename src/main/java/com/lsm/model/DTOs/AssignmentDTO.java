@@ -1,6 +1,7 @@
 package com.lsm.model.DTOs;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,7 +28,8 @@ public class AssignmentDTO {
     private String className;
     private Long courseId;
     private String courseName;
-
+    private LocalDate lastModified;
+    private String lastModifiedByUsername;
 
     public AssignmentDTO(Assignment assignment, String message) {
         this.id = assignment.getId();
@@ -36,15 +38,19 @@ public class AssignmentDTO {
         this.dueDate = assignment.getDueDate();
         this.message = message;
         this.teacherDocuments = convertToDTO(assignment.getTeacherDocument());
-        this.studentSubmissions = assignment.getStudentSubmissions().stream()
+        this.studentSubmissions = assignment.getStudentSubmissions() != null
+                ? assignment.getStudentSubmissions().stream()
                 .map(StudentSubmissionDTO::new)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList())
+                : new ArrayList<>();
         this.createdDate = assignment.getDate();
         this.assignedByTeacherName = assignment.getAssignedBy().getUsername();
         this.classId = assignment.getClassEntity().getId();
         this.className = assignment.getClassEntity().getName();
         this.courseId = assignment.getCourse().getId();
         this.courseName = assignment.getCourse().getName();
+        this.lastModified = assignment.getLastModified();
+        this.lastModifiedByUsername = assignment.getLastModifiedBy().getUsername();
     }
 
     private AssignmentDocumentDTO convertToDTO(AssignmentDocument doc) {

@@ -5,6 +5,7 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -457,17 +458,17 @@ public class AssignmentService {
             AppUser teacher,
             ClassEntity classEntity,
             Course course) {
-        Assignment assignment = new Assignment();
-        assignment.setTitle(dto.getTitle());
-        assignment.setDescription(dto.getDescription());
-        assignment.setDueDate(dto.getDueDate());
-        assignment.setAssignedBy(teacher);
-        if(dto.getDocument() != null)
-            assignment.setTeacherDocument(dto.getDocument().DTOtoDocument(assignmentRepository, appUserRepository));
-        assignment.setClassEntity(classEntity);
-        assignment.setCourse(course);
-        assignment.setDate(LocalDate.now());
-
-        return assignment;
+        return Assignment.builder()
+                .title(dto.getTitle())
+                .description(dto.getDescription())
+                .dueDate(dto.getDueDate())
+                .assignedBy(teacher)
+                .lastModifiedBy(teacher)
+                .classEntity(classEntity)
+                .course(course)
+                .date(LocalDate.now())
+                .lastModified(LocalDate.now())
+                .studentSubmissions(new ArrayList<>())
+                .build();
     }
 }
