@@ -45,7 +45,7 @@ public class Course {
     private Integer credits;
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Assignment> assignments = new HashSet<>();
+    @Builder.Default private Set<Assignment> assignments = new HashSet<>();
 
     @ManyToMany(mappedBy = "courses")
     private List<ClassEntity> classes;

@@ -21,7 +21,7 @@ public class ClassEntityResponseDTO {
     private String name;
     private String description;
     private Long teacherId;
-    private List<Map<Long, String>> studentIdAndNames;
+    private Map<Long, String> studentIdAndNames;
     private List<Long> assignmentIds;
 }
 

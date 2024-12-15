@@ -36,16 +36,14 @@ public class ClassEntityMapper {
 
         // Map students with their IDs and names
         if (entity.getStudents() != null && !entity.getStudents().isEmpty()) {
-            List<Map<Long, String>> studentMappings = entity.getStudents().stream()
-                    .map(student -> {
-                        Map<Long, String> mapping = new HashMap<>();
-                        mapping.put(student.getId(), student.getName() + " " + student.getSurname());  // Assuming AppUser has getName()
-                        return mapping;
-                    })
-                    .collect(Collectors.toList());
+            Map<Long, String> studentMappings = entity.getStudents().stream()
+                    .collect(Collectors.toMap(
+                            AppUser::getId,
+                            student -> student.getName() + " " + student.getSurname()
+                    ));
             dto.setStudentIdAndNames(studentMappings);
         } else {
-            dto.setStudentIdAndNames(new ArrayList<>());
+            dto.setStudentIdAndNames(new HashMap<>());
         }
 
         // Map assignments

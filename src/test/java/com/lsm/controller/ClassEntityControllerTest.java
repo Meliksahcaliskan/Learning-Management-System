@@ -22,6 +22,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -92,12 +94,16 @@ class ClassEntityControllerTest {
                 .studentIds(Arrays.asList(3L, 4L))
                 .build();
 
+        Map<Long, String> studentMap = new HashMap<>();
+        studentMap.put(3L, "Student 1");
+        studentMap.put(4L, "Student 2");
+
         responseDTO = ClassEntityResponseDTO.builder()
                 .id(1L)
                 .name("Test Class")
                 .description("Test Description")
                 .teacherId(2L)
-                .studentIds(Arrays.asList(3L, 4L))
+                .studentIdAndNames(studentMap)
                 .build();
     }
 

@@ -26,7 +26,7 @@ public class TeacherDetails {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "class_id")
     )
-    private Set<ClassEntity> classes = new HashSet<>();
+    @Builder.Default private Set<ClassEntity> classes = new HashSet<>();
 
     @OneToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -34,5 +34,5 @@ public class TeacherDetails {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "course_id")
     )
-    private Set<Course> courses = new HashSet<>();
+    @Builder.Default private Set<Course> courses = new HashSet<>();
 }

@@ -28,8 +28,6 @@ import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolv
 
 import java.util.List;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.securityContext;
-
 @TestConfiguration
 @EnableWebSecurity
 public class TestConfig {
