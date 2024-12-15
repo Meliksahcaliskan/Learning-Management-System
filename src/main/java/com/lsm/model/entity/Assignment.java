@@ -44,6 +44,10 @@ public class Assignment {
     private AppUser assignedBy;
 
     @ManyToOne
+    @JoinColumn(name = "last_modified_by_id", nullable = false)
+    private AppUser lastModifiedBy;
+
+    @ManyToOne
     @JoinColumn(name = "class_id", nullable = false)
     private ClassEntity classEntity;
 
@@ -54,6 +58,10 @@ public class Assignment {
     @NotNull
     @Column(name = "assignment_date", nullable = false)
     private LocalDate date;
+
+    @NotNull
+    @Column(name = "last_modified_date", nullable = false)
+    private LocalDate lastModified;
 
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "teacher_document_id", referencedColumnName = "id")

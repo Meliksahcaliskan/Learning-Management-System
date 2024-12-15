@@ -3,9 +3,9 @@ package com.lsm.controller;
 import com.lsm.model.DTOs.*;
 import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.AssignmentDocument;
+import com.lsm.model.entity.StudentSubmission;
 import com.lsm.model.entity.base.AppUser;
 import com.lsm.model.entity.enums.Role;
-import com.lsm.service.AppUserService;
 import com.lsm.service.AssignmentDocumentService;
 import com.lsm.service.AssignmentService;
 
@@ -34,13 +34,15 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
-import java.security.Principal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/assignments")
@@ -52,27 +54,29 @@ import java.util.List;
 public class AssignmentController {
 
     private final AssignmentService assignmentService;
-    private final AppUserService appUserService;
     private final AssignmentDocumentService documentService;
 
     @Operation(
-        summary = "Create a new assignment",
-        description = "Allows teachers to create a new assignment for students"
+            summary = "Create a new assignment",
+            description = "Allows teachers to create a new assignment for students"
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Assignment created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-        @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+            @ApiResponse(responseCode = "201", description = "Assignment created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
     })
     @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @PostMapping("/createAssignment")
     public ResponseEntity<ApiResponse_<AssignmentDTO>> createAssignment(
             @Valid @RequestBody AssignmentRequestDTO assignmentRequest,
             Authentication authentication
-    ) {
+    ) throws AccessDeniedException {
         try {
             AppUser currentUser = (AppUser) authentication.getPrincipal();
             log.info("Creating assignment for teacher: {}", currentUser.getUsername());
+
+            if (currentUser.getRole() == Role.ROLE_STUDENT)
+                throw new AccessDeniedException("Students cannot create assignments");
 
             Assignment assignment = assignmentService.createAssignment(assignmentRequest, currentUser.getId());
 
@@ -85,10 +89,10 @@ public class AssignmentController {
                     ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while creating assignment: {}", e.getMessage());
-            throw new SecurityException("Access denied: " + e.getMessage());
+            throw e;
         } catch (Exception e) {
             log.error("Error creating assignment: {}", e.getMessage());
-            throw new RuntimeException("Error creating assignment");
+            return httpError(HttpStatus.BAD_REQUEST, "Error creating assignment: " + e.getMessage());
         }
     }
 
@@ -123,7 +127,11 @@ public class AssignmentController {
                 new AssignmentDTO(updated, "Updated successfully")
             ));
         } catch (AccessDeniedException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while updating assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error occurred while updating assignment: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error: " + e.getMessage());
         }
     }
 
@@ -150,8 +158,9 @@ public class AssignmentController {
                     assignments
             ));
 
-        } catch (Exception e) {
-            throw new SecurityException(e.getMessage());
+        } catch (AccessDeniedException e) {
+            log.error("Access denied while getting all assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -193,9 +202,11 @@ public class AssignmentController {
                     assignments
             ));
         } catch (AccessDeniedException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while getting teacher assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (EntityNotFoundException e) {
-            throw new EntityNotFoundException(e.getMessage());
+            log.error("Entity not found while getting teacher assignment: {}", e.getMessage());
+            return httpError(HttpStatus.BAD_REQUEST, "Entity not found: " + e.getMessage());
         }
     }
 
@@ -236,13 +247,13 @@ public class AssignmentController {
             ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while deleting document: {}", e.getMessage());
-            throw new SecurityException(e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (EntityNotFoundException e) {
             log.error("Document not found: {}", e.getMessage());
-            throw new EntityNotFoundException(e.getMessage());
+            return httpError(HttpStatus.BAD_REQUEST, "Entity not found: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error deleting document: {}", e.getMessage());
-            throw new RuntimeException("Error deleting document");
+            return httpError(HttpStatus.BAD_REQUEST, "An error occurred: " + e.getMessage());
         }
     }
 
@@ -276,9 +287,11 @@ public class AssignmentController {
                     assignments
             ));
         } catch (AccessDeniedException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while getting assignments of the student: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (EntityNotFoundException e) {
-            throw new EntityNotFoundException(e.getMessage());
+            log.error("Student not found: {}", e.getMessage());
+            return httpError(HttpStatus.BAD_REQUEST, "Student not found: " + e.getMessage());
         }
     }
 
@@ -308,7 +321,8 @@ public class AssignmentController {
                 null
             ));
         } catch (AccessDeniedException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while deleting an assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -335,42 +349,8 @@ public class AssignmentController {
             ));
         } catch (IOException e) {
             log.error("Error uploading document: {}", e.getMessage());
-            throw new RuntimeException("Error uploading document");
+            return httpError(HttpStatus.BAD_REQUEST, "Error uploading document: " + e.getMessage());
         }
-    }
-
-    private void validateFile(MultipartFile file) {
-        /* if (file.isEmpty()) {
-            throw new IllegalArgumentException("File cannot be empty");
-        } */
-        if (file.getSize() > 5_000_000) { // 5MB limit
-            throw new IllegalArgumentException("File size exceeds maximum limit");
-        }
-        String contentType = file.getContentType();
-        if (contentType == null || !isAllowedContentType(contentType)) {
-            throw new IllegalArgumentException("Invalid file type");
-        }
-    }
-
-    private boolean isAllowedContentType(String contentType) {
-        return Arrays.asList(
-                "application/pdf",
-                "application/msword",
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                "text/plain"
-        ).contains(contentType);
-    }
-
-    private AssignmentDocumentDTO convertToDTO(AssignmentDocument document) {
-        return AssignmentDocumentDTO.builder()
-                .assignmentId(document.getAssignment().getId())
-                .documentId(document.getId())
-                .fileName(document.getFileName())
-                .fileType(document.getFileType())
-                .fileSize(document.getFileSize())
-                .uploadTime(document.getUploadTime())
-                .uploadedByUsername(document.getUploadedBy().getUsername())
-                .build();
     }
 
     @Operation(
@@ -381,17 +361,20 @@ public class AssignmentController {
     public ResponseEntity<Resource> downloadDocument(
             @PathVariable Long documentId,
             Authentication authentication) {
-        AppUser currentUser = (AppUser) authentication.getPrincipal();
-        Resource resource;
         try {
-            resource = documentService.downloadDocument(documentId, currentUser);
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            Resource resource = documentService.downloadDocument(documentId, currentUser);
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
         } catch (IOException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Error downloading document: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Access denied: " + e.getMessage());
         }
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + resource.getFilename() + "\"")
-                .body(resource);
     }
 
     @Operation(
@@ -422,7 +405,73 @@ public class AssignmentController {
                     new AssignmentDTO(graded, "Graded successfully")
             ));
         } catch (AccessDeniedException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while grading the assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Bulk grade assignments",
+            description = "Allows teachers to grade multiple student submissions for an assignment at once"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Assignments graded successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid grade data"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Assignment not found")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    @PatchMapping("/{assignmentId}/bulk-grade")
+    public ResponseEntity<ApiResponse_<List<AssignmentDTO>>> bulkGradeAssignment(
+            @Parameter(description = "ID of the assignment to grade", required = true)
+            @PathVariable @Positive Long assignmentId,
+            @Valid @RequestBody BulkGradeRequestDTO bulkGradeRequest,
+            Authentication authentication
+    ) {
+        try {
+            AppUser currentUser = (AppUser) authentication.getPrincipal();
+            log.info("Bulk grading assignment: {}, user: {}", assignmentId, currentUser.getUsername());
+
+            List<Assignment> gradedAssignments = new ArrayList<>();
+            List<String> errors = new ArrayList<>();
+
+            for (BulkGradeRequestDTO.BulkGradeItem gradeItem : bulkGradeRequest.getGrades()) {
+                try {
+                    Assignment graded = assignmentService.gradeAssignment(
+                            assignmentId,
+                            gradeItem.getGrade(),
+                            currentUser,
+                            gradeItem.getStudentId()
+                    );
+                    gradedAssignments.add(graded);
+                } catch (Exception e) {
+                    errors.add("Failed to grade student " + gradeItem.getStudentId() + ": " + e.getMessage());
+                    log.error("Error grading assignment for student {}: {}", gradeItem.getStudentId(), e.getMessage());
+                }
+            }
+
+            if (!errors.isEmpty()) {
+                return ResponseEntity
+                        .status(HttpStatus.PARTIAL_CONTENT)
+                        .body(new ApiResponse_<>(
+                                false,
+                                "Some grades failed to be applied: " + String.join("; ", errors),
+                                gradedAssignments.stream()
+                                        .map(a -> new AssignmentDTO(a, "Graded successfully"))
+                                        .collect(Collectors.toList())
+                        ));
+            }
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "All assignments graded successfully",
+                    gradedAssignments.stream()
+                            .map(a -> new AssignmentDTO(a, "Graded successfully"))
+                            .collect(Collectors.toList())
+            ));
+        } catch (Exception e) {
+            log.error("Error during bulk grading: {}", e.getMessage());
+            return httpError(HttpStatus.BAD_REQUEST, "Error during bulk grading: " + e.getMessage());
         }
     }
 
@@ -437,7 +486,7 @@ public class AssignmentController {
             @ApiResponse(responseCode = "404", description = "Assignment not found")
     })
     @PatchMapping(value = "/{assignmentId}/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse_<AssignmentDTO>> submitAssignment(
+    public ResponseEntity<ApiResponse_<StudentSubmissionDTO>> submitAssignment(
             @Parameter(description = "ID of the assignment to submit", required = true)
             @PathVariable @Positive Long assignmentId,
             @Valid @ModelAttribute SubmitAssignmentDTO submitDTO,
@@ -450,25 +499,26 @@ public class AssignmentController {
             // Validate file
             validateFile(submitDTO.getDocument());
 
-            Assignment submitted = assignmentService.submitAssignment(assignmentId, submitDTO, currentUser);
+            StudentSubmission submission = assignmentService.submitAssignment(assignmentId, submitDTO, currentUser);
 
             return ResponseEntity.ok(new ApiResponse_<>(
                     true,
                     "Assignment submitted successfully",
-                    new AssignmentDTO(submitted, "Submitted successfully")
+                    new StudentSubmissionDTO(submission)
             ));
         } catch (IOException e) {
-            throw new RuntimeException("Error uploading document");
+            log.error("An exception occurred when submitting an assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "IOException occurred: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error submitting assignment: {}", e.getMessage());
-            throw new RuntimeException("Error submitting assignment: " + e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Error submitting assignment: " + e.getMessage());
         }
     }
 
 
     @Operation(
-            summary = "Unsubmit an assignment",
-            description = "Allows students to unsubmit their assignments if they haven't been graded yet"
+            summary = "Un-submit an assignment",
+            description = "Allows students to un-submit their assignments if they haven't been graded yet"
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Assignment unsubmitted successfully"),
@@ -490,7 +540,54 @@ public class AssignmentController {
                     new AssignmentDTO(unsubmitted, "Unsubmitted successfully")
             ));
         } catch (AccessDeniedException e) {
-            throw new SecurityException(e.getMessage());
+            log.error("Access denied while un-submitting the assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error while un-submitting the assignment: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Error: " + e.getMessage());
         }
+    }
+
+    private void validateFile(MultipartFile file) {
+        if (file == null || file.isEmpty())
+            return;
+        if (file.getSize() > 5_000_000) { // 5MB limit
+            throw new IllegalArgumentException("File size exceeds maximum limit");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !isAllowedContentType(contentType)) {
+            throw new IllegalArgumentException("Invalid file type");
+        }
+    }
+
+    private boolean isAllowedContentType(String contentType) {
+        return Arrays.asList(
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "text/plain"
+        ).contains(contentType);
+    }
+
+    private AssignmentDocumentDTO convertToDTO(AssignmentDocument document) {
+        return AssignmentDocumentDTO.builder()
+                .assignmentId(document.getAssignment().getId())
+                .documentId(document.getId())
+                .fileName(document.getFileName())
+                .fileType(document.getFileType())
+                .fileSize(document.getFileSize())
+                .uploadTime(document.getUploadTime())
+                .uploadedByUsername(document.getUploadedBy().getUsername())
+                .build();
+    }
+
+    private static <T> ResponseEntity<ApiResponse_<T>> httpError(HttpStatus s, String message) {
+        return ResponseEntity.
+                status(s).
+                body(new ApiResponse_<>(
+                        false,
+                        message,
+                        null
+                ));
     }
 }

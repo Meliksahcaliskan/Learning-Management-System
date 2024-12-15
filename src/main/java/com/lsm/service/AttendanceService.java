@@ -14,22 +14,17 @@ import com.lsm.repository.AppUserRepository;
 import com.lsm.repository.ClassEntityRepository;
 import com.lsm.repository.CourseRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class AttendanceService {
-
-    private static final String STUDENT_ROLE = "ROLE_STUDENT";
-    private static final String ACCESS_DENIED_ERROR = "Students can only access their own attendance records.";
-
     private final AttendanceRepository attendanceRepository;
     private final AppUserRepository appUserRepository;
     private final CourseRepository courseRepository;
@@ -67,11 +62,33 @@ public class AttendanceService {
         return attendanceRepository.save(attendance);
     }
 
-    // TODO: fix it like the markAttendance
     @Transactional
-    public void markBulkAttendance(List<AttendanceRequestDTO> attendanceRequests) {
-        for(AttendanceRequestDTO attendanceRequest : attendanceRequests) {
-            AppUser student = appUserRepository.findById(attendanceRequest.getStudentId())
+    public void markBulkAttendance(AppUser  loggedInUser , List<AttendanceRequestDTO> attendanceRequests)
+            throws AccessDeniedException {
+        // Check if the logged-in user is a student
+        if (loggedInUser .getRole().equals(Role.ROLE_STUDENT)) {
+            throw new AccessDeniedException("Students can't mark attendance");
+        }
+
+        // Check if the logged-in user is a teacher and validate their access to the courses
+        if (loggedInUser .getRole().equals(Role.ROLE_TEACHER)) {
+            AppUser  user = appUserService.getCurrentUserWithDetails(loggedInUser .getId());
+            Set<Long> courseIds = user.getTeacherDetails().getClasses().stream()
+                    .flatMap(classEntity -> classEntity.getCourses().stream())
+                    .map(Course::getId)
+                    .collect(Collectors.toSet());
+
+            // Validate that all attendance requests are for courses the teacher is associated with
+            for (AttendanceRequestDTO attendanceRequest : attendanceRequests) {
+                if (!courseIds.contains(attendanceRequest.getCourseId())) {
+                    throw new AccessDeniedException("Teachers can only mark attendance to their courses");
+                }
+            }
+        }
+
+        // Process each attendance request
+        for (AttendanceRequestDTO attendanceRequest : attendanceRequests) {
+            AppUser  student = appUserRepository.findById(attendanceRequest.getStudentId())
                     .orElseThrow(() -> new IllegalArgumentException(
                             String.format("Student with ID %d not found.", attendanceRequest.getStudentId())
                     ));
@@ -82,8 +99,10 @@ public class AttendanceService {
     }
 
     @Transactional
-    public List<AttendanceDTO> getAttendanceByStudentId(AppUser loggedInUser , Long studentId, LocalDate startDate, LocalDate endDate) {
-        validateAccessPermissions(loggedInUser , studentId);
+    public List<AttendanceDTO> getAttendanceByStudentId(AppUser loggedInUser , Long studentId, LocalDate startDate, LocalDate endDate)
+            throws AccessDeniedException {
+        if (Role.ROLE_STUDENT.equals(loggedInUser.getRole()) && !loggedInUser.getId().equals(studentId))
+            throw new AccessDeniedException("Students can only access their own attendance records.");
 
         return attendanceRepository.findByStudentId(studentId)
                 .stream()
@@ -93,102 +112,73 @@ public class AttendanceService {
     }
 
     @Transactional
-    public List<AttendanceStatsDTO> getAttendanceStatsByStudent(AppUser loggedInUser, Long studentId, Long classId) {
-        validateAccessPermissions(loggedInUser, studentId);
+    public List<AttendanceStatsDTO> getAttendanceStatsByStudent(AppUser  loggedInUser , Long studentId, Long classId)
+            throws AccessDeniedException {
+        if (Role.ROLE_STUDENT.equals(loggedInUser.getRole()) && !loggedInUser.getId().equals(studentId))
+            throw new AccessDeniedException("Students can only access their own attendance records.");
 
-        AppUser student = appUserRepository.findById(studentId)
+        AppUser  student = appUserRepository.findById(studentId)
                 .orElseThrow(() -> new IllegalArgumentException("Student not found"));
-
         ClassEntity classEntity = classEntityRepository.getClassEntityById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Class not found"));
 
-        List<Attendance> attendances;
-        if (classId != null) {
-            // Get attendances for specific class
-            attendances = attendanceRepository.findByStudentIdAndClassId(studentId, classId);
-        } else {
-            // Get all attendances for the student
-            attendances = attendanceRepository.findByStudentId(studentId);
-        }
-
-        // Group attendances by course
-        return attendances.stream()
-                .collect(Collectors.groupingBy(Attendance::getCourseId))
-                .entrySet().stream()
-                .map(entry -> {
-                    Long courseId = entry.getKey();
-                    List<Attendance> courseAttendances = entry.getValue();
-
-                    Course course = courseRepository.findById(courseId)
-                            .orElseThrow(() -> new IllegalArgumentException("Course not found"));
-
-                    long totalClasses = courseAttendances.size();
-                    long presentCount = courseAttendances.stream()
-                            .filter(a -> AttendanceStatus.PRESENT.equals(a.getStatus()))
-                            .count();
-                    long absentCount = courseAttendances.stream()
-                            .filter(a -> AttendanceStatus.ABSENT.equals(a.getStatus()))
-                            .count();
-                    long lateCount = courseAttendances.stream()
-                            .filter(a -> AttendanceStatus.EXCUSED.equals(a.getStatus()))
-                            .count();
-
-                    double attendancePercentage = totalClasses > 0
-                            ? (presentCount + lateCount) * 100.0 / totalClasses
-                            : 0;
-
-                    return AttendanceStatsDTO.builder()
-                            .studentId(studentId)
-                            .studentName(student.getName())
-                            .classId(classEntity.getId())
-                            .className(classEntity.getName())
-                            .courseId(courseId)
-                            .courseName(course.getName())
-                            .totalClasses(totalClasses)
-                            .presentCount(presentCount)
-                            .absentCount(absentCount)
-                            .lateCount(lateCount)
-                            .attendancePercentage(Math.round(attendancePercentage * 100.0) / 100.0)
-                            .build();
-                })
-                .collect(Collectors.toList());
+        List<Attendance> attendances = getAttendancesByStudent(studentId, classId);
+        return processAttendances(attendances, student, classEntity, null);
     }
 
     @Transactional
-    public List<AttendanceStatsDTO> getAttendanceStatsByCourse(AppUser loggedInUser, Long courseId, Long classId) {
+    public List<AttendanceStatsDTO> getAttendanceStatsByCourse(AppUser  loggedInUser , Long courseId, Long classId) throws AccessDeniedException {
+        if (loggedInUser .getRole().equals(Role.ROLE_STUDENT))
+            throw new AccessDeniedException("Students can't view attendance stats of the course.");
+
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found"));
         ClassEntity classEntity = classEntityRepository.getClassEntityById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Class not found"));
 
-        List<Attendance> attendances;
+        List<Attendance> attendances = getAttendancesByCourse(courseId, classId);
+        return processAttendances(attendances, null, classEntity, course);
+    }
+
+    private List<Attendance> getAttendancesByStudent(Long studentId, Long classId) {
         if (classId != null) {
-            // Get attendances for specific class in the course
-            attendances = attendanceRepository.findByCourseIdAndClassId(courseId, classId);
+            return attendanceRepository.findByStudentIdAndClassId(studentId, classId);
         } else {
-            // Get all attendances for the course
-            attendances = attendanceRepository.findByCourseId(courseId);
+            return attendanceRepository.findByStudentId(studentId);
         }
+    }
 
-        // Group attendances by student
-        return attendances.stream()
-                .collect(Collectors.groupingBy(attendance -> attendance.getStudent().getId()))
-                .entrySet().stream()
+    private List<Attendance> getAttendancesByCourse(Long courseId, Long classId) {
+        if (classId != null) {
+            return attendanceRepository.findByCourseIdAndClassId(courseId, classId);
+        } else {
+            return attendanceRepository.findByCourseId(courseId);
+        }
+    }
+
+    private List<AttendanceStatsDTO> processAttendances(List<Attendance> attendances, AppUser  student, ClassEntity classEntity, Course course) {
+        // Group attendances by either course or student based on the context
+        Map<Long, List<Attendance>> groupedAttendances = (student != null)
+                ? attendances.stream().collect(Collectors.groupingBy(Attendance::getCourseId))
+                : attendances.stream().collect(Collectors.groupingBy(attendance -> attendance.getStudent().getId()));
+
+        return groupedAttendances.entrySet().stream()
                 .map(entry -> {
-                    Long studentId = entry.getKey();
-                    List<Attendance> studentAttendances = entry.getValue();
+                    Long key = entry.getKey();
+                    List<Attendance> courseOrStudentAttendances = entry.getValue();
 
-                    AppUser student = appUserRepository.findById(studentId)
+                    // If processing by student, get the student details
+                    AppUser  currentStudent = student != null ? student : appUserRepository.findById(key)
                             .orElseThrow(() -> new IllegalArgumentException("Student not found"));
 
-                    long totalClasses = studentAttendances.size();
-                    long presentCount = studentAttendances.stream()
+                    long totalClasses = courseOrStudentAttendances.size();
+                    long presentCount = courseOrStudentAttendances.stream()
                             .filter(a -> AttendanceStatus.PRESENT.equals(a.getStatus()))
                             .count();
-                    long absentCount = studentAttendances.stream()
+                    long absentCount = courseOrStudentAttendances.stream()
                             .filter(a -> AttendanceStatus.ABSENT.equals(a.getStatus()))
                             .count();
-                    long lateCount = studentAttendances.stream()
+                    long lateCount = courseOrStudentAttendances.stream()
                             .filter(a -> AttendanceStatus.EXCUSED.equals(a.getStatus()))
                             .count();
 
@@ -197,12 +187,12 @@ public class AttendanceService {
                             : 0;
 
                     return AttendanceStatsDTO.builder()
-                            .studentId(studentId)
-                            .studentName(student.getName())
+                            .studentId(currentStudent.getId())
+                            .studentName(currentStudent.getName())
                             .classId(classEntity.getId())
                             .className(classEntity.getName())
-                            .courseId(courseId)
-                            .courseName(course.getName())
+                            .courseId(course != null ? course.getId() : key)
+                            .courseName(course != null ? course.getName() : "Unknown Course")
                             .totalClasses(totalClasses)
                             .presentCount(presentCount)
                             .absentCount(absentCount)
@@ -224,38 +214,6 @@ public class AttendanceService {
                 .build();
     }
 
-    /**
-     * Validates whether the current user has permission to access the requested attendance records.
-     *
-     * @param currentUser       the user currently authenticated.
-     * @param requestedStudentId the ID of the student whose records are requested.
-     */
-    private void validateAccessPermissions(AppUser currentUser, Long requestedStudentId) {
-        if (STUDENT_ROLE.equals(currentUser.getRole().name()) && !currentUser.getId().equals(requestedStudentId)) {
-            throw new SecurityException(ACCESS_DENIED_ERROR);
-        }
-    }
-
-    /**
-     * Retrieves the currently authenticated user from the security context.
-     *
-     * @return the authenticated AppUser.
-     * @throws UsernameNotFoundException if the user is not found in the database.
-     */
-    private AppUser getAuthenticatedUser() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        Optional<AppUser> user = appUserRepository.findByUsername(username);
-        if(user.isEmpty())
-            throw new UsernameNotFoundException("User not found");
-        return user.get();
-    }
-
-    /**
-     * Converts an Attendance entity to its DTO representation.
-     *
-     * @param attendance the Attendance entity to be converted.
-     * @return the DTO representation of the attendance.
-     */
     private AttendanceDTO convertToDTO(Attendance attendance) {
         return AttendanceDTO.builder()
                 .attendanceId(attendance.getId())

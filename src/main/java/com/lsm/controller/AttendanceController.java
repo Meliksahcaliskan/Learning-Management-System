@@ -65,8 +65,8 @@ public class AttendanceController {
                             new AttendanceDTO(attendance, "")
                     ));
         } catch (AccessDeniedException e) {
-            log.error("Access denied: {}", e.getMessage());
-            throw new RuntimeException(e.getMessage());
+            log.error("Access denied while marking attendance: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -90,13 +90,18 @@ public class AttendanceController {
             @RequestParam(required = false) LocalDate endDate,
             Authentication authentication
     ) {
-        AppUser loggedInUser = (AppUser) authentication.getPrincipal();
-        List<AttendanceDTO> attendanceRecords = attendanceService.getAttendanceByStudentId(loggedInUser, studentId, startDate, endDate);
-        return ResponseEntity.ok(new ApiResponse_<>(
-                true,
-                "Attendance records retrieved successfully",
-                attendanceRecords
-        ));
+        try {
+            AppUser loggedInUser = (AppUser) authentication.getPrincipal();
+            List<AttendanceDTO> attendanceRecords = attendanceService.getAttendanceByStudentId(loggedInUser, studentId, startDate, endDate);
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Attendance records retrieved successfully",
+                    attendanceRecords
+            ));
+        } catch (AccessDeniedException e) {
+            log.error("Access denied while getting attendance of the student: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        }
     }
 
     @Operation(
@@ -119,8 +124,8 @@ public class AttendanceController {
     ) {
         try {
             AppUser loggedInUser = (AppUser) authentication.getPrincipal();
-            if (loggedInUser.getRole().equals(Role.ROLE_STUDENT) && loggedInUser.getId().equals(studentId))
-                throw new AccessDeniedException("");
+            if (loggedInUser.getRole().equals(Role.ROLE_STUDENT) && !loggedInUser.getId().equals(studentId))
+                throw new AccessDeniedException("The student can't view other students stats");
             List<AttendanceStatsDTO> stats = attendanceService.getAttendanceStatsByStudent(loggedInUser, studentId, classId);
             return ResponseEntity.ok(new ApiResponse_<>(
                     true,
@@ -129,7 +134,7 @@ public class AttendanceController {
             ));
         } catch (AccessDeniedException e) {
             log.error("To display stats of the student as a student, you must be that student: {}", e.getMessage());
-            throw new SecurityException("Access denied: " + e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -151,13 +156,18 @@ public class AttendanceController {
             @RequestParam Long classId,
             Authentication authentication
     ) {
-        AppUser loggedInUser = (AppUser) authentication.getPrincipal();
-        List<AttendanceStatsDTO> stats = attendanceService.getAttendanceStatsByCourse(loggedInUser, courseId, classId);
-        return ResponseEntity.ok(new ApiResponse_<>(
-                true,
-                "Attendance statistics retrieved successfully",
-                stats
-        ));
+        try {
+            AppUser loggedInUser = (AppUser) authentication.getPrincipal();
+            List<AttendanceStatsDTO> stats = attendanceService.getAttendanceStatsByCourse(loggedInUser, courseId, classId);
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Attendance statistics retrieved successfully",
+                    stats
+            ));
+        } catch (AccessDeniedException e) {
+            log.error("Error in getAttendanceStatsOfTheCourse: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        }
     }
 
     @Operation(
@@ -172,15 +182,32 @@ public class AttendanceController {
     @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
     @PostMapping("/bulk")
     public ResponseEntity<ApiResponse_<Integer>> markBulkAttendance(
-            @Valid @RequestBody List<AttendanceRequestDTO> attendanceRequests
+            @Valid @RequestBody List<AttendanceRequestDTO> attendanceRequests,
+            Authentication authentication
     ) {
-        attendanceService.markBulkAttendance(attendanceRequests);
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(new ApiResponse_<>(
-                        true,
-                        "Bulk attendance marked successfully",
-                        attendanceRequests.size()
+        try {
+            AppUser loggedInUser = (AppUser) authentication.getPrincipal();
+            attendanceService.markBulkAttendance(loggedInUser, attendanceRequests);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(new ApiResponse_<>(
+                            true,
+                            "Bulk attendance marked successfully",
+                            attendanceRequests.size()
+                    ));
+        } catch (AccessDeniedException e) {
+            log.error("Error in mark attendance: {}", e.getMessage());
+            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        }
+    }
+
+    private static <T> ResponseEntity<ApiResponse_<T>> httpError(HttpStatus s, String message) {
+        return ResponseEntity.
+                status(s).
+                body(new ApiResponse_<>(
+                        false,
+                        message,
+                        null
                 ));
     }
 }

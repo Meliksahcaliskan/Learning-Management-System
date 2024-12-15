@@ -86,6 +86,9 @@ public class AssignmentService {
             AppUser teacher = appUserRepository.findById(loggedInUserId)
                     .orElseThrow(() -> new EntityNotFoundException("Teacher not found"));
 
+            if (teacher.getRole().equals(Role.ROLE_STUDENT))
+                throw new AccessDeniedException("Students can't create assignments");
+
             ClassEntity classEntity = classEntityRepository.findById(dto.getClassId())
                     .orElseThrow(() -> new EntityNotFoundException("Class not found"));
 
@@ -93,7 +96,6 @@ public class AssignmentService {
                     .orElseThrow(() -> new EntityNotFoundException("Course not found"));
 
             validateTeacherAccess(teacher, classEntity);
-            // validateUniqueTitle(dto.getTitle(), classEntity); // No existingAssignmentId for creation
 
             Assignment assignment = createAssignmentEntity(dto, teacher, classEntity, course);
 
@@ -139,7 +141,7 @@ public class AssignmentService {
         }
         if (dueDate != null) {
             assignments = assignments.stream()
-                    .filter(assignment -> assignment.getDueDate().isBefore(dueDate))
+                    .filter(assignment -> !assignment.getDueDate().isAfter(dueDate))
                     .collect(Collectors.toList());
         }
 
@@ -165,7 +167,7 @@ public class AssignmentService {
                 .orElseThrow(() -> new EntityNotFoundException("Class not found by id: " + student.getStudentDetails().getClassEntity()));
 
         // Get all assignments for the student's class
-        List<Assignment> assignments = assignmentRepository.findByClassEntityOrderByDueDateDesc(classEntity);
+        Set<Assignment> assignments = assignmentRepository.findByClassEntityOrderByDueDateDesc(classEntity);
 
         // Convert to StudentAssignmentViewDTO
         return assignments.stream()
@@ -198,6 +200,8 @@ public class AssignmentService {
 
             // Update assignment fields
             updateAssignmentFields(existingAssignment, dto, classEntity, course);
+            existingAssignment.setLastModified(LocalDate.now());
+            existingAssignment.setLastModifiedBy(user);
 
             log.info("Assignment updated successfully: {}", assignmentId);
             return assignmentRepository.save(existingAssignment);
@@ -303,11 +307,11 @@ public class AssignmentService {
         Assignment assignment = findById(assignmentId);
 
         if (assignment.getDueDate().isBefore(LocalDate.now()))
-            throw new IllegalStateException("Can only unsubmit assignments that have been due.");
+            throw new IllegalStateException("Can only un-submit assignments that have been due.");
 
-        // Validate that only the student can unsubmit their assignment
+        // Validate that only the student can un-submit their assignment
         if (currentUser .getRole() != Role.ROLE_STUDENT)
-            throw new AccessDeniedException("Only students can unsubmit assignments");
+            throw new AccessDeniedException("Only students can un-submit assignments");
 
         // Check if the class entity exists
         ClassEntity classEntity = classEntityRepository.findById(currentUser .getStudentDetails().getClassEntity())
@@ -315,7 +319,7 @@ public class AssignmentService {
 
         // Verify the assignment belongs to the student
         if (!classEntity.getCourses().contains(assignment.getCourse()))
-            throw new AccessDeniedException("You can only unsubmit your own assignments");
+            throw new AccessDeniedException("You can only un-submit your own assignments");
 
         // Find the student's submission
         StudentSubmission studentSubmission = assignment.getStudentSubmissions().stream()
@@ -325,22 +329,20 @@ public class AssignmentService {
 
         // Validate submission status
         if (studentSubmission.getStatus() != AssignmentStatus.SUBMITTED) {
-            throw new IllegalStateException("Can only unsubmit assignments that have been submitted.");
+            throw new IllegalStateException("Can only un-submit assignments that have been submitted.");
         }
 
         // Validate that assignment is in SUBMITTED status and not yet graded
         if (studentSubmission.getGrade() != null)
-            throw new IllegalStateException("Cannot unsubmit graded assignments");
+            throw new IllegalStateException("Cannot un-submit graded assignments");
 
-        // Reset to pending status
-        studentSubmission.setStatus(AssignmentStatus.PENDING);
-        studentSubmission.setDocument(null);
+        assignment.getStudentSubmissions().remove(studentSubmission);
 
         return assignmentRepository.save(assignment);
     }
 
     @Transactional
-    public Assignment submitAssignment(Long assignmentId, SubmitAssignmentDTO submitDTO, AppUser currentUser)
+    public StudentSubmission submitAssignment(Long assignmentId, SubmitAssignmentDTO submitDTO, AppUser currentUser)
             throws IllegalStateException, IOException {
         Assignment assignment = findById(assignmentId);
 
@@ -385,8 +387,9 @@ public class AssignmentService {
                 submitDTO,
                 currentUser
         );
-
-        return assignmentRepository.save(assignment);
+        assignment.getStudentSubmissions().add(studentSubmission);
+        assignmentRepository.save(assignment);
+        return studentSubmission;
     }
 
     public Assignment findById(Long id) {
@@ -443,7 +446,8 @@ public class AssignmentService {
         }
 
         if (teacher.getRole() == Role.ROLE_TEACHER &&
-                !teacher.getTeacherDetails().getClasses().contains(classEntity)) {
+                teacher.getTeacherDetails().getClasses().stream()
+                        .noneMatch(c -> c.getId().equals(classEntity.getId()))) {
             throw new AccessDeniedException("Teachers can create assignments only for their assigned classes");
         }
     }
@@ -466,39 +470,4 @@ public class AssignmentService {
 
         return assignment;
     }
-
-    /*
-    private void validateUniqueTitle(String title, ClassEntity classEntity, Long... existingAssignmentId) {
-        log.debug("Validating title uniqueness: {} for class: {}", title, classEntity.getName());
-
-        // Normalize the title for comparison (trim whitespace and convert to lowercase)
-        String normalizedTitle = title.trim().toLowerCase();
-
-        // Check if any assignment with the same normalized title exists in the class
-        Optional<Assignment> existingAssignment = assignmentRepository
-                .findByTitleIgnoreCaseAndClassEntity(normalizedTitle, classEntity);
-
-        if (existingAssignment.isPresent()) {
-            // For update scenario, check if the found assignment is the same as the one being updated
-            if (existingAssignmentId != null && existingAssignmentId.length > 0) {
-                if (!existingAssignment.get().getId().equals(existingAssignmentId[0])) {
-                    log.warn("Duplicate title found: {} for class: {}", title, classEntity.getName());
-                    throw new IllegalArgumentException(
-                            String.format("An assignment with title '%s' already exists in class %s",
-                                    title, classEntity.getName())
-                    );
-                }
-            } else {
-                // For create scenario, any existing assignment with same title is a conflict
-                log.warn("Attempted to create assignment with duplicate title: {} in class: {}",
-                        title, classEntity.getName());
-                throw new IllegalArgumentException(
-                        String.format("An assignment with title '%s' already exists in class %s",
-                                title, classEntity.getName())
-                );
-            }
-        }
-        log.debug("Title validation passed for: {} in class: {}", title, classEntity.getName());
-    }
-     */
 }

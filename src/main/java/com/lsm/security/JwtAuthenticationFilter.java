@@ -42,9 +42,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final HandlerExceptionResolver handlerExceptionResolver;
     private final HttpSessionSecurityContextRepository securityContextRepository;
 
-    // @Value("${security.jwt.header.xsrf:X-XSRF-TOKEN}")
-    // private String xsrfHeader;
-
     @Value("${security.jwt.ignore-paths:/api/v1/auth/**,/swagger-ui/**,/api-docs/**}")
     private String[] ignorePaths;
 
@@ -69,14 +66,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 filterChain.doFilter(request, response);
                 return;
             }
-
-            /*
-            if (!validateXsrfToken(request)) {
-                handleSecurityException(request, response,
-                        new InvalidTokenException("Invalid XSRF token"));
-                return;
-            }
-            */
 
             processToken(token, request, response);
             filterChain.doFilter(request, response);
