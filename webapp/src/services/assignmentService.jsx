@@ -154,4 +154,19 @@ export const getAllAssignments = async (accessToken) => {
     return response.data;
 }
 
+export const bulkGradeAssignment = async (assignmentID, grades, accessToken) => {
+    const response = await axios.patch(
+        `${BASE_URL}/api/v1/assignments/${assignmentID}/bulk-grade`,
+        {
+            grades : grades,
+        },
+        {
+            headers : {
+                Authorization : `Bearer ${accessToken}`
+            }
+        }
+    );
+    return response.data;
+}
+
 export default { createAssignment, getAssignmentsForStudent };

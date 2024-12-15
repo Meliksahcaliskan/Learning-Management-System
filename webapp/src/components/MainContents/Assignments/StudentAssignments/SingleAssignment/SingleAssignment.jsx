@@ -137,14 +137,24 @@ const SingleAssigment = ({ assignment, refreshAssignments, status }) => {
                         <button className="btn" onClick={handleAssignmentUnsubmit}>Teslimi geri al</button>
                     }
                     {status === 'GRADED' &&
-                        <div className="assignment-body-section">
-                            <label className="assignment-section-title">Ödev sonucu</label>
-                            {(assignment.mySubmission && assignment.mySubmission.grade) ? (
-                                <span className="assignment-grade">{assignment.mySubmission.grade}/100</span>
-                            ) : (
-                                <i>Daha sonuçlandırılmadı</i>
-                            )}
-                        </div>
+                        <>
+                            <div className="assignment-body-section">
+                                <label className="assignment-section-title">Ödev sonucu</label>
+                                {(assignment.mySubmission && assignment.mySubmission.grade) ? (
+                                    <span className="assignment-grade">{assignment.mySubmission.grade}/100</span>
+                                ) : (
+                                    <i>Daha sonuçlandırılmadı</i>
+                                )}
+                            </div>
+                            <div className="assignment-body-section">
+                                <label className="assignment-section-title">Geri dönüş</label>
+                                {(assignment.mySubmission && assignment.mySubmission.feedback) ? (
+                                    <p className="assignment-section-text">{assignment.mySubmission.feedback}</p>
+                                ) : (
+                                    <i> Geri dönüş yapılmadı.</i>
+                                )}
+                            </div>
+                        </>
                     }
                 </div>
             )}

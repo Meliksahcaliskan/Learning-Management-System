@@ -3,6 +3,7 @@ import './Login.css'
 import { useContext, useEffect, useState } from 'react'
 import authService from '../../services/authService'
 import { AuthContext } from '../../contexts/AuthContext'
+import Cookies from 'js-cookie';
 
 const Login = () => {
 
@@ -33,9 +34,18 @@ const Login = () => {
         try {
             const response = await authService.login({
                 username : username,
-                password : password
+                password : password,
+                rememberMe : rememberMe
             });
-            console.log('login request response : ', response);
+            if (rememberMe) {
+                // Setting cookies for rememberMe, cookies are persistent
+                Cookies.set('accessToken', response.data.accessToken, { expires: 30, secure: true, sameSite: 'Strict' });
+                Cookies.set('refreshToken', response.data.refreshToken, { expires: 30, secure: true, sameSite: 'Strict' });
+              } else {
+                // Session cookie for non-rememberMe users, expires when the session ends
+                Cookies.set('accessToken', response.data.accessToken, { secure: true, sameSite: 'Strict' });
+                Cookies.set('refreshToken', response.data.refreshToken, { secure: true, sameSite: 'Strict' });
+              }         
             login(response.data);
         } catch(err) {
             console.log(err);
