@@ -6,15 +6,11 @@ import { AuthContext } from '../../../../../contexts/AuthContext';
 
 import { getAllClasses, getClasses, getTeacherClasses } from '../../../../../services/classesService';
 import { getAllSubjectsOf } from '../../../../../services/coursesService';
-import { createAssignment, uploadDocument } from '../../../../../services/assignmentService';
+import { createAssignment, deleteAssignment, uploadDocument } from '../../../../../services/assignmentService';
 
 import { isDateInFuture } from '../../../../../utils/dateUtils';
 import { calculateFileSize, isAllowedFileType } from '../../../../../utils/fileUtils';
 
-
-
-
-// TODOs : if file upload failed after the assignment is created, delete the assignment and display proper error message
 
 const NewAssignment = () => {
     const { user } = useContext(AuthContext);
@@ -136,8 +132,9 @@ const NewAssignment = () => {
     };
 
     const handleSubmit = async () => {
+        resetErrorMEssages();
         let hasError = false;
-
+    
         if (!assignmentClass.name) {
             setClassError('Sınıf seçimi yapınız.');
             hasError = true;
@@ -158,11 +155,11 @@ const NewAssignment = () => {
             setTitleError('Ödev başlığı 3 karakterden fazla olmalıdır.');
             hasError = true;
         }
-
-        if(!assignmentDueDate || !isDateInFuture(assignmentDueDate)) {
+        if (!assignmentDueDate || !isDateInFuture(assignmentDueDate)) {
             setDateError('Bitiş tarihi gelecekte olmalıdır.');
             hasError = true;
         }
+    
         if (!hasError) {
             const payload = {
                 teacherId: user.id,
@@ -173,30 +170,43 @@ const NewAssignment = () => {
                 courseId: assignmentSubject.id,
                 document: null,
             };
-
-            createAssignment(payload, user.accessToken)
-                .then(response => {
-                    if(response.success) {
-                        if(assignmentDocument) {
-                            const assignmentID = response.data.id;
-                            uploadDocument(assignmentID, assignmentDocument, user.accessToken)
-                                .then(response => {
-                                    console.log('upload document to assignment response', response);
-                                })
-                                .catch(error => {
-                                    setUploadError(true);
-                                });
+    
+            try {
+                const response = await createAssignment(payload, user.accessToken);
+                if (response.success && assignmentDocument) {
+                        const assignmentID = response.data.id;
+                        try {
+                            const uploadResponse = await uploadDocument(
+                                assignmentID,
+                                assignmentDocument,
+                                user.accessToken
+                            );
+                            console.log('upload document to assignment response', uploadResponse);
+                        } catch (uploadError) {
+                            console.error(
+                                "Failed to upload the document, need to delete the assignment",
+                                assignmentID
+                            );
+                            
+                            try {
+                                await deleteAssignment(assignmentID, user.accessToken);
+                                console.log("Assignment deleted successfully:", assignmentID);
+                            } catch (deletionError) {
+                                console.error("Failed to delete the assignment:", assignmentID, deletionError);
+                            }
+    
+                            throw uploadError;
                         }
-                        resetForm();
-                        setCreationSuccess(true);
                     }
-                })
-                .catch(error => {
-                    console.log(error);
-                    setCreationError(true);
-                })
+                    resetForm();
+                    setCreationSuccess(true);
+            } catch (error) {
+                console.error("Error during assignment creation:", error);
+                setCreationError(true);
+            }
         }
     };
+    
 
     const resetForm = () => {
         setAssignmentClass({name : '', id : null});
@@ -205,6 +215,16 @@ const NewAssignment = () => {
         setAssignmentTitle('');
         setAssignmentDescription('');
         setAssignmentDocument(null);
+    }
+
+    const resetErrorMEssages = () => {
+        setClassError('');
+        setSubjectError('');
+        setDateError('');
+        setTitleError('');
+        setFileError('');
+        setCreationError('');
+        setCreationSuccess('');
     }
 
     return (
@@ -307,7 +327,7 @@ const NewAssignment = () => {
             {creationError && 
                 <p className='error-message' style={{ whiteSpace : 'pre-line'}}>
                     Ödev oluşturulukren hata! <br />
-                    Aynı başlığa sahip bir ödev olabilir. <br />
+                    Lütfen sayfayı yenileyerek tekrar deneyiniz. <br />
                 </p>
             }
             {creationSuccess && <p className='success-message'>Ödev başarıyla oluşturuldu.</p>}

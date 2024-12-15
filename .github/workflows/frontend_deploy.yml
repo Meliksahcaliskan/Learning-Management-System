@@ -1,0 +1,63 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - frontend_dev_v2
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+
+    steps:
+      # Checkout code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Install dependencies and build the project
+      - name: Build Frontend
+        run: |
+          cd webapp
+          npm install
+          npm run build
+
+      # Upload built files to the server using FTP
+      - name: Upload Built Files to Server
+        run: |
+          sudo apt-get update && sudo apt-get install -y lftp
+          lftp -u ${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }} -p 21 ftp://learnovify.com <<EOF
+          set ssl:verify-certificate yes
+          set ssl:ca-file /etc/ssl/certs/ca-certificates.crt
+          mirror -R webapp/dist/ uploads
+          bye
+          EOF
+
+      # SSH into the server and deploy the files
+      - name: Deploy Files on Server
+        run: |
+          sudo apt-get install sshpass -y
+          sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no root@${{ secrets.SERVER_IP }} <<EOF
+          # Remove existing frontend files
+          sudo rm -rf /var/www/learnovify/*
+
+          # Move new files to the server directory
+          sudo mv /home/ftpuser/uploads/* /var/www/learnovify
+
+          # Set proper permissions
+          sudo chmod -R 755 /var/www/learnovify
+          sudo chown -R www-data:www-data /var/www/learnovify
+
+          echo "Frontend deployment completed successfully!"
+          EOF

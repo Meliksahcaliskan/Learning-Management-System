@@ -1,8 +1,7 @@
 import { AuthContext } from '../../contexts/AuthContext';
 import { getAssignments, getAssignmentsForTeacher } from '../../services/assignmentService';
-import { getAllClasses, getClasses, getTeacherClasses } from '../../services/classesService';
+import { getClasses } from '../../services/classesService';
 import { getAllSubjectsOf } from '../../services/coursesService';
-import { isDateInFuture } from '../dateUtils';
 import './AssignmentSearch.css';
 import { useContext, useEffect, useState } from 'react';
 
@@ -22,7 +21,7 @@ const AssignmentSearch = ({onSearchResults}) => {
         const fetchClasses = async () => {
             try {
                 const response = await getClasses(user.role, user.accessToken);
-                setAllClasses(response);
+                setAllClasses(response.data);
             }catch(error) {
                 console.log(error);
             }
@@ -48,8 +47,8 @@ const AssignmentSearch = ({onSearchResults}) => {
     const loadCourses = async (className) => {
         const classID = allClasses.find(singleClass => singleClass.name === className)?.id;
         getAllSubjectsOf(classID, user.accessToken)
-            .then(data => {
-                setAllSubjectsOfClass(data);
+            .then(response => {
+                setAllSubjectsOfClass(response.data);
             })
             .catch(error => {
                 console.error(error);

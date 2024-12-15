@@ -47,6 +47,7 @@ public class StudentAssignmentViewDTO {
             return null;
         return AssignmentDocumentDTO.builder()
                 .assignmentId(doc.getAssignment().getId())
+                .documentId(doc.getId())
                 .fileName(doc.getFileName())
                 .fileType(doc.getFileType())
                 .fileSize(doc.getFileSize())

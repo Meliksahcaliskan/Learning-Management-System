@@ -12,6 +12,7 @@ const SingleAssigment = ({ assignment, refreshAssignments, status }) => {
     const { user } = useContext(AuthContext);
 
     const [isExpanded, setIsExpanded] = useState(false);
+    const [submitError, setSubmitError] = useState(false);
     const [uploadedFile, setUploadedFile] = useState(null);
 
 
@@ -21,19 +22,21 @@ const SingleAssigment = ({ assignment, refreshAssignments, status }) => {
     }
 
     const handleAssignmentSubmit = async () => {
+        setSubmitError(false);
         const formData = new FormData();
-        formData.append('document', uploadedFile);
-        formData.append('submissionComment', null);
-        console.log(formData);
+        if(uploadedFile){
+            formData.append('document', uploadedFile);
+        }
+        formData.append('submissionComment', '');
 
-        submitAssignment(assignment.id, formData, user.accessToken)
-            .then(response => {
-                console.log(response);
-                refreshAssignments();
-            })
-            .catch(error => {
-                console.log(error);
-            })
+        try {
+            const response = await submitAssignment(assignment.id, formData, user.accessToken);
+            console.log(response);
+            refreshAssignments();
+        }catch(error) {
+            console.log(error);
+            setSubmitError(true);
+        }
     }
     
     const handleAssignmentUnsubmit = async () => {
@@ -56,7 +59,7 @@ const SingleAssigment = ({ assignment, refreshAssignments, status }) => {
 
     // TODO
     const handleDocumentDownload = () => {
-        console.log("handling document download");
+        console.log(assignment.teacherDocument);
     }
 
     return(
@@ -97,44 +100,37 @@ const SingleAssigment = ({ assignment, refreshAssignments, status }) => {
                     {status === 'PENDING' && (
                         <>
                             <div className="assignment-body-section">
-                                {isDateInFuture(assignment.dueDate) ?
-                                    (uploadedFile ? (
-                                            <>
-                                                <label className="assignment-section-title">Yüklenen döküman</label>
-                                                <div className="assignment-document-container">
-                                                    <span className="assignment-document">{uploadedFile.name}</span>
-                                                    <button type="submit" className="delete-icon" onClick={handleDocumentRemoval}><img src={deleteIcon} alt="remove file"/></button>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <label className="assignment-section-title">Döküman ekle</label>
-                                                <input type="file" onChange={handleFileUpload}/>
-                                            </>
-                                        )
-                                    ) : (
-                                        <i className="assignment-section-text">Ödev teslim edilmedi</i>
-                                    )
-                                }
+                                {uploadedFile ? (
+                                    <>
+                                        <label className="assignment-section-title">Yüklenen döküman</label>
+                                        <div className="assignment-document-container">
+                                            <span className="assignment-document">{uploadedFile.name}</span>
+                                            <button type='submit' className='delete-icon' onClick={handleDocumentRemoval}>
+                                                <img src={deleteIcon} alt="remove file"/>
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <label className="assignment-section-title">Döküman ekle</label>
+                                        <input type="file" onChange={handleFileUpload}/>
+                                    </>
+                                )}
                             </div>
                             <button className="btn" onClick={handleAssignmentSubmit}>Teslim Et</button>
                         </>
                     )}
 
-                    {/* {(assignment.mySubmission && assignment.mySubmission.document) &&
+                    {(status === 'GRADED' || status === 'SUBMITTED') && 
                         <div className="assignment-body-section">
-                            <label className="assignment-section-title">Eklenen dökümanlar</label>
+                            <label className="assignment-section-title">Eklenen döküman</label>
+                            {(assignment.mySubmission && assignment.mySubmission.document) ? (
+                                <span className="assignment-document">{assignment.mySubmission.document.fileName}</span>
+                            ) : (
+                                <i>Döküman eklenmedi.</i>
+                            )}
                         </div>
-                    } */}
-
-                    <div className="assignment-body-section">
-                        <label className="assignment-section-title">Eklenen döküman</label>
-                        {(assignment.mySubmission && assignment.mySubmission.document) ? (
-                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.mySubmission.document.fileName}</span>
-                        ) : (
-                            <i>Döküman eklenmedi.</i>
-                        )}
-                    </div>
+                    }
 
 
                     {status === 'SUBMITTED' &&
@@ -152,6 +148,7 @@ const SingleAssigment = ({ assignment, refreshAssignments, status }) => {
                     }
                 </div>
             )}
+            {submitError && <p className='error-message' style={{textAlign : 'center'}}>Ödev teslim edilemedi.</p>}
         </div>
     );
 }

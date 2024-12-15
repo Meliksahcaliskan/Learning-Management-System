@@ -24,7 +24,6 @@ export const deleteAssignment = async (assignmentID, accessToken) => {
             },
         }
     );
-    console.log('deletion response : ', response);
     return response.data;
 }
 
@@ -127,7 +126,6 @@ export const getAssignmentsForStudent = async (studentID, accessToken) => {
 
 export const getAssignmentsForTeacher = async (teacherID, filter, accessToken) => {
     const {classId, courseId, dueDate} = filter;
-    console.log(classId, courseId, dueDate);
     const response = await axios.get(
         `${BASE_URL}/api/v1/assignments/teacher/${teacherID}`,
         {
