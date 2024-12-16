@@ -26,7 +26,7 @@ public class StudentSubmission {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private AssignmentStatus status = AssignmentStatus.PENDING;
+    @Builder.Default private AssignmentStatus status = AssignmentStatus.PENDING;
 
     @ManyToOne
     @JoinColumn(name = "assignment_id", nullable = false)

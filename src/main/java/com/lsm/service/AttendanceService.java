@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -127,16 +128,23 @@ public class AttendanceService {
     }
 
     @Transactional
-    public List<AttendanceStatsDTO> getAttendanceStatsByCourse(AppUser  loggedInUser , Long courseId, Long classId) throws AccessDeniedException {
-        if (loggedInUser .getRole().equals(Role.ROLE_STUDENT))
+    public List<AttendanceStatsDTO> getAttendanceStatsByCourse(
+            AppUser loggedInUser,
+            Long courseId,
+            Long classId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) throws AccessDeniedException {
+        if (loggedInUser.getRole().equals(Role.ROLE_STUDENT)) {
             throw new AccessDeniedException("Students can't view attendance stats of the course.");
+        }
 
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found"));
         ClassEntity classEntity = classEntityRepository.getClassEntityById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Class not found"));
 
-        List<Attendance> attendances = getAttendancesByCourse(courseId, classId);
+        List<Attendance> attendances = getAttendancesByCourse(courseId, classId, startDate, endDate);
         return processAttendances(attendances, null, classEntity, course);
     }
 
@@ -148,11 +156,26 @@ public class AttendanceService {
         }
     }
 
-    private List<Attendance> getAttendancesByCourse(Long courseId, Long classId) {
-        if (classId != null) {
-            return attendanceRepository.findByCourseIdAndClassId(courseId, classId);
+    private List<Attendance> getAttendancesByCourse(
+            Long courseId,
+            Long classId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        if (startDate != null && endDate != null) {
+            if (classId != null) {
+                return attendanceRepository.findByCourseIdAndClassIdAndDateBetween(
+                        courseId, classId, startDate.atStartOfDay().toLocalDate(), endDate.atTime(LocalTime.MAX).toLocalDate());
+            } else {
+                return attendanceRepository.findByCourseIdAndDateBetween(
+                        courseId, startDate.atStartOfDay().toLocalDate(), endDate.atTime(LocalTime.MAX).toLocalDate());
+            }
         } else {
-            return attendanceRepository.findByCourseId(courseId);
+            if (classId != null) {
+                return attendanceRepository.findByCourseIdAndClassId(courseId, classId);
+            } else {
+                return attendanceRepository.findByCourseId(courseId);
+            }
         }
     }
 

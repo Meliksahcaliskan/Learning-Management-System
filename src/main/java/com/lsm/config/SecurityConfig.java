@@ -155,7 +155,7 @@ public class SecurityConfig {
                     registry.requestMatchers(HttpMethod.POST, "/api/v1/assignments/**")
                             .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
                     registry.requestMatchers(HttpMethod.GET, "/api/v1/assignments/student/**")
-                            .hasAuthority("ROLE_STUDENT");
+                            .hasAnyAuthority("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
                     registry.requestMatchers(HttpMethod.PUT, "/api/v1/assignments/**")
                             .hasAnyAuthority("ROLE_TEACHER", "ROLE_ADMIN", "ROLE_COORDINATOR");
                     registry.requestMatchers(HttpMethod.DELETE, "/api/v1/assignments/**")

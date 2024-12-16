@@ -8,7 +8,9 @@ import com.lsm.model.entity.base.AppUser;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -28,29 +30,30 @@ public class ClassEntityMapper {
         dto.setDescription(entity.getDescription());
 
         // Map teacher
-        Long teacherId = entity.getTeacher().getId();
-        dto.setTeacherId(teacherId);
+        if (entity.getTeacher() != null) {
+            dto.setTeacherId(entity.getTeacher().getId());
+        }
 
-        // Map students
-        if (entity.getStudents() != null) {
-            List<Long> studentIds = entity.getStudents().stream()
-                    .map(AppUser::getId)
-                    .collect(Collectors.toList());
-            dto.setStudentIds(studentIds);
+        // Map students with their IDs and names
+        if (entity.getStudents() != null && !entity.getStudents().isEmpty()) {
+            Map<Long, String> studentMappings = entity.getStudents().stream()
+                    .collect(Collectors.toMap(
+                            AppUser::getId,
+                            student -> student.getName() + " " + student.getSurname()
+                    ));
+            dto.setStudentIdAndNames(studentMappings);
         } else {
-            ArrayList<Long> studentIds = new ArrayList<>();
-            dto.setStudentIds(studentIds);
+            dto.setStudentIdAndNames(new HashMap<>());
         }
 
         // Map assignments
-        if (entity.getAssignments() != null) {
+        if (entity.getAssignments() != null && !entity.getAssignments().isEmpty()) {
             List<Long> assignmentIds = entity.getAssignments().stream()
                     .map(Assignment::getId)
                     .collect(Collectors.toList());
             dto.setAssignmentIds(assignmentIds);
         } else {
-            ArrayList<Long> assignmentIds = new ArrayList<>();
-            dto.setAssignmentIds(assignmentIds);
+            dto.setAssignmentIds(new ArrayList<>());
         }
 
         return dto;

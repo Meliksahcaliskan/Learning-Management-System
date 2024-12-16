@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.Map;
 
 @Builder
 @AllArgsConstructor
@@ -20,7 +21,7 @@ public class ClassEntityResponseDTO {
     private String name;
     private String description;
     private Long teacherId;
-    private List<Long> studentIds;
+    private Map<Long, String> studentIdAndNames;
     private List<Long> assignmentIds;
 }
 
