@@ -1,10 +1,12 @@
 package com.example.loginmultiplatform.ui
 
+import android.content.Context
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,7 +18,8 @@ import com.google.android.material.datepicker.MaterialDatePicker
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.*
@@ -29,13 +32,16 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.unit.sp
 import com.example.loginmultiplatform.R
 import androidx.navigation.NavController
 import java.text.SimpleDateFormat
 import java.util.*
 import com.example.loginmultiplatform.model.AttendanceResponse
 import com.example.loginmultiplatform.model.AttendanceStats
+import com.example.loginmultiplatform.model.StudentCourseResponse
 import com.example.loginmultiplatform.viewmodel.AttendanceViewModel
+import com.example.loginmultiplatform.utils.CreateAttendancePDF
 
 val customFontFamily = FontFamily(
     Font(R.font.montserrat_regular, FontWeight.Normal),
@@ -60,12 +66,17 @@ actual fun AttendanceScreen(viewModel: AttendanceViewModel, navController: NavCo
     val attendanceStats by viewModel.attendanceStats.collectAsState()
     val groupedData = attendanceList.groupBy { it.courseId } //derslere göre gruplandırma
     val coursesList by viewModel.studentCourses.collectAsState()
+    val calendar = Calendar.getInstance()
 
-    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-    val defaultStartDate by remember { mutableStateOf("$currentYear-01-01") }
-    val defaultEndDate by remember { mutableStateOf("$currentYear-12-31") }
+
+
+    calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+    val defaultStartDate by remember { mutableStateOf(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)) }
+    calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek + 6)
+    val defaultEndDate by remember { mutableStateOf(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)) }
     var showDatePicker by remember { mutableStateOf(false) }
     var resetVisible by remember { mutableStateOf(false) }
+
     var startDate by remember { mutableStateOf(defaultStartDate) }
     var endDate by remember { mutableStateOf(defaultEndDate) }
 
@@ -93,39 +104,55 @@ actual fun AttendanceScreen(viewModel: AttendanceViewModel, navController: NavCo
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         } else {
+            val context = LocalContext.current
+
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
 
-                item { Legend() }
+                item { Legend(context, groupedData, startDate, endDate, statistics = attendanceStats, courses = coursesList, classId = classId) }
 
                 item {
                     Button(
-                        onClick = { showDatePicker = true },
+                        onClick = { showDatePicker = true},
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF5270FF))
                     ) {
                         Text("Tarih Aralığı Seç", fontFamily = customFontFamily, fontWeight = FontWeight.Bold, color = Color.White)
                     }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
 
-                    if (resetVisible) {
-                        Button(
-                            onClick = {
-                                startDate = defaultStartDate
-                                endDate = defaultEndDate
-                                viewModel.fetchAttendance(studentId, startDate, endDate)
-                                resetVisible = false
-                            },
-                            modifier = Modifier.weight(1f).padding(start = 8.dp),
-                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF5270FF))
-                        ) {
-                            Text("Sıfırla", fontFamily = customFontFamily, fontWeight = FontWeight.Bold, color = Color.White)
+                        SelectedDateRangeDisplay(startDate = startDate, endDate = endDate)
+
+                        if (resetVisible) {
+                            IconButton(
+                                onClick = {
+                                    startDate = defaultStartDate
+                                    endDate = defaultEndDate
+                                    viewModel.fetchAttendance(studentId, startDate, endDate)
+                                    resetVisible = false
+                                },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Tarihleri sıfırla",
+                                    tint = Color.Red
+                                )
+                            }
                         }
+
+                        //Spacer(modifier = Modifier.width(4.dp))
+                        //println(resetVisible)
+
                     }
-
-
-                    SelectedDateRangeDisplay(startDate = startDate, endDate = endDate)
                 }
 
                 if (showDatePicker) {
@@ -179,6 +206,25 @@ actual fun AttendanceScreen(viewModel: AttendanceViewModel, navController: NavCo
                         }
                     }
                 }
+
+                /*item {
+                    Button(
+                        onClick = {
+                            CreateAttendancePDF(context = context, groupedData = groupedData, startDate = startDate, endDate = endDate, studentName = "Alice")
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF5270FF))
+                    ) {
+                        Text(
+                            text = "İndir",
+                            fontFamily = customFontFamily,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }*/
             }
         }
     }
@@ -186,63 +232,56 @@ actual fun AttendanceScreen(viewModel: AttendanceViewModel, navController: NavCo
 
 @Composable
 fun SelectedDateRangeDisplay(startDate: String, endDate: String) {
-    Row(
+
+    // Başlangıç Tarihi
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Başlangıç Tarihi
-        Box(
-            modifier = Modifier
-                .background(
-                    color = Color(0xFF5270FF),
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-        ) {
-            Text(
-                text = startDate,
-                style = MaterialTheme.typography.body2.copy(
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = customFontFamily
-                )
+            .background(
+                color = Color(0xFF5270FF),
+                shape = RoundedCornerShape(16.dp)
             )
-        }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
         Text(
-            text = "-",
-            style = MaterialTheme.typography.body1.copy(
-                color = MaterialTheme.colors.onSurface,
+            text = startDate,
+            style = MaterialTheme.typography.body2.copy(
+                color = Color.White,
                 fontWeight = FontWeight.Bold,
                 fontFamily = customFontFamily
             )
         )
+    }
 
-        Spacer(modifier = Modifier.width(8.dp))
+    Spacer(modifier = Modifier.width(8.dp))
 
-        // Bitiş Tarihi
-        Box(
-            modifier = Modifier
-                .background(
-                    color = Color(0xFF5270FF),
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-        ) {
-            Text(
-                text = endDate,
-                style = MaterialTheme.typography.body2.copy(
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = customFontFamily
-                )
+    Text(
+        text = "-",
+        style = MaterialTheme.typography.body1.copy(
+            color = MaterialTheme.colors.onSurface,
+            fontWeight = FontWeight.Bold,
+            fontFamily = customFontFamily
+        )
+    )
+
+    Spacer(modifier = Modifier.width(8.dp))
+
+    // Bitiş Tarihi
+    Box(
+        modifier = Modifier
+            .background(
+                color = Color(0xFF5270FF),
+                shape = RoundedCornerShape(16.dp)
             )
-        }
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = endDate,
+            style = MaterialTheme.typography.body2.copy(
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontFamily = customFontFamily
+            )
+        )
     }
 }
 
@@ -320,6 +359,8 @@ fun ExpendableTableCard(
                     contentDescription = null
                 )
             }
+
+            Divider()
 
             AnimatedVisibility(
                 visible = expanded,
@@ -460,7 +501,13 @@ fun StatisticsRow(label: String, value: String) {
 }
 
 @Composable
-fun Legend() {
+fun Legend(context: Context,
+           groupedData: Map<Long, List<AttendanceResponse>>,
+           startDate: String,
+           endDate: String,
+           statistics: List<AttendanceStats>,
+           courses: List<StudentCourseResponse>,
+           classId: Int) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -471,6 +518,32 @@ fun Legend() {
         LegendItem(color = Color.Red, text = "Gelmedi")
         LegendItem(color = Color(0xFFFFA500), text = "Geç Geldi")
     }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        IconButton(
+            onClick = {
+                // İndir butonuna basılınca PDF oluşturma işlemi
+                CreateAttendancePDF(context, groupedData, startDate, endDate, statistics, courses, classId)
+            }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Download,
+                contentDescription = "İndir",
+                tint = Color(0xFF5270FF)
+            )
+        }
+        Text(
+            text = "Rapor İndir",
+            fontSize = 14.sp,
+            color = Color(0xFF5270FF),
+            fontFamily = customFontFamily,
+            fontWeight = FontWeight.Bold
+        )
+    }
+
 }
 
 @Composable

@@ -224,19 +224,6 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
                     }
                 )
             }
-
-            /*if (showSuccessDialog) {
-                AlertDialog(
-                    onDismissRequest = { showSuccessDialog = false },
-                    title = { Text("Success") },
-                    text = { Text(successMessage) },
-                    confirmButton = {
-                        Button(onClick = { showSuccessDialog = false }) {
-                            Text("OK")
-                        }
-                    }
-                )
-            }*/
         }
     }
 }

@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import com.example.loginmultiplatform.ui.*
 import com.example.loginmultiplatform.viewmodel.AttendanceViewModel
 import com.example.loginmultiplatform.viewmodel.LoginViewModel
+import com.example.loginmultiplatform.viewmodel.TeacherAttendanceViewModel
 
 @Composable
 fun NavigationGraph(
@@ -23,6 +24,10 @@ fun NavigationGraph(
     ) {
         composable("login_screen") {
             LoginScreen(viewModel = loginViewModel, navController = navController)
+        }
+
+        composable("teacher_dashboard") {
+            TeacherDashboard(loginViewModel = loginViewModel, teacherAttendanceViewModel = TeacherAttendanceViewModel(), navController = navController)
         }
 
         composable("student_dashboard") {

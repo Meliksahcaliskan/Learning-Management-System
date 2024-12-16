@@ -83,6 +83,7 @@ kotlin {
                 implementation("com.google.accompanist:accompanist-pager:0.30.0")
                 implementation("com.google.accompanist:accompanist-pager-indicators:0.30.0")
 
+                implementation("androidx.compose.material:material-icons-extended:1.5.4")
                 //implementation("org.slf4j:slf4j-simple:2.0.9")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
                 implementation("androidx.navigation:navigation-compose:2.7.3")

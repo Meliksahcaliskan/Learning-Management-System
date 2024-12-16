@@ -5,6 +5,7 @@ import com.example.loginmultiplatform.model.AttendanceStats
 import com.example.loginmultiplatform.model.LoginResponse
 import com.example.loginmultiplatform.model.ResponseWrapper
 import com.example.loginmultiplatform.model.StudentCourseResponse
+import com.example.loginmultiplatform.model.TeacherClassResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -33,9 +34,7 @@ interface ApiService {
         @Query("classId") classId: Int
     ): ResponseWrapper<List<AttendanceStats>>
 
-    /*@GET("/api/v1/classed/student")
-    suspend fun getClassName(
-        @Path("classId") classId: Int
-    )*/
+    @GET("/api/v1/classes/teacher")
+    suspend fun fetchTeacherClasses(): ResponseWrapper<List<TeacherClassResponse>>
 }
 
