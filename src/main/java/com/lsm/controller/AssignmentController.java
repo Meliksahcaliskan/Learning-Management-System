@@ -575,6 +575,7 @@ public class AssignmentController {
                 .documentId(document.getId())
                 .fileName(document.getFileName())
                 .fileType(document.getFileType())
+                .filePath(document.getFilePath())
                 .fileSize(document.getFileSize())
                 .uploadTime(document.getUploadTime())
                 .uploadedByUsername(document.getUploadedBy().getUsername())

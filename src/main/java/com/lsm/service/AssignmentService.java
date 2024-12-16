@@ -284,12 +284,14 @@ public class AssignmentService {
         }
 
         // Check if the assignment is past due and if any submission is not submitted
+        /*
         boolean canGrade = assignment.getStudentSubmissions().stream()
-                .noneMatch(studentSubmission -> studentSubmission.getStatus() != AssignmentStatus.SUBMITTED)
-        /*  && assignment.getDueDate().isBefore(LocalDate.now()) */;
+                .noneMatch(studentSubmission -> studentSubmission.getStatus() != AssignmentStatus.SUBMITTED);
+        //  && assignment.getDueDate().isBefore(LocalDate.now())
 
         if (!canGrade)
             throw new IllegalStateException("Can only grade assignments that have been submitted");
+        */
 
         // Update the submission for the specific student
         assignment.getStudentSubmissions().stream()
