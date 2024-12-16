@@ -70,6 +70,19 @@ export const deleteDocument = async (documentID, accessToken) => {
     return response;
 }
 
+export const downloadDocument = async (documentID, accessToken) => {
+    const response = await axios.get(
+        `${BASE_URL}/api/v1/assignments/documents/${documentID}`,
+        {
+            responseType : 'blob',
+            headers : {
+                Authorization : `Bearer ${accessToken}`
+            }
+        }
+    );
+    return response.data;
+}
+
 export const submitAssignment = async (assignmentID, fileData, accessToken) => {
     const response = await axios.patch(
         `${BASE_URL}/api/v1/assignments/${assignmentID}/submit`,

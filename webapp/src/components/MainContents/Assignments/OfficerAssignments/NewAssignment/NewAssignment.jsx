@@ -1,15 +1,15 @@
 import './NewAssignment.css';
-import deleteIcon from '/icons/delete.svg';
 
 import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../../../../../contexts/AuthContext';
 
-import { getAllClasses, getClasses, getTeacherClasses } from '../../../../../services/classesService';
+import { getClasses } from '../../../../../services/classesService';
 import { getAllSubjectsOf } from '../../../../../services/coursesService';
 import { createAssignment, deleteAssignment, uploadDocument } from '../../../../../services/assignmentService';
 
 import { isDateInFuture } from '../../../../../utils/dateUtils';
 import { calculateFileSize, isAllowedFileType } from '../../../../../utils/fileUtils';
+import Document from '../../../../common/Document/Document';
 
 
 const NewAssignment = () => {
@@ -127,12 +127,8 @@ const NewAssignment = () => {
         }
     };
 
-    const handleFileRemove = () => {
-        setAssignmentDocument(null);
-    };
-
     const handleSubmit = async () => {
-        resetErrorMEssages();
+        resetErrorMessages();
         let hasError = false;
     
         if (!assignmentClass.name) {
@@ -217,7 +213,7 @@ const NewAssignment = () => {
         setAssignmentDocument(null);
     }
 
-    const resetErrorMEssages = () => {
+    const resetErrorMessages = () => {
         setClassError('');
         setSubjectError('');
         setDateError('');
@@ -299,10 +295,11 @@ const NewAssignment = () => {
             </div>
 
             {assignmentDocument ? (
-                <div style={{ display: 'flex' }}>
-                    <span className="assignment-document">{assignmentDocument.name}</span>
-                    <button type="submit" className="delete-icon" onClick={handleFileRemove}><img src={deleteIcon} alt="remove file" /></button>
-                </div>
+                <Document
+                    file={assignmentDocument}
+                    isRemovable={true}
+                    onRemove={() => setAssignmentDocument(null)}
+                />
             ) : (
                 <div className="input-container">
                     <label className="label">Döküman</label>

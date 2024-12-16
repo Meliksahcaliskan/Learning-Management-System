@@ -4,9 +4,9 @@ import arrowUp from '/icons/arrow-up.svg';
 import deleteIcon from '/icons/delete.svg';
 
 import './SingleAssignment.css';
-import { submitAssignment, unsubmitStudentAssignment } from "../../../../../services/assignmentService";
+import { downloadDocument, submitAssignment, unsubmitStudentAssignment } from "../../../../../services/assignmentService";
 import { AuthContext } from "../../../../../contexts/AuthContext";
-import { isDateInFuture } from "../../../../../utils/dateUtils";
+import Document from "../../../../common/Document/Document";
 
 const SingleAssigment = ({ assignment, refreshAssignments, status }) => {
     const { user } = useContext(AuthContext);
@@ -52,14 +52,20 @@ const SingleAssigment = ({ assignment, refreshAssignments, status }) => {
 
     }
 
-    const handleDocumentRemoval = () => {
-        console.log("removing uploaded file");
-        setUploadedFile(null);
-    }
-
     // TODO
-    const handleDocumentDownload = () => {
+    const handleDocumentDownload = async () => {
+        console.log("handling document download");
         console.log(assignment.teacherDocument);
+        try {
+            const response = await downloadDocument(assignment.teacherDocument.documentId, user.accessToken);
+            console.log(response);
+            const objectURL = URL.createObjectURL(response);
+            const a = document.createElement('a');
+            a.href = objectURL;
+            // a.download = 
+        }catch(error) {
+            console.log(error);
+        }
     }
 
     return(
@@ -91,7 +97,9 @@ const SingleAssigment = ({ assignment, refreshAssignments, status }) => {
                     <div className="assignment-body-section">
                         <label className="assignment-section-title">Yardımcı materyaller</label>
                         {assignment.teacherDocument ? (
-                            <span className="assignment-document" onClick={handleDocumentDownload}>{assignment.teacherDocument.fileName}</span>
+                            <Document 
+                                file={assignment.teacherDocument}
+                            />
                         ) : (
                             <i className="assignment-section-text">Döküman eklenmedi.</i>
                         )}
@@ -103,12 +111,11 @@ const SingleAssigment = ({ assignment, refreshAssignments, status }) => {
                                 {uploadedFile ? (
                                     <>
                                         <label className="assignment-section-title">Yüklenen döküman</label>
-                                        <div className="assignment-document-container">
-                                            <span className="assignment-document">{uploadedFile.name}</span>
-                                            <button type='submit' className='delete-icon' onClick={handleDocumentRemoval}>
-                                                <img src={deleteIcon} alt="remove file"/>
-                                            </button>
-                                        </div>
+                                        <Document 
+                                            file={uploadedFile}
+                                            isRemovable={true}
+                                            onRemove={() => setUploadedFile(null)}
+                                        />
                                     </>
                                 ) : (
                                     <>
@@ -125,7 +132,9 @@ const SingleAssigment = ({ assignment, refreshAssignments, status }) => {
                         <div className="assignment-body-section">
                             <label className="assignment-section-title">Eklenen döküman</label>
                             {(assignment.mySubmission && assignment.mySubmission.document) ? (
-                                <span className="assignment-document">{assignment.mySubmission.document.fileName}</span>
+                                <Document 
+                                    file={assignment.mySubmission.document}
+                                />
                             ) : (
                                 <i>Döküman eklenmedi.</i>
                             )}

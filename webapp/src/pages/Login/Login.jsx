@@ -18,7 +18,6 @@ const Login = () => {
 
     //!!!! remove before deployment
     useEffect(() => {
-        // localStorage.setItem('password', 'securePassword123_@');
         const loginPassword = localStorage.getItem('password');
         setPassword(loginPassword);
     }, []);
