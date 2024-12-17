@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -141,8 +142,10 @@ public class AttendanceService {
 
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found"));
-        ClassEntity classEntity = classEntityRepository.getClassEntityById(classId)
-                .orElseThrow(() -> new IllegalArgumentException("Class not found"));
+        ClassEntity classEntity = null;
+        if (classId != null)
+            classEntity = classEntityRepository.getClassEntityById(classId)
+                    .orElseThrow(() -> new IllegalArgumentException("Class not found"));
 
         List<Attendance> attendances = getAttendancesByCourse(courseId, classId, startDate, endDate);
         return processAttendances(attendances, null, classEntity, course);
@@ -179,7 +182,7 @@ public class AttendanceService {
         }
     }
 
-    private List<AttendanceStatsDTO> processAttendances(List<Attendance> attendances, AppUser  student, ClassEntity classEntity, Course course) {
+    private List<AttendanceStatsDTO> processAttendances(List<Attendance> attendances, AppUser student, ClassEntity classEntity, Course course) {
         // Group attendances by either course or student based on the context
         Map<Long, List<Attendance>> groupedAttendances = (student != null)
                 ? attendances.stream().collect(Collectors.groupingBy(Attendance::getCourseId))
@@ -191,7 +194,7 @@ public class AttendanceService {
                     List<Attendance> courseOrStudentAttendances = entry.getValue();
 
                     // If processing by student, get the student details
-                    AppUser  currentStudent = student != null ? student : appUserRepository.findById(key)
+                    AppUser currentStudent = student != null ? student : appUserRepository.findById(key)
                             .orElseThrow(() -> new IllegalArgumentException("Student not found"));
 
                     long totalClasses = courseOrStudentAttendances.size();
@@ -209,11 +212,39 @@ public class AttendanceService {
                             ? (presentCount + lateCount) * 100.0 / totalClasses
                             : 0;
 
+                    if (classEntity != null) {
+                        return AttendanceStatsDTO.builder()
+                                .studentId(currentStudent.getId())
+                                .studentName(currentStudent.getName())
+                                .classId(classEntity.getId())
+                                .className(classEntity.getName())
+                                .courseId(course != null ? course.getId() : key)
+                                .courseName(course != null ? course.getName() : "Unknown Course")
+                                .totalClasses(totalClasses)
+                                .presentCount(presentCount)
+                                .absentCount(absentCount)
+                                .lateCount(lateCount)
+                                .attendancePercentage(Math.round(attendancePercentage * 100.0) / 100.0)
+                                .build();
+                    }
+                    // Handle class ID resolution safely
+                    Long resolvedClassId = null;
+                    if (course != null && currentStudent != null) {
+                        resolvedClassId = course.getClasses().stream()
+                                .filter(cls -> cls.getStudents().stream()
+                                        .anyMatch(s -> s.getId().equals(currentStudent.getId())))
+                                .map(ClassEntity::getId)
+                                .findFirst()
+                                .orElse(null);
+                    }
+                    Optional<ClassEntity> resolvedClass = classEntityRepository.getClassEntityById(resolvedClassId);
+                    ClassEntity resolvedClassEntity = resolvedClass.orElse(null);
+
                     return AttendanceStatsDTO.builder()
                             .studentId(currentStudent.getId())
                             .studentName(currentStudent.getName())
-                            .classId(classEntity.getId())
-                            .className(classEntity.getName())
+                            .classId(resolvedClassId)
+                            .className(resolvedClassEntity != null ? resolvedClassEntity.getName() : null)
                             .courseId(course != null ? course.getId() : key)
                             .courseName(course != null ? course.getName() : "Unknown Course")
                             .totalClasses(totalClasses)

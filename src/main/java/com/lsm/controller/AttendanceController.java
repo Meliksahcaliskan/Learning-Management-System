@@ -155,7 +155,7 @@ public class AttendanceController {
             @Parameter(description = "ID of the course", required = true)
             @PathVariable @Positive Long courseId,
             @Parameter(description = "ID of the class")
-            @RequestParam Long classId,
+            @RequestParam(required = false) Long classId,
             @Parameter(description = "Start date (format: yyyy-MM-dd)")
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
