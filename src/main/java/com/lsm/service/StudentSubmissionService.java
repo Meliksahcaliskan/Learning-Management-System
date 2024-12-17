@@ -10,19 +10,14 @@ import com.lsm.repository.StudentSubmissionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -32,9 +27,7 @@ public class StudentSubmissionService {
     private final StudentSubmissionRepository submissionRepository;
     private final AssignmentRepository assignmentRepository;
     private final ClassEntityRepository classEntityRepository;
-
-    @Value("${app.upload.dir}")
-    private String UPLOAD_DIR;
+    private final FileStorageService fileStorageService;
 
     @Transactional
     public StudentSubmission submitAssignment(Long assignmentId, SubmitAssignmentDTO submitDTO, AppUser student)
@@ -48,14 +41,18 @@ public class StudentSubmissionService {
         // Verify student's class enrollment
         validateStudentEnrollment(student, assignment);
 
-        // Get or create submission
-        StudentSubmission submission = getOrCreateSubmission(assignment, student);
+        // Handle document upload first to get AssignmentDocument
+        AssignmentDocument document = fileStorageService.handleDocumentUpload(
+                submitDTO.getDocument(),
+                assignment,
+                student
+        );
+
+        // Get or create submission with the new document
+        StudentSubmission submission = getOrCreateSubmission(document, assignment, student);
 
         // Validate submission status
         validateSubmissionStatus(submission);
-
-        // Handle document upload
-        handleDocumentUpload(submission, submitDTO.getDocument(), student);
 
         // Update submission details
         submission.setStatus(AssignmentStatus.SUBMITTED);
@@ -80,12 +77,13 @@ public class StudentSubmissionService {
         }
     }
 
-    private StudentSubmission getOrCreateSubmission(Assignment assignment, AppUser student) {
+    private StudentSubmission getOrCreateSubmission(AssignmentDocument doc, Assignment assignment, AppUser student) {
         return assignment.getStudentSubmissions().stream()
                 .filter(sub -> sub.getStudent().getId().equals(student.getId()))
                 .findFirst()
                 .orElse(StudentSubmission.builder()
                         .assignment(assignment)
+                        .document(doc)
                         .student(student)
                         .status(AssignmentStatus.PENDING)
                         .build());
@@ -98,34 +96,6 @@ public class StudentSubmissionService {
         if (submission.getStatus() == AssignmentStatus.GRADED || submission.getGrade() != null) {
             throw new IllegalStateException("This assignment has already been graded");
         }
-    }
-
-    private void handleDocumentUpload(StudentSubmission submission, MultipartFile file, AppUser student)
-            throws IOException {
-        // Delete existing document if present
-        if (submission.getDocument() != null) {
-            Files.deleteIfExists(Paths.get(submission.getDocument().getFilePath()));
-            submission.setDocument(null);
-        }
-
-        // Create new document
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        Path uploadPath = Paths.get(UPLOAD_DIR);
-        Files.createDirectories(uploadPath);
-        Path filePath = uploadPath.resolve(fileName);
-        Files.copy(file.getInputStream(), filePath);
-
-        AssignmentDocument document = AssignmentDocument.builder()
-                .fileName(file.getOriginalFilename())
-                .filePath(filePath.toString())
-                .fileType(file.getContentType())
-                .fileSize(file.getSize())
-                .uploadTime(LocalDateTime.now())
-                .uploadedBy(student)
-                .assignment(submission.getAssignment())
-                .build();
-
-        submission.setDocument(document);
     }
 
     public StudentSubmission findSubmissionById(Long submissionId) {

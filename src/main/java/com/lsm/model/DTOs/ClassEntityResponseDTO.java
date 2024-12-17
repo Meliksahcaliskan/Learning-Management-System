@@ -20,6 +20,7 @@ public class ClassEntityResponseDTO {
     private Long id;
     private String name;
     private String description;
+    private Long classId;
     private Long teacherId;
     private Map<Long, String> studentIdAndNames;
     private List<Long> assignmentIds;

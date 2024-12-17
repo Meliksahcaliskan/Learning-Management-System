@@ -28,6 +28,7 @@ public class ClassEntityMapper {
         dto.setId(entity.getId());
         dto.setName(entity.getName());
         dto.setDescription(entity.getDescription());
+        dto.setClassId(entity.getId());
 
         // Map teacher
         if (entity.getTeacher() != null) {

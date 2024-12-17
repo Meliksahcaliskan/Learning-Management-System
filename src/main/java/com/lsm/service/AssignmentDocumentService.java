@@ -145,12 +145,13 @@ public class AssignmentDocumentService {
         }
 
         if (currentUser.getRole() == Role.ROLE_TEACHER &&
-                !currentUser.equals(document.getAssignment().getAssignedBy())) {
+                !currentUser.getId().equals(document.getAssignment().getAssignedBy().getId())) {
             throw new AccessDeniedException("Teachers can only access their own assignment documents");
         }
 
         if (currentUser.getRole() == Role.ROLE_STUDENT &&
-                !document.getAssignment().getClassEntity().getStudents().contains(currentUser)) {
+                document.getAssignment().getClassEntity().getStudents().stream()
+                        .noneMatch(s -> s.getId().equals(currentUser.getId()))) {
             throw new AccessDeniedException("Students can only access documents for their assignments");
         }
     }
