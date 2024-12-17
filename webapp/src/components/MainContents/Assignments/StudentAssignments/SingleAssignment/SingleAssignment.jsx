@@ -15,7 +15,7 @@ const SingleAssigment = ({ assignment, refreshAssignments, status }) => {
     const [submitError, setSubmitError] = useState(false);
     const [uploadedFile, setUploadedFile] = useState(null);
 
-
+    console.log(assignment);
     const handleFileUpload = (event) => {
         const file = event.target.files[0];
         setUploadedFile(file);
