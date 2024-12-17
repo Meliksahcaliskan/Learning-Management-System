@@ -97,7 +97,7 @@ const AssignmentSearch = ({onSearchResults}) => {
     }
 
     return(
-        <div className="homework-search">
+        <div className="search">
             <div className="search-options">
                 <div className="input-container">
                     <label className='label'>Sınıf Adı</label>
@@ -145,7 +145,7 @@ const AssignmentSearch = ({onSearchResults}) => {
                     />
                 </div>
             </div>
-            <button className="save-btn btn" onClick={handleSearch}>Ara</button>
+            <button className="btn" onClick={handleSearch}>Ara</button>
         </div>
     );
 
