@@ -1,5 +1,6 @@
 package com.lsm.controller;
 
+import com.lsm.mapper.AssignmentDocumentMapper;
 import com.lsm.model.DTOs.*;
 import com.lsm.model.entity.Assignment;
 import com.lsm.model.entity.AssignmentDocument;
@@ -55,6 +56,7 @@ public class AssignmentController {
 
     private final AssignmentService assignmentService;
     private final AssignmentDocumentService documentService;
+    private final AssignmentDocumentMapper assignmentDocumentMapper;
 
     @Operation(
             summary = "Create a new assignment",
@@ -345,7 +347,7 @@ public class AssignmentController {
             return ResponseEntity.ok(new ApiResponse_<>(
                     true,
                     "Document uploaded successfully",
-                    convertToDTO(document)
+                    assignmentDocumentMapper.convertToDTO(document)
             ));
         } catch (IOException e) {
             log.error("Error uploading document: {}", e.getMessage());
@@ -567,19 +569,6 @@ public class AssignmentController {
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 "text/plain"
         ).contains(contentType);
-    }
-
-    private AssignmentDocumentDTO convertToDTO(AssignmentDocument document) {
-        return AssignmentDocumentDTO.builder()
-                .assignmentId(document.getAssignment().getId())
-                .documentId(document.getId())
-                .fileName(document.getFileName())
-                .fileType(document.getFileType())
-                .filePath(document.getFilePath())
-                .fileSize(document.getFileSize())
-                .uploadTime(document.getUploadTime())
-                .uploadedByUsername(document.getUploadedBy().getUsername())
-                .build();
     }
 
     private static <T> ResponseEntity<ApiResponse_<T>> httpError(HttpStatus s, String message) {

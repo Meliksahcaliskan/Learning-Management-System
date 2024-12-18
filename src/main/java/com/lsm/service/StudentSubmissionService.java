@@ -18,6 +18,7 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -56,7 +57,7 @@ public class StudentSubmissionService {
 
         // Update submission details
         submission.setStatus(AssignmentStatus.SUBMITTED);
-        submission.setSubmissionDate(LocalDate.now());
+        submission.setSubmissionDate(LocalDateTime.now());
         submission.setComment(submitDTO.getSubmissionComment());
 
         return submissionRepository.save(submission);
