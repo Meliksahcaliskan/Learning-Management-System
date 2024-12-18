@@ -312,6 +312,94 @@ public class CourseController {
         }
     }
 
+    @PutMapping("/{courseId}/teacher/{teacherId}")
+    @Operation(summary = "Assign teacher to course", description = "Assign a teacher to a specific course")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Teacher assigned successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Course or teacher not found")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    public ResponseEntity<ApiResponse_<CourseDTO>> assignTeacherToCourse(
+            @Parameter(description = "ID of the course", required = true)
+            @PathVariable @Positive Long courseId,
+            @Parameter(description = "ID of the teacher", required = true)
+            @PathVariable @Positive Long teacherId
+    ) {
+        try {
+            log.info("Assigning teacher {} to course {}", teacherId, courseId);
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Teacher assigned successfully",
+                    courseService.assignTeacherToCourse(courseId, teacherId)
+            ));
+        } catch (EntityNotFoundException e) {
+            log.error("Resource not found: {}", e.getMessage());
+            return httpError(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            log.error("Error assigning teacher to course: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error assigning teacher: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{courseId}/teacher")
+    @Operation(summary = "Remove teacher from course", description = "Remove the assigned teacher from a course")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Teacher removed successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Course not found")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    public ResponseEntity<ApiResponse_<CourseDTO>> removeTeacherFromCourse(
+            @Parameter(description = "ID of the course", required = true)
+            @PathVariable @Positive Long courseId
+    ) {
+        try {
+            log.info("Removing teacher from course {}", courseId);
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Teacher removed successfully",
+                    courseService.removeTeacherFromCourse(courseId)
+            ));
+        } catch (EntityNotFoundException e) {
+            log.error("Course not found: {}", e.getMessage());
+            return httpError(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            log.error("Error removing teacher from course: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error removing teacher: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/{courseId}/teacher/{teacherId}/update")
+    @Operation(summary = "Update course teacher", description = "Update the teacher assigned to a course")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Teacher updated successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Course or teacher not found")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    public ResponseEntity<ApiResponse_<CourseDTO>> updateCourseTeacher(
+            @Parameter(description = "ID of the course", required = true)
+            @PathVariable @Positive Long courseId,
+            @Parameter(description = "ID of the new teacher", required = true)
+            @PathVariable @Positive Long teacherId
+    ) {
+        try {
+            log.info("Updating teacher for course {} to {}", courseId, teacherId);
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Teacher updated successfully",
+                    courseService.updateCourseTeacher(courseId, teacherId)
+            ));
+        } catch (EntityNotFoundException e) {
+            log.error("Resource not found: {}", e.getMessage());
+            return httpError(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            log.error("Error updating course teacher: {}", e.getMessage());
+            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error updating teacher: " + e.getMessage());
+        }
+    }
+
     private static <T> ResponseEntity<ApiResponse_<T>> httpError(HttpStatus status, String message) {
         return ResponseEntity
                 .status(status)

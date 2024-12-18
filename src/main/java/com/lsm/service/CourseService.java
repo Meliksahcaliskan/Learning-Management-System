@@ -251,6 +251,53 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
+    @CacheEvict(value = {"coursesByTeacher", "courses"}, allEntries = true)
+    public CourseDTO assignTeacherToCourse(Long courseId, Long teacherId) {
+        log.debug("Assigning teacher {} to course {}", teacherId, courseId);
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + courseId));
+
+        AppUser teacher = appUserRepository.findById(teacherId)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found with id: " + teacherId));
+
+        if (teacher.getRole() != Role.ROLE_TEACHER) {
+            throw new IllegalArgumentException("User is not a teacher");
+        }
+
+        course.setTeacher(teacher);
+        return mapToDTO(courseRepository.save(course));
+    }
+
+    @CacheEvict(value = {"coursesByTeacher", "courses"}, allEntries = true)
+    public CourseDTO removeTeacherFromCourse(Long courseId) {
+        log.debug("Removing teacher from course {}", courseId);
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + courseId));
+
+        course.setTeacher(null);
+        return mapToDTO(courseRepository.save(course));
+    }
+
+    @CacheEvict(value = {"coursesByTeacher", "courses"}, allEntries = true)
+    public CourseDTO updateCourseTeacher(Long courseId, Long newTeacherId) {
+        log.debug("Updating teacher for course {} to {}", courseId, newTeacherId);
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + courseId));
+
+        AppUser newTeacher = appUserRepository.findById(newTeacherId)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found with id: " + newTeacherId));
+
+        if (newTeacher.getRole() != Role.ROLE_TEACHER) {
+            throw new IllegalArgumentException("User is not a teacher");
+        }
+
+        course.setTeacher(newTeacher);
+        return mapToDTO(courseRepository.save(course));
+    }
+
     private StudentDTO mapToStudentDTO(AppUser user) {
         if (user.getRole() != Role.ROLE_STUDENT || user.getStudentDetails() == null) {
             throw new IllegalArgumentException("User is not a student");
