@@ -1,8 +1,5 @@
-// File: src/commonMain/kotlin/com/example/loginmultiplatform/LoginScreen.kt
-
 package com.example.loginmultiplatform.ui
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -15,28 +12,36 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.navigation.NavController
 import com.example.loginmultiplatform.R
 import com.example.loginmultiplatform.getPlatformResourceContainer
-import com.example.loginmultiplatform.ResourceContainer
+import com.example.loginmultiplatform.utils.SharedPreferencesHelper
 import com.example.loginmultiplatform.viewmodel.LoginViewModel
 
 @Composable
 actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) {
-    //val context = LocalContext.current
+
     val resources = getPlatformResourceContainer()
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showErrorDialog by remember { mutableStateOf(false) }
-    var successMessage by remember { mutableStateOf("") } // Başarı mesajı için state
+    var successMessage by remember { mutableStateOf("") }
     var showSuccessDialog by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf("") } // Hata mesajı için state
+    var errorMessage by remember { mutableStateOf("") }
+    var rememberMe by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val sharedPreferencesHelper = remember { SharedPreferencesHelper(context) }
 
     val customFontFamily = FontFamily(
         Font(R.font.montserrat_regular, FontWeight.Normal),
@@ -44,25 +49,26 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
         Font(R.font.montserrat_semibold, FontWeight.Bold)
     )
 
+    // Animasyonu başlat
+    LaunchedEffect(Unit) {
+        val savedDetails = sharedPreferencesHelper.getLoginDetails()
+        username = savedDetails.first
+        password = savedDetails.second
+        rememberMe = savedDetails.first.isNotEmpty()
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF5270FF), // İlk renk
+                        Color(0xFF14267C)  // İkinci renk
+                    )
+                )
+            )
     ) {
-        // Background Image
-        Image(
-            painter = painterResource(id = resources.lighthouse),
-            contentDescription = "Background Image",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-            alignment = Alignment.TopCenter
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(color = Color.Black.copy(0.6f))
-        )
 
         // Foreground Content
         Column(
@@ -79,13 +85,14 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
                 modifier = Modifier.size(150.dp),
                 tint = Color.Unspecified
             )
+
             Spacer(modifier = Modifier.height(2.dp))
 
             // Email Field
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text(text = resources.emailPlaceholder, color=Color.White.copy(alpha = 0.5f), fontFamily = customFontFamily, fontWeight = FontWeight.Normal) },
+                label = { Text(text = resources.emailPlaceholder, color=Color.White, fontFamily = customFontFamily, fontWeight = FontWeight.Normal) },
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = LocalTextStyle.current.copy(color = Color(234,228,221)),
                 //textFontFamily = customFontFamily,
@@ -103,7 +110,7 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text(text = resources.passwordPlaceholder, color = Color.White.copy(alpha = 0.5f), fontFamily = customFontFamily, fontWeight = FontWeight.Normal) },
+                label = { Text(text = resources.passwordPlaceholder, color = Color.White, fontFamily = customFontFamily, fontWeight = FontWeight.Normal) },
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = LocalTextStyle.current.copy(color = Color(234,228,221)),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -115,7 +122,7 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
                         if (password.isNotEmpty()) {
                             IconButton(onClick = { password = "" }, modifier = Modifier.alpha(1f)) {
                                 Icon(
-                                    painter = painterResource(id = android.R.drawable.ic_menu_close_clear_cancel),
+                                    imageVector = Icons.Rounded.Clear,
                                     contentDescription = "Clear text",
                                     tint = Color.White
                                 )
@@ -125,12 +132,12 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
                         // Eye icon: Şifre görünürlüğünü kontrol eder
                         IconButton(onClick = { passwordVisible = !passwordVisible }, modifier = Modifier.alpha(1f)) {
                             val eyeIcon = if (passwordVisible) {
-                                resources.eyeClose // Şifreyi gösterirken göz
+                                Icons.Rounded.VisibilityOff // Şifreyi gösterirken göz
                             } else {
-                                resources.eyeOpen // Şifreyi gizlerken göz
+                                Icons.Rounded.Visibility // Şifreyi gizlerken göz
                             }
                             Icon(
-                                painter = painterResource(id = eyeIcon),
+                                imageVector = eyeIcon,
                                 contentDescription = if (passwordVisible) "Hide password" else "Show password",
                                 tint = Color.White
                             )
@@ -152,7 +159,6 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    var rememberMe by remember { mutableStateOf(false) }
                     Checkbox(
                         checked = rememberMe,
                         onCheckedChange = { rememberMe = it },
@@ -184,6 +190,13 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
                             onSuccess = { loginData ->
                                 successMessage = "Login Successful!"
                                 showSuccessDialog = true
+
+                                if(rememberMe) {
+                                    sharedPreferencesHelper.saveLoginDetails(username, password)
+                                } else {
+                                    sharedPreferencesHelper.clearLoginDetails()
+                                }
+
                                 when (loginData.role) {
                                     "ROLE_STUDENT" -> navController.navigate("student_dashboard")
                                     "ROLE_TEACHER" -> navController.navigate("teacher_dashboard")
@@ -224,6 +237,21 @@ actual fun LoginScreen(viewModel: LoginViewModel, navController: NavController) 
                     }
                 )
             }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Text(
+                text = "© 2024 Learnovify",
+                fontFamily = customFontFamily,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
         }
     }
 }

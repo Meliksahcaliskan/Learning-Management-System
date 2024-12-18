@@ -25,6 +25,9 @@ interface ResourceContainer {
     val forgotPassword: String
     val signIn: String
     val settings: Int
+    val logo_sekil: Int
+    val logo_yazi: Int
+    val app_logo_login: Int
 }
 
 expect fun getPlatformResourceContainer(): ResourceContainer

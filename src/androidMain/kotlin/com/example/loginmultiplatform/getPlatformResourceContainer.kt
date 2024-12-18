@@ -21,6 +21,9 @@ actual fun getPlatformResourceContainer(): ResourceContainer {
         override val lighthouse: Int = R.drawable.lighthouse
         override val appLogo: Int = R.drawable.app_logo
         override val settings: Int = R.drawable.settings
+        override val logo_sekil: Int = R.drawable.logo_sekil
+        override val logo_yazi: Int = R.drawable.logo_yazi
+        override val app_logo_login: Int = R.drawable.app_logo_login
         override val welcomeAgain: String = context.getString(R.string.welcome_again)
         override val emailPlaceholder: String = context.getString(R.string.email_placeholder)
         override val passwordPlaceholder: String = context.getString(R.string.password_placeholder)

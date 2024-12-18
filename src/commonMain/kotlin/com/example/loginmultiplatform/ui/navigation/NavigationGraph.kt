@@ -20,8 +20,11 @@ fun NavigationGraph(
 
     NavHost(
         navController = navController,
-        startDestination = "login_screen"
+        startDestination = "splash_screen"
     ) {
+        composable("splash_screen") {
+            SplashScreen(navController)
+        }
         composable("login_screen") {
             LoginScreen(viewModel = loginViewModel, navController = navController)
         }

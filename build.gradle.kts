@@ -85,6 +85,8 @@ kotlin {
 
                 implementation("androidx.compose.material:material-icons-extended:1.5.4")
                 //implementation("org.slf4j:slf4j-simple:2.0.9")
+                implementation("androidx.compose.animation:animation:1.5.4")
+
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
                 implementation("androidx.navigation:navigation-compose:2.7.3")
                 implementation("androidx.core:core-ktx:1.10.1")
