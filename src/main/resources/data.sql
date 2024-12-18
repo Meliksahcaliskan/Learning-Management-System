@@ -41,11 +41,13 @@ INSERT INTO app_users (id, username, name, surname, email, password, role,
                                                                                          '5552345678', '12345678902', '2007-03-20', '2023-09-01', 'Sarah Wilson', '5552345679', 1);
 
 -- Insert Courses
-INSERT INTO courses (id, name, description, code, credits) VALUES
-                                                               (nextval('courses_seq'), 'AYT-Mathematics', 'Foundational mathematics course', 'MAT-1', 4),
-                                                               (nextval('courses_seq'), 'AYT-Physics', 'Introduction to physics', 'FIZ-1', 4),
-                                                               (nextval('courses_seq'), 'AYT-Literacy', 'Basic turkish literacy concepts', 'EDB-1', 4);
-
+INSERT INTO courses (id, name, description, code, credits, teacher_id) VALUES
+                                                                           (nextval('courses_seq'), 'AYT-Mathematics', 'Foundational mathematics course', 'MAT-1', 4,
+                                                                            (SELECT id FROM app_users WHERE username = 'teacher1')),
+                                                                           (nextval('courses_seq'), 'AYT-Physics', 'Introduction to physics', 'FIZ-1', 4,
+                                                                            (SELECT id FROM app_users WHERE username = 'teacher2')),
+                                                                           (nextval('courses_seq'), 'AYT-Literacy', 'Basic turkish literacy concepts', 'EDB-1', 4,
+                                                                            (SELECT id FROM app_users WHERE username = 'teacher2'));
 -- Insert Classes
 INSERT INTO classes (id, name, description, teacher_id) VALUES
                                                             (nextval('classes_id_seq'), '11-A-MF', '11-A MF',
@@ -63,13 +65,6 @@ INSERT INTO class_courses (class_id, course_id) VALUES
                                                      (SELECT id FROM courses WHERE code = 'FIZ-1')),
                                                     ((SELECT id FROM classes WHERE name = '11-A-MF'),
                                                      (SELECT id FROM courses WHERE code = 'EDB-1'));
-
--- Insert Teacher-Course Relationships
-INSERT INTO teacher_courses (user_id, course_id) VALUES
-                                                     ((SELECT id FROM app_users WHERE username = 'teacher1'),
-                                                      (SELECT id FROM courses WHERE code = 'MAT-1')),
-                                                     ((SELECT id FROM app_users WHERE username = 'teacher2'),
-                                                      (SELECT id FROM courses WHERE code = 'EDB-1'));
 
 -- Insert Teacher-Class Relationships
 INSERT INTO teacher_classes (user_id, class_id) VALUES
