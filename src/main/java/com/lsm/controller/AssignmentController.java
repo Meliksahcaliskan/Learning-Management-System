@@ -94,7 +94,7 @@ public class AssignmentController {
             throw e;
         } catch (Exception e) {
             log.error("Error creating assignment: {}", e.getMessage());
-            return httpError(HttpStatus.BAD_REQUEST, "Error creating assignment: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.BAD_REQUEST, "Error creating assignment: " + e.getMessage());
         }
     }
 
@@ -130,10 +130,10 @@ public class AssignmentController {
             ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while updating assignment: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error occurred while updating assignment: {}", e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error: " + e.getMessage());
         }
     }
 
@@ -162,7 +162,7 @@ public class AssignmentController {
 
         } catch (AccessDeniedException e) {
             log.error("Access denied while getting all assignment: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -205,10 +205,10 @@ public class AssignmentController {
             ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while getting teacher assignment: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (EntityNotFoundException e) {
             log.error("Entity not found while getting teacher assignment: {}", e.getMessage());
-            return httpError(HttpStatus.BAD_REQUEST, "Entity not found: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.BAD_REQUEST, "Entity not found: " + e.getMessage());
         }
     }
 
@@ -249,13 +249,13 @@ public class AssignmentController {
             ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while deleting document: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (EntityNotFoundException e) {
             log.error("Document not found: {}", e.getMessage());
-            return httpError(HttpStatus.BAD_REQUEST, "Entity not found: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.BAD_REQUEST, "Entity not found: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error deleting document: {}", e.getMessage());
-            return httpError(HttpStatus.BAD_REQUEST, "An error occurred: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.BAD_REQUEST, "An error occurred: " + e.getMessage());
         }
     }
 
@@ -290,10 +290,10 @@ public class AssignmentController {
             ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while getting assignments of the student: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (EntityNotFoundException e) {
             log.error("Student not found: {}", e.getMessage());
-            return httpError(HttpStatus.BAD_REQUEST, "Student not found: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.BAD_REQUEST, "Student not found: " + e.getMessage());
         }
     }
 
@@ -324,7 +324,7 @@ public class AssignmentController {
             ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while deleting an assignment: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -351,7 +351,7 @@ public class AssignmentController {
             ));
         } catch (IOException e) {
             log.error("Error uploading document: {}", e.getMessage());
-            return httpError(HttpStatus.BAD_REQUEST, "Error uploading document: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.BAD_REQUEST, "Error uploading document: " + e.getMessage());
         }
     }
 
@@ -408,7 +408,7 @@ public class AssignmentController {
             ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while grading the assignment: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -473,7 +473,7 @@ public class AssignmentController {
             ));
         } catch (Exception e) {
             log.error("Error during bulk grading: {}", e.getMessage());
-            return httpError(HttpStatus.BAD_REQUEST, "Error during bulk grading: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.BAD_REQUEST, "Error during bulk grading: " + e.getMessage());
         }
     }
 
@@ -510,10 +510,10 @@ public class AssignmentController {
             ));
         } catch (IOException e) {
             log.error("An exception occurred when submitting an assignment: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "IOException occurred: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "IOException occurred: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error submitting assignment: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Error submitting assignment: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Error submitting assignment: " + e.getMessage());
         }
     }
 
@@ -543,10 +543,10 @@ public class AssignmentController {
             ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while un-submitting the assignment: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error while un-submitting the assignment: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Error: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Error: " + e.getMessage());
         }
     }
 
@@ -569,15 +569,5 @@ public class AssignmentController {
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 "text/plain"
         ).contains(contentType);
-    }
-
-    private static <T> ResponseEntity<ApiResponse_<T>> httpError(HttpStatus s, String message) {
-        return ResponseEntity.
-                status(s).
-                body(new ApiResponse_<>(
-                        false,
-                        message,
-                        null
-                ));
     }
 }

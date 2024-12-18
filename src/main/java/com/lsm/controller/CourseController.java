@@ -64,10 +64,10 @@ public class CourseController {
             ));
         } catch (EntityNotFoundException e) {
             log.error("Course not found with ID in getCourseById({}): {}", id, e.getMessage());
-            return httpError(HttpStatus.NOT_FOUND, "Course not found: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.NOT_FOUND, "Course not found: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error retrieving course with ID {}: {}", id, e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving course: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving course: " + e.getMessage());
         }
     }
 
@@ -88,7 +88,7 @@ public class CourseController {
             ));
         } catch (Exception e) {
             log.error("Error retrieving all courses: {}", e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving courses: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving courses: " + e.getMessage());
         }
     }
 
@@ -113,10 +113,10 @@ public class CourseController {
             ));
         } catch (EntityNotFoundException e) {
             log.error("Class not found with ID {}: {}", classId, e.getMessage());
-            return httpError(HttpStatus.NOT_FOUND, "Class not found: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.NOT_FOUND, "Class not found: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error retrieving courses for class {}: {}", classId, e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving courses: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving courses: " + e.getMessage());
         }
     }
 
@@ -149,13 +149,13 @@ public class CourseController {
             ));
         } catch (EntityNotFoundException e) {
             log.error("Student not found with ID {}: {}", studentId, e.getMessage());
-            return httpError(HttpStatus.NOT_FOUND, "Student not found: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.NOT_FOUND, "Student not found: " + e.getMessage());
         } catch (AccessDeniedException e) {
             log.error("Access denied for student courses: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error retrieving courses for student {}: {}", studentId, e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving courses: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving courses: " + e.getMessage());
         }
     }
 
@@ -182,7 +182,7 @@ public class CourseController {
                     ));
         } catch (Exception e) {
             log.error("Error creating course: {}", e.getMessage());
-            return httpError(HttpStatus.BAD_REQUEST, "Error creating course: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.BAD_REQUEST, "Error creating course: " + e.getMessage());
         }
     }
 
@@ -209,10 +209,10 @@ public class CourseController {
             ));
         } catch (EntityNotFoundException e) {
             log.error("Course not found with ID {}: {}", id, e.getMessage());
-            return httpError(HttpStatus.NOT_FOUND, "Course not found: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.NOT_FOUND, "Course not found: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error updating course {}: {}", id, e.getMessage());
-            return httpError(HttpStatus.BAD_REQUEST, "Error updating course: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.BAD_REQUEST, "Error updating course: " + e.getMessage());
         }
     }
 
@@ -238,10 +238,10 @@ public class CourseController {
             ));
         } catch (EntityNotFoundException e) {
             log.error("Course not found with ID {}: {}", id, e.getMessage());
-            return httpError(HttpStatus.NOT_FOUND, "Course not found: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.NOT_FOUND, "Course not found: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error deleting course {}: {}", id, e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error deleting course: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error deleting course: " + e.getMessage());
         }
     }
 
@@ -274,13 +274,13 @@ public class CourseController {
             ));
         } catch (EntityNotFoundException e) {
             log.error("Teacher not found with ID {}: {}", teacherId, e.getMessage());
-            return httpError(HttpStatus.NOT_FOUND, "Teacher not found: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.NOT_FOUND, "Teacher not found: " + e.getMessage());
         } catch (AccessDeniedException e) {
             log.error("Access denied for teacher courses: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error retrieving courses for teacher {}: {}", teacherId, e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving courses: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving courses: " + e.getMessage());
         }
     }
 
@@ -308,7 +308,7 @@ public class CourseController {
             ));
         } catch (Exception e) {
             log.error("Error searching courses: {}", e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error searching courses: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error searching courses: " + e.getMessage());
         }
     }
 
@@ -335,10 +335,10 @@ public class CourseController {
             ));
         } catch (EntityNotFoundException e) {
             log.error("Resource not found: {}", e.getMessage());
-            return httpError(HttpStatus.NOT_FOUND, e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.NOT_FOUND, e.getMessage());
         } catch (Exception e) {
             log.error("Error assigning teacher to course: {}", e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error assigning teacher: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error assigning teacher: " + e.getMessage());
         }
     }
 
@@ -363,10 +363,10 @@ public class CourseController {
             ));
         } catch (EntityNotFoundException e) {
             log.error("Course not found: {}", e.getMessage());
-            return httpError(HttpStatus.NOT_FOUND, e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.NOT_FOUND, e.getMessage());
         } catch (Exception e) {
             log.error("Error removing teacher from course: {}", e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error removing teacher: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error removing teacher: " + e.getMessage());
         }
     }
 
@@ -393,20 +393,10 @@ public class CourseController {
             ));
         } catch (EntityNotFoundException e) {
             log.error("Resource not found: {}", e.getMessage());
-            return httpError(HttpStatus.NOT_FOUND, e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.NOT_FOUND, e.getMessage());
         } catch (Exception e) {
             log.error("Error updating course teacher: {}", e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error updating teacher: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error updating teacher: " + e.getMessage());
         }
-    }
-
-    private static <T> ResponseEntity<ApiResponse_<T>> httpError(HttpStatus status, String message) {
-        return ResponseEntity
-                .status(status)
-                .body(new ApiResponse_<>(
-                        false,
-                        message,
-                        null
-                ));
     }
 }

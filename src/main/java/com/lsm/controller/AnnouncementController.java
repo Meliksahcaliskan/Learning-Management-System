@@ -54,10 +54,10 @@ public class AnnouncementController {
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (AccessDeniedException e) {
             log.error("Access denied in createAnnouncement: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (Exception e) {
             log.error("Unexpected error in createAnnouncement: {}", e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
         }
     }
 
@@ -81,7 +81,7 @@ public class AnnouncementController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error retrieving announcements: {}", e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving announcements: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving announcements: " + e.getMessage());
         }
     }
 
@@ -109,10 +109,10 @@ public class AnnouncementController {
             return ResponseEntity.ok(response);
         } catch (AccessDeniedException e) {
             log.error("Access denied in updateAnnouncement: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (Exception e) {
             log.error("Unexpected error in updateAnnouncement: {}", e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
         }
     }
 
@@ -136,20 +136,10 @@ public class AnnouncementController {
             return ResponseEntity.ok(response);
         } catch (AccessDeniedException e) {
             log.error("Access denied: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         } catch (Exception e) {
             log.error("Unexpected error: {}", e.getMessage());
-            return httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
         }
-    }
-
-    private static <T> ResponseEntity<ApiResponse_<T>> httpError(HttpStatus status, String message) {
-        return ResponseEntity
-                .status(status)
-                .body(new ApiResponse_<>(
-                        false,
-                        message,
-                        null
-                ));
     }
 }

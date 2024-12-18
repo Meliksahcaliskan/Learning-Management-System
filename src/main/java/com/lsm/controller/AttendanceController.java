@@ -67,7 +67,7 @@ public class AttendanceController {
                     ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while marking attendance: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -101,7 +101,7 @@ public class AttendanceController {
             ));
         } catch (AccessDeniedException e) {
             log.error("Access denied while getting attendance of the student: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -135,7 +135,7 @@ public class AttendanceController {
             ));
         } catch (AccessDeniedException e) {
             log.error("To display stats of the student as a student, you must be that student: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -169,7 +169,7 @@ public class AttendanceController {
 
             // Validate date range if provided
             if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-                return httpError(HttpStatus.BAD_REQUEST, "Start date must be before or equal to end date");
+                return ApiResponse_.httpError(HttpStatus.BAD_REQUEST, "Start date must be before or equal to end date");
             }
 
             List<AttendanceStatsDTO> stats = attendanceService.getAttendanceStatsByCourse(
@@ -181,7 +181,7 @@ public class AttendanceController {
             ));
         } catch (AccessDeniedException e) {
             log.error("Error in getAttendanceStatsOfTheCourse: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
     }
 
@@ -212,17 +212,7 @@ public class AttendanceController {
                     ));
         } catch (AccessDeniedException e) {
             log.error("Error in mark attendance: {}", e.getMessage());
-            return httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
         }
-    }
-
-    private static <T> ResponseEntity<ApiResponse_<T>> httpError(HttpStatus s, String message) {
-        return ResponseEntity.
-                status(s).
-                body(new ApiResponse_<>(
-                        false,
-                        message,
-                        null
-                ));
     }
 }
