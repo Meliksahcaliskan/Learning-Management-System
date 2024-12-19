@@ -2,7 +2,9 @@ package com.lsm.controller;
 
 import com.lsm.model.DTOs.AnnouncementDTO;
 import com.lsm.model.entity.base.AppUser;
+import com.lsm.repository.DeviceTokenRepository;
 import com.lsm.service.AnnouncementService;
+import com.lsm.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -31,6 +33,8 @@ import java.util.List;
 public class AnnouncementController {
 
     private final AnnouncementService announcementService;
+    private final NotificationService notificationService;
+    private final DeviceTokenRepository deviceTokenRepository;
 
     @Operation(summary = "Create a new announcement", description = "Only teachers, admins, and coordinators can create announcements")
     @ApiResponses(value = {
@@ -140,6 +144,89 @@ public class AnnouncementController {
         } catch (Exception e) {
             log.error("Unexpected error: {}", e.getMessage());
             return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
+        }
+    }
+
+    @Operation(summary = "Send push notification for an announcement",
+            description = "Sends push notification to all students in the class for an existing announcement")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Notification sent successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Announcement not found")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    @PostMapping("/{announcementId}/notify")
+    public ResponseEntity<ApiResponse_<Void>> sendAnnouncementNotification(
+            @PathVariable Long announcementId,
+            Authentication authentication) {
+        try {
+            AppUser loggedInUser = (AppUser) authentication.getPrincipal();
+
+            // Get announcement details
+            AnnouncementDTO announcement = announcementService.getAnnouncementById(loggedInUser, announcementId);
+
+            // Send notifications to all students in the class
+            List<String> deviceTokens = deviceTokenRepository.findTokensByClassId(announcement.getClassId());
+            for (String token : deviceTokens) {
+                notificationService.sendNotification(
+                        token,
+                        "New Announcement",
+                        announcement.getTitle()
+                );
+            }
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Notification sent successfully",
+                    null
+            ));
+        } catch (AccessDeniedException e) {
+            log.error("Access denied for sending announcement notification: {}", e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error sending notification: {}", e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error sending notification: " + e.getMessage());
+        }
+    }
+
+    @Operation(summary = "Send push notification for multiple announcements",
+            description = "Sends push notifications for multiple announcements to their respective class students")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Notifications sent successfully"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_COORDINATOR')")
+    @PostMapping("/notify")
+    public ResponseEntity<ApiResponse_<Void>> sendBulkAnnouncementNotifications(
+            @RequestBody List<Long> announcementIds,
+            Authentication authentication) {
+        try {
+            AppUser loggedInUser = (AppUser) authentication.getPrincipal();
+
+            for (Long announcementId : announcementIds) {
+                AnnouncementDTO announcement = announcementService.getAnnouncementById(loggedInUser, announcementId);
+                List<String> deviceTokens = deviceTokenRepository.findTokensByClassId(announcement.getClassId());
+
+                for (String token : deviceTokens) {
+                    notificationService.sendNotification(
+                            token,
+                            "New Announcement",
+                            announcement.getTitle()
+                    );
+                }
+            }
+
+            return ResponseEntity.ok(new ApiResponse_<>(
+                    true,
+                    "Notifications sent successfully",
+                    null
+            ));
+        } catch (AccessDeniedException e) {
+            log.error("Access denied: {}", e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.FORBIDDEN, "Access denied: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error sending notifications: {}", e.getMessage());
+            return ApiResponse_.httpError(HttpStatus.INTERNAL_SERVER_ERROR, "Error sending notifications: " + e.getMessage());
         }
     }
 }

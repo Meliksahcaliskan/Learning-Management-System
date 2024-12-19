@@ -215,6 +215,7 @@ public class AttendanceService {
                     List<AttendanceDTO> recentAttendances = courseOrStudentAttendances.stream()
                             .sorted((a1, a2) -> a2.getDate().compareTo(a1.getDate()))
                             .limit(5)  // Get the 5 most recent attendance records
+                            .filter(a -> !a.getStatus().equals(AttendanceStatus.PRESENT))
                             .map(attendance -> new AttendanceDTO(attendance, attendance.getComment()))
                             .toList();
 

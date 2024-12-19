@@ -111,6 +111,27 @@ public class AnnouncementService {
         return convertToDTO(updatedAnnouncement);
     }
 
+    @Transactional
+    public AnnouncementDTO getAnnouncementById(AppUser loggedInUser, Long announcementId)
+            throws AccessDeniedException, ResourceNotFoundException {
+        AppUser user = appUserService.getCurrentUserWithDetails(loggedInUser.getId());
+        Announcement announcement = announcementRepository.findById(announcementId)
+                .orElseThrow(() -> new ResourceNotFoundException("Announcement not found"));
+
+        // Check permissions
+        if (user.getRole().equals(Role.ROLE_STUDENT) &&
+                !user.getStudentDetails().getClassEntity().equals(announcement.getClassEntity().getId())) {
+            throw new AccessDeniedException("Students can't access announcements of other classes");
+        }
+        if (user.getRole().equals(Role.ROLE_TEACHER) &&
+                user.getTeacherDetails().getClasses().stream()
+                        .noneMatch(c -> c.getId().equals(announcement.getClassEntity().getId()))) {
+            throw new AccessDeniedException("Teachers can't access announcements of classes they don't teach");
+        }
+
+        return convertToDTO(announcement);
+    }
+
     private AnnouncementDTO convertToDTO(Announcement announcement) {
         AnnouncementDTO dto = new AnnouncementDTO();
         dto.setId(announcement.getId());
