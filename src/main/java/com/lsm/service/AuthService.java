@@ -89,13 +89,19 @@ public class AuthService {
             // Clean up any existing refresh tokens before creating a new one
             cleanupExpiredTokens(user);
 
-            String accessToken = jwtTokenProvider.generateAccessToken(user);
-            RefreshToken refreshToken = createRefreshToken(user.getId());
+            // Generate tokens with remember me consideration
+            String accessToken = jwtTokenProvider.generateAccessToken(user, loginRequest.isRememberMe());
+            RefreshToken refreshToken = createRefreshToken(user.getId(), loginRequest.isRememberMe());
 
             loginAttemptService.loginSucceeded(clientIp);
             eventPublisher.publishEvent(new UserLoginEvent(user));
 
-            return new AuthenticationResult(accessToken, refreshToken.getToken(), user, REFRESH_TOKEN_VALIDITY);
+            // Return different expiration times based on remember me
+            long expiresIn = loginRequest.isRememberMe() ?
+                    REFRESH_TOKEN_VALIDITY * 7 : // 7 times longer for remember me
+                    REFRESH_TOKEN_VALIDITY;
+
+            return new AuthenticationResult(accessToken, refreshToken.getToken(), user, expiresIn);
 
         } catch (BadCredentialsException e) {
             loginAttemptService.loginFailed(clientIp);
@@ -111,16 +117,22 @@ public class AuthService {
     }
 
     @Transactional
-    public RefreshToken createRefreshToken(Long userId) {
+    public RefreshToken createRefreshToken(Long userId, boolean rememberMe) {
         AppUser user = appUserRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         cleanupOldRefreshTokens(user);
 
+        // Calculate expiration based on remember me
+        long validity = rememberMe ?
+                REFRESH_TOKEN_VALIDITY * 7 : // 7 times longer for remember me
+                REFRESH_TOKEN_VALIDITY;
+
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
                 .token(generateSecureToken())
-                .expiryDate(Instant.now().plusMillis(REFRESH_TOKEN_VALIDITY))
+                .expiryDate(Instant.now().plusMillis(validity))
+                .rememberMe(rememberMe)
                 .build();
 
         return refreshTokenRepository.save(refreshToken);
@@ -132,7 +144,7 @@ public class AuthService {
                 .map(this::verifyRefreshToken)
                 .map(token -> {
                     AppUser user = token.getUser();
-                    String newAccessToken = jwtTokenProvider.generateAccessToken(user);
+                    String newAccessToken = jwtTokenProvider.generateAccessToken(user, token.isRememberMe());
                     return new TokenRefreshResult(newAccessToken, refreshToken);
                 })
                 .orElseThrow(() -> new InvalidTokenException("Invalid refresh token"));
