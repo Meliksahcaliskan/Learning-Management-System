@@ -226,7 +226,10 @@ public class AttendanceService {
                                 .classId(classEntity.getId())
                                 .className(classEntity.getName())
                                 .courseId(course != null ? course.getId() : key)
-                                .courseName(course != null ? course.getName() : "Unknown Course")
+                                .courseName(course != null ? course.getName() :
+                                        courseRepository.findById(key)
+                                                .map(Course::getName)
+                                                .orElse("Unknown Course"))
                                 .totalClasses(totalClasses)
                                 .presentCount(presentCount)
                                 .absentCount(absentCount)
@@ -254,7 +257,10 @@ public class AttendanceService {
                             .classId(resolvedClassId)
                             .className(resolvedClassEntity != null ? resolvedClassEntity.getName() : null)
                             .courseId(course != null ? course.getId() : key)
-                            .courseName(course != null ? course.getName() : "Unknown Course")
+                            .courseName(course != null ? course.getName() :
+                                    courseRepository.findById(key)
+                                            .map(Course::getName)
+                                            .orElse("Unknown Course"))
                             .totalClasses(totalClasses)
                             .presentCount(presentCount)
                             .absentCount(absentCount)
