@@ -212,6 +212,12 @@ public class AttendanceService {
                             ? (presentCount + lateCount) * 100.0 / totalClasses
                             : 0;
 
+                    List<AttendanceDTO> recentAttendances = courseOrStudentAttendances.stream()
+                            .sorted((a1, a2) -> a2.getDate().compareTo(a1.getDate()))
+                            .limit(5)  // Get the 5 most recent attendance records
+                            .map(attendance -> new AttendanceDTO(attendance, attendance.getComment()))
+                            .toList();
+
                     if (classEntity != null) {
                         return AttendanceStatsDTO.builder()
                                 .studentId(currentStudent.getId())
@@ -225,6 +231,7 @@ public class AttendanceService {
                                 .absentCount(absentCount)
                                 .lateCount(lateCount)
                                 .attendancePercentage(Math.round(attendancePercentage * 100.0) / 100.0)
+                                .recentAttendance(recentAttendances)
                                 .build();
                     }
                     // Handle class ID resolution safely
@@ -252,6 +259,7 @@ public class AttendanceService {
                             .absentCount(absentCount)
                             .lateCount(lateCount)
                             .attendancePercentage(Math.round(attendancePercentage * 100.0) / 100.0)
+                            .recentAttendance(recentAttendances)
                             .build();
                 })
                 .collect(Collectors.toList());

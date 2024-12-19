@@ -108,6 +108,8 @@ dependencies {
 
     // OWASP dependency check
     implementation 'org.owasp:dependency-check-core:8.2.1'
+
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
 }
 
 tasks.named('test') {
